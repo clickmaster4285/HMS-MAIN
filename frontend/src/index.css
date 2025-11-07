@@ -1,8 +1,13 @@
 @import "tailwindcss";
 
-/* @theme {
-  --color-primary-50: oklch(98.4% 0.014 180.72);
-} */
+@theme {
+  /* --color-primary-50: oklch(98.4% 0.014 180.72); */
+  --font-sans: "Montserrat", "Roboto", sans-serif;
+  --font-mono: "IBM Plex Mono", monospace;
+  --font-nastaliq: "Noto Nastaliq Urdu", serif;
+  --font-roboto: "Roboto", sans-serif;
+  --font-montserrat: "Montserrat", sans-serif;
+}
 
 @theme static {
   /* primary color of the website */

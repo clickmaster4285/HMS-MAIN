@@ -32,7 +32,7 @@ const PrintA4 = ({ formData }) => {
   // Payment info
   const amountStatus = formData?.visitData?.amountStatus || 'cash';
   const token = formData?.visitData?.token || 0;
-  const notes = formData?.visitData?.notes || 0;
+  const notes = formData?.visitData?.notes;
 
   // Convert logo to base64 for reliable printing
   const [logoDataUrl, setLogoDataUrl] = React.useState('');
@@ -108,7 +108,7 @@ const PrintA4 = ({ formData }) => {
               margin: 0;
               padding: 5mm;
               color: #333;
-              width: 190mm;
+              width: 210mm;
               height: 277mm;
               position: relative;
               font-size: 13px;
@@ -140,7 +140,7 @@ const PrintA4 = ({ formData }) => {
             }
 
             .logo-section {
-              width: 20%;
+              width: 30%;
               min-width: 40mm;
             }
 
@@ -160,7 +160,7 @@ const PrintA4 = ({ formData }) => {
 
             .patient-details-section,
             .doctor-details-section {
-              width: 40%;
+              width: 35%;
               padding: 0 5mm;
               border-left: 1px solid #ddd;
               overflow: hidden;
@@ -214,7 +214,7 @@ const PrintA4 = ({ formData }) => {
             }
 
             .main-content-area {
-              height: 190mm;
+              height: 210mm;
               margin-top: 3mm;
               padding: 3mm;
               position: relative;

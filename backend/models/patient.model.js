@@ -46,7 +46,7 @@ const visitSchema = new mongoose.Schema({
     default: 'not_refunded'
   },
   
-  token: { type: Number, },
+  token: { type: String, },
   referredBy: { type: String },
 }, { timestamps: true });
 

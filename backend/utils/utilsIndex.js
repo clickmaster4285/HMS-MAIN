@@ -2,7 +2,7 @@ const generateUniqueUserId = require("./generateUniqueUserId.utils");
 const generateUniqueDoctorId = require("./generateUniqueDoctorId");
 const generateUniqueMrNo = require("./generateUniqueMrNo");  
 const generateUniqueAdmissionNo = require("./generaetUniqueAdmissionNo");
-const generateUniqueToken = require("./generateUniqueToken");
+const generateOPDToken = require("./generateOPDToken");
 const generateUniqueId = require("./generateUniqueId");
 const generateUniqueStaffId = require("./generateUniqueStaffId")
 
@@ -11,7 +11,7 @@ const utils = {
   generateUniqueDoctorId,
   generateUniqueMrNo,
   generateUniqueAdmissionNo,
-  generateUniqueToken,
+  generateOPDToken,
   generateUniqueId,
   generateUniqueStaffId,
   
