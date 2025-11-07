@@ -51,6 +51,24 @@ const WardModal = ({
         }
     }, [formData.department, formData.wardNumber, isCreating, departments]);
 
+    // Effect to get suggested number when department changes (for both create and edit)
+    useEffect(() => {
+        if (formData.department) {
+            // Get new suggested number for the selected department
+            dispatch(getSuggestedWardNumber(formData.department))
+                .unwrap()
+                .then((result) => {
+                    if (result.success && result.suggestedWardNumber) {
+                        // Only auto-fill for new wards, but we can show the suggestion for both
+                        console.log('Suggested ward number:', result.suggestedWardNumber);
+                    }
+                })
+                .catch(error => {
+                    console.error('Failed to get suggested ward number:', error);
+                });
+        }
+    }, [formData.department, dispatch]);
+
     // Unified input change handler
     const handleInputChange = (field, value) => {
         const newFormData = {
@@ -63,8 +81,8 @@ const WardModal = ({
             const selectedDept = departments.find(dept => dept._id === value);
             newFormData.department_Name = selectedDept ? selectedDept.name : '';
 
-            // Get suggested number when department changes for new wards
-            if (isCreating && value) {
+            // Get suggested number when department changes
+            if (value) {
                 dispatch(getSuggestedWardNumber(value));
             }
         }
@@ -77,6 +95,31 @@ const WardModal = ({
             if (field === 'department' && newFormData.department_Name) {
                 onInputChange({ target: { name: 'department_Name', value: newFormData.department_Name } });
             }
+        }
+    };
+
+    // Handle suggest button click
+    const handleSuggestClick = () => {
+        if (formData.department) {
+            dispatch(getSuggestedWardNumber(formData.department))
+                .unwrap()
+                .then((result) => {
+                    if (result.success && result.suggestedWardNumber) {
+                        handleInputChange('wardNumber', result.suggestedWardNumber);
+
+                        // Auto-generate name for new wards
+                        if (isCreating) {
+                            const selectedDept = departments.find(dept => dept._id === formData.department);
+                            if (selectedDept) {
+                                const autoName = `${selectedDept.name} Ward ${result.suggestedWardNumber}`;
+                                handleInputChange('name', autoName);
+                            }
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Failed to get suggested ward number:', error);
+                });
         }
     };
 
@@ -96,10 +139,27 @@ const WardModal = ({
         return dept ? dept.name : '';
     };
 
-    // Get display ward number
-    const getDisplayWardNumber = () => {
-        if (!getDepartmentName() || !formData.wardNumber) return '';
-        return `${getDepartmentName().substring(0, 4).toUpperCase()}-${formData.wardNumber}`;
+    // Extract just the number part from formatted ward number (for display)
+    const getWardNumberDisplay = () => {
+        if (!formData.wardNumber) return '';
+
+        // If wardNumber is in format "CARD-1", extract just "1"
+        if (typeof formData.wardNumber === 'string' && formData.wardNumber.includes('-')) {
+            const parts = formData.wardNumber.split('-');
+            return parts[parts.length - 1];
+        }
+
+        return formData.wardNumber;
+    };
+
+    // Handle ward number input change - ensure we store just the number
+    const handleWardNumberChange = (value) => {
+        // If value is in format "CARD-1", extract just "1"
+        if (typeof value === 'string' && value.includes('-')) {
+            const parts = value.split('-');
+            value = parts[parts.length - 1];
+        }
+        handleInputChange('wardNumber', value);
     };
 
     return (
@@ -155,28 +215,33 @@ const WardModal = ({
                         <div className="flex items-center space-x-2">
                             <input
                                 type="number"
-                                value={formData.wardNumber}
-                                onChange={(e) => handleInputChange('wardNumber', e.target.value)}
+                                value={getWardNumberDisplay()}
+                                onChange={(e) => handleWardNumberChange(e.target.value)}
                                 className="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 transition"
                                 disabled={isProcessing}
                                 min="1"
                                 required
+                                placeholder="Enter ward number"
                             />
-                            {isCreating && formData.department && (
+                            {/* Show Suggest button for BOTH create and edit modes */}
+                            {formData.department && (
                                 <button
                                     type="button"
-                                    onClick={() => dispatch(getSuggestedWardNumber(formData.department))}
+                                    onClick={handleSuggestClick}
                                     disabled={suggestionLoading || isProcessing}
-                                    className="whitespace-nowrap px-3 py-3 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 text-sm font-medium disabled:opacity-50"
+                                    className="whitespace-nowrap px-3 py-3 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                                    title="Get next available ward number for this department"
                                 >
                                     {suggestionLoading ? '...' : 'Suggest'}
                                 </button>
                             )}
                         </div>
                         {!formData.wardNumber && (
-                            <p className="mt-1 text-sm text-red-600">Ward number is required</p>
+                            <p className="mt-1 text-sm text-yellow-600">
+                                Please enter a ward number or use Suggest
+                            </p>
                         )}
-                        {isCreating && suggestedWardNumber && (
+                        {suggestedWardNumber && (
                             <p className="mt-1 text-sm text-green-600">
                                 Suggested: {suggestedWardNumber}
                             </p>
@@ -205,14 +270,18 @@ const WardModal = ({
                     <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                         <h3 className="font-medium text-blue-800 mb-2">Ward Preview</h3>
                         <p className="text-sm text-blue-700">
-                            <strong>Display Number:</strong> {getDisplayWardNumber()}
+                            <strong>Ward Identifier:</strong> {getDepartmentName()} Ward {getWardNumberDisplay()}
                         </p>
                         <p className="text-sm text-blue-700">
-                            <strong>Full Identifier:</strong> {getDepartmentName()} Ward {formData.wardNumber}
+                            <strong>Full Ward Number:</strong> {getDepartmentName().substring(0, 4).toUpperCase()}-{getWardNumberDisplay()}
                         </p>
                         {formData.bedCount && (
                             <p className="text-sm text-blue-700">
-                                <strong>Beds:</strong> {formData.bedCount} bed{formData.bedCount !== 1 ? 's' : ''} will be created
+                                <strong>Beds:</strong> {formData.bedCount} bed{formData.bedCount !== 1 ? 's' : ''} will be created as{' '}
+                                {Array.from({ length: Math.min(3, formData.bedCount) }, (_, i) =>
+                                    `${getDepartmentName().substring(0, 4).toUpperCase()}-${getWardNumberDisplay()}-B${i + 1}`
+                                ).join(', ')}
+                                {formData.bedCount > 3 ? ', ...' : ''}
                             </p>
                         )}
                     </div>

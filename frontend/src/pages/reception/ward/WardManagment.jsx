@@ -74,14 +74,21 @@ const WardManagement = () => {
   // Update the handleAddWard function
   const handleAddWard = () => {
     if (!wardDetails.wardNumber || !wardDetails.department) {
-      alert('Ward Number and Department are required');
+      toast.error('Ward Number and Department are required');
+      return;
+    }
+
+    // Ensure wardNumber is a number
+    const wardNumber = parseInt(wardDetails.wardNumber);
+    if (isNaN(wardNumber) || wardNumber < 1) {
+      toast.error('Ward number must be a positive number');
       return;
     }
 
     const wardData = {
       name: wardDetails.name,
-      department: wardDetails.department, // ObjectId
-      wardNumber: parseInt(wardDetails.wardNumber),
+      department: wardDetails.department,
+      wardNumber: wardNumber, // Send as number, not string
       bedCount: parseInt(wardDetails.bedCount) || 1,
       nurses: wardDetails.nurses || []
     };
@@ -92,34 +99,49 @@ const WardManagement = () => {
         setIsModalOpen(false);
         resetWardDetails();
         dispatch(getAllWards());
-        // Show success message
         toast.success(result.message || 'Ward created successfully!');
       })
       .catch(error => {
         console.error('Failed to create ward:', error);
-        // Handle error object properly
-        const errorMessage = error?.message || error?.toString() || 'Failed to create ward. Please try again.';
+        const errorMessage = error?.message || 'Failed to create ward. Please try again.';
         toast.error(errorMessage);
       });
   };
-
   const handleUpdateWard = () => {
     if (!wardDetails._id) {
       console.error("Ward ID is missing");
+      toast.error("Ward ID is missing");
       return;
     }
 
-    const { _id, ...updateData } = wardDetails;
-    dispatch(updateWardById({ id: _id, wardData: updateData }))
+    // Prepare update data - only send changed fields
+    const updateData = {
+      name: wardDetails.name,
+      department: wardDetails.department,
+      wardNumber: wardDetails.wardNumber, // This should be the numeric part, not the full format
+      bedCount: parseInt(wardDetails.bedCount) || 1,
+      nurses: wardDetails.nurses || []
+    };
+
+    // Remove undefined or null values
+    Object.keys(updateData).forEach(key => {
+      if (updateData[key] === undefined || updateData[key] === null) {
+        delete updateData[key];
+      }
+    });
+
+    dispatch(updateWardById({ id: wardDetails._id, wardData: updateData }))
       .unwrap()
-      .then(() => {
+      .then((result) => {
         setIsModalOpen(false);
         resetWardDetails();
-        dispatch(getAllWards());
+        dispatch(getAllWards()); // Refresh the list
+        toast.success(result.message || 'Ward updated successfully!');
       })
       .catch(error => {
         console.error('Failed to update ward:', error);
-        alert(error?.message || 'Failed to update ward. Please try again.');
+        const errorMessage = error?.message || 'Failed to update ward. Please try again.';
+        toast.error(errorMessage);
       });
   };
 

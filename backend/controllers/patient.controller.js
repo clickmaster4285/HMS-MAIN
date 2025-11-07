@@ -600,7 +600,7 @@ const getAllPatients = async (req, res) => {
     // IMPORTANT: include only the LAST visit to power OPD list
     const patients = await hospitalModel.Patient.find(query)
       .select(
-        'patient_MRNo patient_Name patient_ContactNo patient_CNIC patient_Gender patient_Age ' +
+        'patient_MRNo patient_Name patient_ContactNo patient_CNIC patient_Gender patient_Age patient_Guardian ' +
         'patient_Address patient_BloodType patient_MaritalStatus totalVisits lastVisit visits'
       )
       .slice('visits', -1) // only last visit

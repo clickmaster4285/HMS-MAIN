@@ -1,5 +1,5 @@
 const hospitalModel = require("../models/index.model");
-
+const mongoose = require('mongoose')
 /**
  * Generates a unique ward number based on department and ward number
  * @param {ObjectId} departmentId - The department ID
@@ -20,14 +20,21 @@ async function generateUniqueWardNumber(departmentId, wardNumber, currentWardId 
          throw new Error('Department not found');
       }
 
-      // Generate department prefix (first 4 characters uppercase)
-      const departmentPrefix = department.name.substring(0, 4).toUpperCase();
-      const displayWardNumber = `${departmentPrefix}-${wardNumber}`;
+      // Extract numeric part if wardNumber is in format "CARD-1"
+      let numericWardNumber = wardNumber;
+      if (typeof wardNumber === 'string' && wardNumber.includes('-')) {
+         const parts = wardNumber.split('-');
+         numericWardNumber = parts[parts.length - 1]; // Get the last part (the number)
+      }
 
-      // Check for existing ward with same department and ward number
+      // Generate department prefix and full ward number
+      const departmentPrefix = department.name.substring(0, 4).toUpperCase();
+      const fullWardNumber = `${departmentPrefix}-${numericWardNumber}`;
+
+      // Check for existing ward with same department and full ward number
       const query = {
          department: departmentId,
-         wardNumber: wardNumber,
+         wardNumber: fullWardNumber,
          isDeleted: false
       };
 
@@ -39,7 +46,7 @@ async function generateUniqueWardNumber(departmentId, wardNumber, currentWardId 
       const existingWard = await hospitalModel.ward.findOne(query);
 
       return {
-         displayWardNumber,
+         displayWardNumber: fullWardNumber,
          isUnique: !existingWard,
          departmentName: department.name,
          existingWard: existingWard || null
@@ -49,7 +56,6 @@ async function generateUniqueWardNumber(departmentId, wardNumber, currentWardId 
       throw new Error(`Unable to generate ward number: ${error.message}`);
    }
 }
-
 /**
  * Generates the next available ward number for a department
  * @param {ObjectId} departmentId - The department ID
@@ -57,17 +63,33 @@ async function generateUniqueWardNumber(departmentId, wardNumber, currentWardId 
  */
 async function getNextAvailableWardNumber(departmentId) {
    try {
+      // Get department details
+      const department = await hospitalModel.Department.findById(departmentId);
+      if (!department) {
+         throw new Error('Department not found');
+      }
+
+      const departmentPrefix = department.name.substring(0, 4).toUpperCase();
+
       // Find the highest ward number in the department
       const highestWard = await hospitalModel.ward.findOne(
          {
             department: departmentId,
-            isDeleted: false
+            isDeleted: false,
+            wardNumber: new RegExp(`^${departmentPrefix}-`) // Match wards in this department
          },
          { wardNumber: 1 },
          { sort: { wardNumber: -1 } }
       );
 
-      return highestWard ? highestWard.wardNumber + 1 : 1;
+      let nextNumber = 1;
+      if (highestWard) {
+         // Extract the number part from "CARD-1" format
+         const lastNumber = parseInt(highestWard.wardNumber.split('-')[1]);
+         nextNumber = lastNumber + 1;
+      }
+
+      return nextNumber;
    } catch (error) {
       console.error("Error getting next ward number:", error);
       throw new Error(`Unable to get next ward number: ${error.message}`);

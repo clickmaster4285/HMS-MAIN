@@ -21,6 +21,14 @@ export const createWard = createAsyncThunk(
       });
       return response.data;
     } catch (error) {
+      // Handle duplicate key errors specifically
+      if (error.response?.data?.message?.includes('E11000') ||
+        error.response?.data?.message?.includes('already exists')) {
+        return rejectWithValue({
+          message: error.response.data.message,
+          isDuplicate: true
+        });
+      }
       return rejectWithValue(error.response?.data || error.message);
     }
   }
@@ -249,13 +257,20 @@ const wardSlice = createSlice({
       })
       .addCase(updateWardById.fulfilled, (state, action) => {
         state.updateStatus = 'succeeded';
-        const updatedWard = action.payload.ward;
-        state.allWards = state.allWards.map(ward =>
-          ward._id === updatedWard._id ? updatedWard : ward
-        );
-        if (state.currentWard?._id === updatedWard._id) {
-          state.currentWard = updatedWard;
+
+        // Fix: Use action.payload.data instead of action.payload.ward
+        const updatedWard = action.payload.data || action.payload.ward;
+
+        if (updatedWard && updatedWard._id) {
+          state.allWards = state.allWards.map(ward =>
+            ward._id === updatedWard._id ? updatedWard : ward
+          );
+
+          if (state.currentWard?._id === updatedWard._id) {
+            state.currentWard = updatedWard;
+          }
         }
+
         state.successMessage = action.payload.message;
       })
       .addCase(updateWardById.rejected, (state, action) => {
@@ -338,12 +353,12 @@ const wardSlice = createSlice({
   }
 });
 
-export const { 
-  clearWardState, 
-  resetCurrentWard, 
+export const {
+  clearWardState,
+  resetCurrentWard,
   resetCurrentBed,
-  resetDepartmentWards, 
-  resetBedHistory 
+  resetDepartmentWards,
+  resetBedHistory
 } = wardSlice.actions;
 
 export const selectAllWards = (state) => state.ward.allWards;

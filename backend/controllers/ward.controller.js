@@ -34,13 +34,13 @@ exports.createWard = async (req, res) => {
             });
         }
 
-        // Generate unique ward number
+        // Generate unique ward number (this now returns the full format)
         const wardNumberResult = await generateUniqueWardNumber(department, wardNumber);
 
         if (!wardNumberResult.isUnique) {
             return res.status(409).json({
                 success: false,
-                message: `Ward number ${wardNumber} already exists in ${departmentDoc.name} department. Please use a different ward number.`
+                message: `Ward ${wardNumberResult.displayWardNumber} already exists in ${departmentDoc.name} department. Please use a different ward number.`
             });
         }
 
@@ -54,8 +54,8 @@ exports.createWard = async (req, res) => {
             name,
             department: departmentDoc._id,
             department_Name: departmentDoc.name,
-            wardNumber,
-            displayWardNumber: wardNumberResult.displayWardNumber,
+            wardNumber: wardNumberResult.displayWardNumber, // Store the full format
+            displayWardNumber: wardNumberResult.displayWardNumber, // Keep this for consistency
             bedCount,
             beds,
             nurses: nurseAssignments
@@ -71,6 +71,13 @@ exports.createWard = async (req, res) => {
             ward: newWard
         });
     } catch (error) {
+        // Handle duplicate key error specifically
+        if (error.code === 11000) {
+            return res.status(409).json({
+                success: false,
+                message: `A ward with this number already exists in the department. Please use a different ward number.`
+            });
+        }
         res.status(500).json({
             success: false,
             message: error.message
@@ -113,6 +120,7 @@ exports.updateWardById = async (req, res) => {
 
         let updateData = { name, bedCount, nurses: nurseAssignments };
         let newDisplayWardNumber = existingWard.displayWardNumber;
+        let newWardNumber = existingWard.wardNumber;
 
         // Check if department or ward number changed
         if (department && department !== existingWard.department.toString()) {
@@ -128,8 +136,10 @@ exports.updateWardById = async (req, res) => {
 
             updateData.department = department;
             updateData.department_Name = wardNumberResult.departmentName;
+            updateData.wardNumber = wardNumberResult.displayWardNumber; // Store the full format
             updateData.displayWardNumber = wardNumberResult.displayWardNumber;
             newDisplayWardNumber = wardNumberResult.displayWardNumber;
+            newWardNumber = wardNumberResult.displayWardNumber;
 
             // Remove from old department, add to new department
             await hospitalModel.Department.updateMany(
@@ -138,8 +148,10 @@ exports.updateWardById = async (req, res) => {
             );
 
             const newDepartment = await hospitalModel.Department.findById(department);
-            newDepartment.ward.push(id);
-            await newDepartment.save();
+            if (newDepartment) {
+                newDepartment.ward.push(id);
+                await newDepartment.save();
+            }
         }
         else if (wardNumber && wardNumber !== existingWard.wardNumber) {
             // Only ward number changed within same department
@@ -152,9 +164,10 @@ exports.updateWardById = async (req, res) => {
                 });
             }
 
-            updateData.wardNumber = wardNumber;
+            updateData.wardNumber = wardNumberResult.displayWardNumber; // Store the full format
             updateData.displayWardNumber = wardNumberResult.displayWardNumber;
             newDisplayWardNumber = wardNumberResult.displayWardNumber;
+            newWardNumber = wardNumberResult.displayWardNumber;
         }
 
         // Update bed numbers if display ward number changed
@@ -171,12 +184,20 @@ exports.updateWardById = async (req, res) => {
             { new: true, runValidators: true }
         ).notDeleted();
 
+        if (!updatedWard) {
+            return res.status(404).json({
+                success: false,
+                message: "Ward not found after update"
+            });
+        }
+
         res.status(200).json({
             success: true,
             message: "Ward updated successfully",
-            data: updatedWard
+            data: updatedWard // Ensure this is returned
         });
     } catch (error) {
+        console.error("Error updating ward:", error);
         res.status(500).json({
             success: false,
             message: "Failed to update ward",

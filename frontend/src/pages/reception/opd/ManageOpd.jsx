@@ -117,6 +117,8 @@ const ManageOpd = () => {
     });
   }, [patients, searchQuery, dateRange]);
 
+  console.log("Filtered Patients:", filteredPatients);
+
   return (
     <div className="">
       {/* Delete Confirmation */}

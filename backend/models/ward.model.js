@@ -26,7 +26,7 @@ const wardSchema = new mongoose.Schema({
     ref: 'Department',
     required: true
   },
-  wardNumber: { type: Number, required: true },
+  wardNumber: { type: String, required: true },
   displayWardNumber: { type: String }, // Auto-generated: "CARD-1", "NEURO-1"
   bedCount: { type: Number, required: true, min: 1 },
   beds: [bedSchema],
