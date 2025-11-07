@@ -1,11 +1,9 @@
 const hospitalModel = require("../models/index.model");
 const utils = require("../utils/utilsIndex");
 const bcrypt = require("bcrypt");
-const { patient } = require("./index.controller");
 
 const createDoctor = async (req, res) => {
   try {
-    // Destructure from form data
     const {
       user_Name,
       user_Email,
@@ -22,12 +20,6 @@ const createDoctor = async (req, res) => {
       doctor_Contract,
     } = req.body;
 
-    // console.log("request body ", req.body);
-
-    const qualifications = Array.isArray(doctor_Qualifications)
-      ? doctor_Qualifications
-      : [doctor_Qualifications].filter(Boolean);
-
     // Validate required fields
     if (!user_Name || !user_Contact || !user_CNIC || !user_Password) {
       return res.status(400).json({
@@ -36,6 +28,9 @@ const createDoctor = async (req, res) => {
       });
     }
 
+    // Handle empty email - convert to undefined
+    const processedEmail = user_Email && user_Email.trim() !== '' ? user_Email.trim() : undefined;
+
     // Validate contract data exists
     if (!doctor_Contract || typeof doctor_Contract !== 'object') {
       return res.status(400).json({
@@ -43,13 +38,41 @@ const createDoctor = async (req, res) => {
         message: "Contract data is missing or invalid"
       });
     }
-    // Extract and validate contract fields
+
     const {
       doctor_Percentage,
       hospital_Percentage,
       contract_Time,
       doctor_JoiningDate
     } = doctor_Contract;
+
+    // Check for existing user (exclude empty emails from check)
+    const existingUserQuery = {
+      $or: [
+        { user_CNIC },
+        { user_Contact }
+      ]
+    };
+
+    // Only add email to duplicate check if it's not empty/undefined
+    if (processedEmail) {
+      existingUserQuery.$or.push({ user_Email: processedEmail });
+    }
+
+    const existingUser = await hospitalModel.User.findOne(existingUserQuery);
+
+    if (existingUser) {
+      let conflictField = '';
+      if (existingUser.user_CNIC === user_CNIC) conflictField = 'CNIC';
+      else if (existingUser.user_Contact === user_Contact) conflictField = 'contact number';
+      else if (processedEmail && existingUser.user_Email === processedEmail) conflictField = 'email';
+
+      return res.status(409).json({
+        success: false,
+        message: `User with this ${conflictField} already exists`,
+        conflictField
+      });
+    }
 
     // Generate ID
     const user_Identifier = await utils.generateUniqueDoctorId(user_Name.trim());
@@ -58,11 +81,10 @@ const createDoctor = async (req, res) => {
     const doctor_Image = req.files?.doctor_Image?.[0];
     const doctor_Agreement = req.files?.doctor_Agreement?.[0];
 
-    // Create user
-    const newUser = await hospitalModel.User.create({
+    // Create user data - don't include email if it's empty/undefined
+    const userData = {
       user_Identifier,
       user_Name,
-      user_Email,
       user_CNIC,
       user_Password: await bcrypt.hash(user_Password, 10),
       user_Access: 'Doctor',
@@ -70,7 +92,14 @@ const createDoctor = async (req, res) => {
       user_Contact,
       isVerified: true,
       isDeleted: false,
-    });
+    };
+
+    // Only add email if it exists
+    if (processedEmail) {
+      userData.user_Email = processedEmail;
+    }
+
+    const newUser = await hospitalModel.User.create(userData);
 
     // Create doctor
     const newDoctor = await hospitalModel.Doctor.create({
@@ -78,7 +107,9 @@ const createDoctor = async (req, res) => {
       doctor_Department,
       doctor_Type,
       doctor_Specialization,
-      doctor_Qualifications,
+      doctor_Qualifications: Array.isArray(doctor_Qualifications)
+        ? doctor_Qualifications
+        : [doctor_Qualifications].filter(Boolean),
       doctor_LicenseNumber,
       doctor_Fee: Number(doctor_Fee),
       doctor_Image: doctor_Image ? {
@@ -94,7 +125,7 @@ const createDoctor = async (req, res) => {
         } : undefined
       }
     });
-    console.log("New doctor created: ", newDoctor);
+
     // Update user reference
     await hospitalModel.User.findByIdAndUpdate(newUser._id, {
       doctorProfile: newDoctor._id
@@ -111,7 +142,6 @@ const createDoctor = async (req, res) => {
   } catch (error) {
     console.error('Creation error:', error);
 
-    // Handle specific MongoDB errors
     if (error.code === 11000) {
       const field = Object.keys(error.keyPattern)[0];
       const value = error.keyValue[field];
@@ -130,7 +160,6 @@ const createDoctor = async (req, res) => {
       });
     }
 
-    // Handle validation errors
     if (error.name === 'ValidationError') {
       const errors = Object.values(error.errors).map(err => err.message);
       return res.status(400).json({
@@ -140,7 +169,6 @@ const createDoctor = async (req, res) => {
       });
     }
 
-    // Handle other errors
     return res.status(500).json({
       success: false,
       message: "An unexpected error occurred while creating the doctor",
@@ -356,7 +384,17 @@ const updateDoctor = async (req, res) => {
     // Update User model (personal information)
     const userUpdateData = {};
     if (user_Name !== undefined) userUpdateData.user_Name = user_Name;
-    if (user_Password !== undefined) userUpdateData.user_Password = user_Password.hash ? await bcrypt.hash(user_Password, 10) : doctor.user.user_Password;
+    // FIXED: Password update logic
+    if (user_Password !== undefined) {
+      // Check if password is already hashed (starts with $2b$) or is a new plain password
+      if (user_Password.startsWith('$2b$')) {
+        // Password is already hashed, use as-is
+        userUpdateData.user_Password = user_Password;
+      } else {
+        // Password is plain text, hash it
+        userUpdateData.user_Password = await bcrypt.hash(user_Password, 10);
+      }
+    }
     if (user_Email !== undefined) userUpdateData.user_Email = user_Email;
     if (user_Contact !== undefined) userUpdateData.user_Contact = user_Contact;
     if (user_Address !== undefined) userUpdateData.user_Address = user_Address;
@@ -371,6 +409,7 @@ const updateDoctor = async (req, res) => {
       );
     }
 
+    console.log("the data is ", userUpdateData)
     // Build doctor update data
     const doctorUpdateData = {
       doctor_Department: doctor_Department !== undefined ? doctor_Department : doctor.doctor_Department,

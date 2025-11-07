@@ -7,24 +7,39 @@ const API_URL = import.meta.env.VITE_REACT_APP_API_URL;
 
 export const loginUser = createAsyncThunk(
   'auth/login',
-  async ({ email, password }, { rejectWithValue }) => {
+  async ({ email, identifier, password }, { rejectWithValue }) => {
     try {
-      const response = await axios.post(`${API_URL}/user/log-in`, {
-        user_Email: email,
+      // Use either email or identifier based on what was provided
+      const loginData = {
         user_Password: password,
-      });
-      // console.log('response ',response)
+      };
+
+      // Add either email or identifier to the request
+      if (email && email.includes('@')) {
+        loginData.user_Email = email;
+      } else {
+        loginData.user_Identifier = identifier || email;
+      }
+
+      const response = await axios.post(`${API_URL}/user/log-in`, loginData);
 
       const { jwtLoginToken, user } = response.data.information;
       const decodedToken = jwtDecode(jwtLoginToken);
-      // console.log("TYhe decodedToken",user)
+
       return {
         token: jwtLoginToken,
-          user,
+        user,
         exp: decodedToken.exp,
       };
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || 'Login failed');
+      // Return the complete error response to preserve status codes
+      return rejectWithValue({
+        message: error.response?.data?.message || 'Login failed',
+        status: error.response?.status,
+        errorType: error.response?.data?.errorType,
+        // Include the full response if needed
+        ...error.response?.data
+      });
     }
   }
 );
@@ -54,6 +69,9 @@ const authSlice = createSlice({
       state.token = localStorage.getItem('jwtLoginToken') || null;
       state.user = JSON.parse(localStorage.getItem('user')) || null;
     },
+    clearError(state) {
+      state.error = null;
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -65,6 +83,7 @@ const authSlice = createSlice({
         state.status = 'succeeded';
         state.token = action.payload.token;
         state.user = action.payload.user;
+        state.error = null;
 
         // Store in localStorage
         localStorage.setItem('jwtLoginToken', action.payload.token);
@@ -72,7 +91,7 @@ const authSlice = createSlice({
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.status = 'failed';
-        state.error = action.payload;
+        state.error = action.payload; // Now this contains the full error object
       })
       .addCase(logoutUser.fulfilled, (state) => {
         state.token = null;
@@ -87,8 +106,7 @@ const authSlice = createSlice({
   },
 });
 
-
-export const { initializeAuth } = authSlice.actions;
+export const { initializeAuth, clearError } = authSlice.actions;
 export const selectCurrentToken = (state) => state.auth.token;
 export const selectCurrentUser = (state) => state.auth.user;
 export const selectAuthStatus = (state) => state.auth.status;

@@ -8,10 +8,11 @@ import {
   getAllWards,
   updateWardById,
   deleteWard,
-  getPatientByBedId
 } from '../../../features/ward/Wardslice';
 import WardModal from './WardModal';
 import BedManagementModal from './BedManagementModal';
+import { toast } from 'react-toastify';
+import { useCallback } from 'react';
 
 const WardManagement = () => {
   const dispatch = useDispatch();
@@ -34,7 +35,7 @@ const WardManagement = () => {
   const [isCreatingNewWard, setIsCreatingNewWard] = useState(true);
   const [wardDetails, setWardDetails] = useState({
     name: '',
-    department_Name: '',
+    department: '',
     wardNumber: null,
     bedCount: null,
     nurses: []
@@ -48,18 +49,19 @@ const WardManagement = () => {
   }, [dispatch]);
 
   useEffect(() => {
-    if (wardDetails.department_Name) {
+    if (wardDetails.department) {
       const nurses = staffList.filter(staff =>
-        staff.department === wardDetails.department_Name &&
+        staff.department === wardDetails.department &&
         staff.staffType === 'Nurse'
       );
       setDepartmentNurses(nurses);
     } else {
       setDepartmentNurses([]);
     }
-  }, [wardDetails.department_Name, staffList]);
+  }, [wardDetails.department, staffList]);
 
-  const handleInputChange = (e) => {
+  // In WardManagement.jsx
+  const handleInputChange = useCallback((e) => {
     const { name, value } = e.target;
     setWardDetails(prev => ({
       ...prev,
@@ -67,30 +69,37 @@ const WardManagement = () => {
         ? (value === '' ? null : Number(value))
         : value
     }));
-  };
+  }, []);
 
+  // Update the handleAddWard function
   const handleAddWard = () => {
-    if (!wardDetails.wardNumber) {
-      alert('Ward Number is required');
+    if (!wardDetails.wardNumber || !wardDetails.department) {
+      alert('Ward Number and Department are required');
       return;
     }
 
     const wardData = {
-      ...wardDetails,
-      department_Name: wardDetails.department_Name,
-      bedCount: wardDetails.bedCount || 0
+      name: wardDetails.name,
+      department: wardDetails.department, // ObjectId
+      wardNumber: parseInt(wardDetails.wardNumber),
+      bedCount: parseInt(wardDetails.bedCount) || 1,
+      nurses: wardDetails.nurses || []
     };
 
     dispatch(createWard(wardData))
       .unwrap()
-      .then(() => {
+      .then((result) => {
         setIsModalOpen(false);
         resetWardDetails();
         dispatch(getAllWards());
+        // Show success message
+        toast.success(result.message || 'Ward created successfully!');
       })
       .catch(error => {
         console.error('Failed to create ward:', error);
-        alert(error?.message || 'Failed to create ward. Please try again.');
+        // Handle error object properly
+        const errorMessage = error?.message || error?.toString() || 'Failed to create ward. Please try again.';
+        toast.error(errorMessage);
       });
   };
 
@@ -200,7 +209,7 @@ const WardManagement = () => {
       )}
       {createError && (
         <div className="mb-6 p-4 bg-red-100 text-red-700 rounded-lg border border-red-200">
-          {createError}
+          {typeof createError === 'object' ? createError.message : createError}
         </div>
       )}
       {loadError && (

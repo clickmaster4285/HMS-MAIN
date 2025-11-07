@@ -11,6 +11,7 @@ router.get('/get-by-bed-id/:bedId', controller.getPatientbyBedId);
 router.put('/update-ward/:id', controller.updateWardById);
 router.delete('/delete-ward/:id', controller.deleteWard);
 
+router.get('/suggest-ward-number/:departmentId', controller.getSuggestedWardNumber);
 // Bed management routes
 router.get('/bed-history/:wardId/:bedNumber', controller.getBedHistory);
 

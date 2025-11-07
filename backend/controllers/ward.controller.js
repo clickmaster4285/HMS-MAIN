@@ -1,40 +1,69 @@
 const hospitalModel = require("../models/index.model");
+const { generateUniqueWardNumber, getNextAvailableWardNumber } = require("../utils/generateUniqueWardNumber");
+
+// In your frontend, you can use this to suggest next available number
+exports.getSuggestedWardNumber = async (req, res) => {
+    try {
+        const { departmentId } = req.params;
+
+        const nextWardNumber = await getNextAvailableWardNumber(departmentId);
+
+        res.status(200).json({
+            success: true,
+            suggestedWardNumber: nextWardNumber
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
 
 // Create a new ward
 exports.createWard = async (req, res) => {
-    const { name, department_Name, wardNumber, bedCount, nurseAssignments } = req.body;
+    const { name, department, wardNumber, bedCount, nurseAssignments } = req.body;
 
     try {
-        // Generate beds
-        const beds = Array.from({ length: bedCount }, (_, i) => ({
-            bedNumber: `B${wardNumber}-${i + 1}`,
-            occupied: false
-        }));
-
-        const newWard = await hospitalModel.ward.create({
-            name,
-            wardNumber,
-            bedCount,
-            department_Name,
-            beds,
-            nurses: nurseAssignments
-        });
-
-        // Assign to department
-        const department = await hospitalModel.Department.findOne({
-            name: { $regex: new RegExp(`^${department_Name}$`, 'i') }
-        });
-
-        if (!department) {
-            await newWard.softDelete();
+        // Validate department exists
+        const departmentDoc = await hospitalModel.Department.findById(department);
+        if (!departmentDoc) {
             return res.status(404).json({
                 success: false,
                 message: 'Department not found'
             });
         }
 
-        department.ward.push(newWard._id);
-        await department.save();
+        // Generate unique ward number
+        const wardNumberResult = await generateUniqueWardNumber(department, wardNumber);
+
+        if (!wardNumberResult.isUnique) {
+            return res.status(409).json({
+                success: false,
+                message: `Ward number ${wardNumber} already exists in ${departmentDoc.name} department. Please use a different ward number.`
+            });
+        }
+
+        // Generate beds with the display ward number
+        const beds = Array.from({ length: bedCount }, (_, i) => ({
+            bedNumber: `${wardNumberResult.displayWardNumber}-B${i + 1}`,
+            occupied: false
+        }));
+
+        const newWard = await hospitalModel.ward.create({
+            name,
+            department: departmentDoc._id,
+            department_Name: departmentDoc.name,
+            wardNumber,
+            displayWardNumber: wardNumberResult.displayWardNumber,
+            bedCount,
+            beds,
+            nurses: nurseAssignments
+        });
+
+        // Add ward to department
+        departmentDoc.ward.push(newWard._id);
+        await departmentDoc.save();
 
         res.status(201).json({
             success: true,
@@ -71,35 +100,76 @@ exports.getAllWards = async (req, res) => {
 exports.updateWardById = async (req, res) => {
     try {
         const { id } = req.params;
-        const updates = req.body;
+        const { name, department, wardNumber, bedCount, nurseAssignments } = req.body;
 
-        if (!mongoose.Types.ObjectId.isValid(id)) {
-            return res.status(400).json({
-                success: false,
-                message: "Invalid ward ID"
-            });
-        }
-
-        // Prevent certain fields from being updated
-        const restrictedFields = ['_id', 'isDeleted', 'beds.history'];
-        restrictedFields.forEach(field => {
-            if (updates[field]) {
-                delete updates[field];
-            }
-        });
-
-        const updatedWard = await hospitalModel.ward.findByIdAndUpdate(
-            id,
-            updates,
-            { new: true, runValidators: true }
-        ).notDeleted();
-
-        if (!updatedWard) {
+        // Find existing ward
+        const existingWard = await hospitalModel.ward.findById(id).notDeleted();
+        if (!existingWard) {
             return res.status(404).json({
                 success: false,
                 message: "Ward not found"
             });
         }
+
+        let updateData = { name, bedCount, nurses: nurseAssignments };
+        let newDisplayWardNumber = existingWard.displayWardNumber;
+
+        // Check if department or ward number changed
+        if (department && department !== existingWard.department.toString()) {
+            // Department changed - need to regenerate display number
+            const wardNumberResult = await generateUniqueWardNumber(department, wardNumber || existingWard.wardNumber, id);
+
+            if (!wardNumberResult.isUnique) {
+                return res.status(409).json({
+                    success: false,
+                    message: `Ward number ${wardNumber || existingWard.wardNumber} already exists in ${wardNumberResult.departmentName} department.`
+                });
+            }
+
+            updateData.department = department;
+            updateData.department_Name = wardNumberResult.departmentName;
+            updateData.displayWardNumber = wardNumberResult.displayWardNumber;
+            newDisplayWardNumber = wardNumberResult.displayWardNumber;
+
+            // Remove from old department, add to new department
+            await hospitalModel.Department.updateMany(
+                { ward: id },
+                { $pull: { ward: id } }
+            );
+
+            const newDepartment = await hospitalModel.Department.findById(department);
+            newDepartment.ward.push(id);
+            await newDepartment.save();
+        }
+        else if (wardNumber && wardNumber !== existingWard.wardNumber) {
+            // Only ward number changed within same department
+            const wardNumberResult = await generateUniqueWardNumber(existingWard.department, wardNumber, id);
+
+            if (!wardNumberResult.isUnique) {
+                return res.status(409).json({
+                    success: false,
+                    message: `Ward number ${wardNumber} already exists in ${existingWard.department_Name} department.`
+                });
+            }
+
+            updateData.wardNumber = wardNumber;
+            updateData.displayWardNumber = wardNumberResult.displayWardNumber;
+            newDisplayWardNumber = wardNumberResult.displayWardNumber;
+        }
+
+        // Update bed numbers if display ward number changed
+        if (newDisplayWardNumber !== existingWard.displayWardNumber) {
+            updateData.beds = existingWard.beds.map((bed, index) => ({
+                ...bed.toObject(),
+                bedNumber: `${newDisplayWardNumber}-B${index + 1}`
+            }));
+        }
+
+        const updatedWard = await hospitalModel.ward.findByIdAndUpdate(
+            id,
+            updateData,
+            { new: true, runValidators: true }
+        ).notDeleted();
 
         res.status(200).json({
             success: true,

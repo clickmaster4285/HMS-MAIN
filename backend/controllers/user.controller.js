@@ -126,6 +126,15 @@ const login = async (req, res) => {
       });
     }
 
+    // ✅ ADD THIS CHECK: Prevent deleted users from logging in
+    if (user.isDeleted) {
+      return res.status(403).json({
+        success: false,
+        status: 403,
+        message: "Your account has been deactivated. Please contact administrator.",
+      });
+    }
+
     if (!user.isVerified) {
       return res.status(401).json({
         success: false,
@@ -154,6 +163,7 @@ const login = async (req, res) => {
       user_Access: user.user_Access,
       doctorProfile: user.doctorProfile || null,
       isVerified: user.isVerified,
+      isDeleted: user.isDeleted, // Include this in payload for frontend
       createdAt: user.createdAt,
       updatedAt: user.updatedAt
     };
@@ -179,6 +189,7 @@ const login = async (req, res) => {
     });
   }
 };
+
 module.exports = {
   signUp,
   VerifyEmail,

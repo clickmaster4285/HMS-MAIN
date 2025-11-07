@@ -6,7 +6,7 @@ const BedManagementModal = ({ ward, onClose }) => {
 
   if (!ward || !ward.beds) return null;
 
-  const handleBedClick = (bedId, bedNumber) => {
+  const handleBedClick = (bedId,) => {
     navigate(`/receptionist/beds/${bedId}`);
     
   };

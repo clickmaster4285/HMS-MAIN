@@ -190,15 +190,6 @@ const DynamicSidebar = ({ userRole, isOpen, toggleSidebar }) => {
         links: [{ href: "ward-management", label: "Ward Management" }],
       },
       {
-        name: "Pharmacy",
-        icon: <PharmacyIcon className="text-lg" />,
-        links: [
-          { href: "Med-list", label: "Medicine List" },
-          { href: "prescription-management", label: "Prescription Management" },
-          { href: "stock-management", label: "Stock Management" },
-        ],
-      },
-      {
         name: "Appointments",
         icon: <AppointmentsIcon className="text-lg" />,
         links: [{ href: "patient-appointment", label: "Appointments" }],
@@ -234,10 +225,12 @@ const DynamicSidebar = ({ userRole, isOpen, toggleSidebar }) => {
         ],
       },
       {
-        name: "Summary",
-        icon: <NotesIcon className="text-lg" />,
+        name: "Pharmacy",
+        icon: <PharmacyIcon className="text-lg" />,
         links: [
-          { href: "summary", label: "Summary" },
+          { href: "Med-list", label: "Medicine List" },
+          { href: "prescription-management", label: "Prescription Management" },
+          { href: "stock-management", label: "Stock Management" },
         ],
       },
       {
@@ -254,6 +247,13 @@ const DynamicSidebar = ({ userRole, isOpen, toggleSidebar }) => {
         name: "Expenses",
         icon: <CalendarIcon className="text-lg" />,
         links: [{ href: "expenses", label: "Expenses" }],
+      },
+      {
+        name: "Summary",
+        icon: <NotesIcon className="text-lg" />,
+        links: [
+          { href: "summary", label: "Summary" },
+        ],
       },
     ],
     lab: [

@@ -67,6 +67,7 @@ const StaffFormPage = () => {
       const formattedData = {
         user_Name: staffDetails.user?.user_Name || '',
         user_Email: staffDetails.user?.user_Email || '',
+        user_Password: '', // Keep empty for security in edit mode
         user_Contact: staffDetails.user?.user_Contact || '',
         user_Address: staffDetails.user?.user_Address || '',
         user_CNIC: staffDetails.user?.user_CNIC || '',
@@ -75,7 +76,7 @@ const StaffFormPage = () => {
         department: staffDetails.department || '',
         qualifications: staffDetails.qualifications || [],
         gender: staffDetails.gender || '',
-        dateOfBirth: staffDetails.dateOfBirth ? 
+        dateOfBirth: staffDetails.dateOfBirth ?
           new Date(staffDetails.dateOfBirth).toISOString().split('T')[0] : '',
         shift: staffDetails.shift || '',
         shiftTiming: {
@@ -167,6 +168,17 @@ const StaffFormPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Add password validation
+    if (!isEditing && (!formData.user_Password || formData.user_Password.length < 2)) {
+      toast.error("Password must be at least 2 characters long");
+      return;
+    }
+
+    if (isEditing && formData.user_Password && formData.user_Password.length < 2) {
+      toast.error("New password must be at least 2 characters long");
+      return;
+    }
 
     // Validate CNIC
     if (!validateCNIC(formData.user_CNIC)) {

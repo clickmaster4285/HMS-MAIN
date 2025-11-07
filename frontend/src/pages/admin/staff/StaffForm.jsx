@@ -68,18 +68,16 @@ const StaffForm = ({
             placeholder="42201-1234567-1"
             required
           />
-          {!isEditing && (
-            <InputField
-              name="user_Password"
-              label="Password"
-              type="password"
-              value={formData.user_Password}
-              onChange={handleChange}
-              icon={<FaLock className="text-gray-400" />}
-              placeholder="Create a password"
-              required
-            />
-          )}
+          <InputField
+            name="user_Password"
+            label={isEditing ? "New Password (leave blank to keep current)" : "Password"}
+            type="password"
+            value={formData.user_Password}
+            onChange={handleChange}
+            icon={<FaLock className="text-gray-400" />}
+            placeholder={isEditing ? "Enter new password" : "Create a password"}
+            required={!isEditing} // Required only for new staff
+          />
           <InputField
             name="user_Address"
             label="Address"

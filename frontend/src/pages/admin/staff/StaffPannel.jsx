@@ -5,7 +5,6 @@ import { toast } from 'react-toastify';
 import { FaEdit, FaTrash, FaUndo } from 'react-icons/fa';
 import {
   getAllStaff,
-  getStaffById,
   softDeleteStaff,
   restoreStaff,
   getDeletedStaff
@@ -23,7 +22,6 @@ const StaffListPage = () => {
     deletedStaffList,
     loading,
     error,
-    successMessage
   } = useSelector((state) => state.staff);
 // console.log("Staff List:", staffList);
   const [searchTerm, setSearchTerm] = useState('');
@@ -52,7 +50,7 @@ const StaffListPage = () => {
         try {
           await dispatch(softDeleteStaff(id));
           dispatch(getAllStaff());
-        } catch (error) {
+        } catch {
           toast.error('Failed to delete staff');
         }
         setConfirmModal({ ...confirmModal, isOpen: false });
@@ -68,7 +66,7 @@ const StaffListPage = () => {
         try {
           await dispatch(restoreStaff(id));
           dispatch(getDeletedStaff());
-        } catch (error) {
+        } catch {
           toast.error('Failed to restore staff');
         }
         setConfirmModal({ ...confirmModal, isOpen: false });

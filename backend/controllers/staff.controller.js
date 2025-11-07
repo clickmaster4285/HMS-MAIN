@@ -249,6 +249,7 @@ const updateStaffById = async (req, res) => {
     user_Contact,
     user_Address,
     user_CNIC,
+    user_Password, // Add this
     user_Access,
     designation,
     department,
@@ -331,6 +332,19 @@ const updateStaffById = async (req, res) => {
     if (user_Contact) userUpdates.user_Contact = user_Contact;
     if (user_Address) userUpdates.user_Address = user_Address;
     if (user_CNIC) userUpdates.user_CNIC = user_CNIC;
+
+    // ADD PASSWORD UPDATE LOGIC HERE
+    if (user_Password && user_Password.trim() !== '') {
+      // Only update password if a new one is provided and it's not empty
+      if (user_Password.length < 2) {
+        return res.status(400).json({
+          success: false,
+          message: "Password must be at least 2 characters long"
+        });
+      }
+      userUpdates.user_Password = await bcrypt.hash(user_Password, 10);
+    }
+
     if (user_Access) {
       // Validate user access type
       const allowedStaffTypes = ["Receptionist", "Lab", "Radiology", "Nurse"];
@@ -446,83 +460,76 @@ const updateStaffById = async (req, res) => {
 
 // Soft delete staff
 const softDeleteStaff = async (req, res) => {
-  const { id } = req.params;
-
   try {
-    const staff = await hospitalModel.Staff.findOneAndUpdate(
-      { _id: id, isDeleted: false },
-      {
-        $set: {
-          isDeleted: true,
-          isVerified: false,
-        }
-      },
+    const { id } = req.params;
+
+    const staff = await hospitalModel.Staff.findByIdAndUpdate(
+      id,
+      { isDeleted: true },
       { new: true }
-    );
+    ).populate('user');
 
     if (!staff) {
       return res.status(404).json({
         success: false,
-        message: 'Staff not found or already deleted'
+        message: "Staff not found"
       });
     }
 
-    // Also mark user as deleted
-    await hospitalModel.User.findByIdAndUpdate(staff.user, {
-      isDeleted: true,
-      isVerified: false // Added this
-    });
+    // Also mark the user as deleted
+    await hospitalModel.User.findByIdAndUpdate(
+      staff.user._id,
+      { isDeleted: true }
+    );
 
     res.status(200).json({
       success: true,
-      message: 'Staff deleted successfully',
+      message: "Staff deleted successfully",
       data: staff
     });
   } catch (error) {
-    console.error(error);
     res.status(500).json({
       success: false,
-      message: 'Server error',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      message: "Error deleting staff",
+      error: error.message
     });
   }
 };
 
 // Restore soft-deleted staff
 const restoreStaff = async (req, res) => {
-  const { id } = req.params;
-
   try {
-    const staff = await hospitalModel.Staff.findOneAndUpdate(
-      { _id: id, isDeleted: true },
-      { $set: { isDeleted: false, isVerified: true } },
+    const { id } = req.params;
+
+    const staff = await hospitalModel.Staff.findByIdAndUpdate(
+      id,
+      { isDeleted: false },
       { new: true }
-    );
+    ).populate('user');
 
     if (!staff) {
       return res.status(404).json({
         success: false,
-        message: 'Staff not found or not deleted'
+        message: "Staff not found"
       });
     }
 
     // Also restore the user
-    await hospitalModel.User.findByIdAndUpdate(staff.user, {
-      isDeleted: false,
-      isVerified: true // Added this
-    });
+    await hospitalModel.User.findByIdAndUpdate(
+      staff.user._id,
+      { isDeleted: false }
+    );
 
     res.status(200).json({
       success: true,
-      message: 'Staff restored successfully',
+      message: "Staff restored successfully",
       data: staff
     });
   } catch (error) {
-    console.error(error);
     res.status(500).json({
       success: false,
-      message: 'Server error',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      message: "Error restoring staff",
+      error: error.message
     });
   }
 };
@@ -530,10 +537,8 @@ const restoreStaff = async (req, res) => {
 // Get all deleted staff (for admin)
 const getDeletedStaff = async (req, res) => {
   try {
-    const deletedStaff = await hospitalModel.Staff.find({
-      isDeleted: true,
-      isVerified: false,
-    }).populate('user');
+    const deletedStaff = await hospitalModel.Staff.find({ isDeleted: true })
+      .populate('user', 'user_Identifier user_Name user_Email user_CNIC user_Contact user_Address user_Access');
 
     res.status(200).json({
       success: true,
@@ -543,7 +548,7 @@ const getDeletedStaff = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Error fetching deleted staff",
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      error: error.message
     });
   }
 };

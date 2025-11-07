@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { loginUser } from '../../features/auth/authSlice';
+import { loginUser, clearError } from '../../features/auth/authSlice';
 import login_back from '../../assets/images/login_back.jpg';
+import { toast } from 'react-toastify';
 
 const Login = () => {
   const [emailOrIdentifier, setEmailOrIdentifier] = useState('');
@@ -12,16 +13,48 @@ const Login = () => {
   const status = useSelector((state) => state.auth.status);
   const error = useSelector((state) => state.auth.error);
 
+  // Clear errors when component mounts or when inputs change
+  useEffect(() => {
+    if (error) {
+      dispatch(clearError());
+    }
+  }, [emailOrIdentifier, password, dispatch]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     const resultAction = await dispatch(
-      loginUser({ email: emailOrIdentifier, identifier: emailOrIdentifier, password })
+      loginUser({
+        email: emailOrIdentifier,
+        identifier: emailOrIdentifier,
+        password
+      })
     );
 
     if (loginUser.fulfilled.match(resultAction)) {
       const userRole = resultAction.payload.user.user_Access;
-      navigate(`/${userRole}/dashboard`);
+      toast.success('Login successful!');
+      navigate(`/${userRole.toLowerCase()}/dashboard`);
+    } else if (loginUser.rejected.match(resultAction)) {
+      // Handle specific error cases with the full error object
+      const errorPayload = resultAction.payload;
+
+      if (errorPayload?.status === 403) {
+        // User account is deleted
+        toast.error(errorPayload.message || 'Your account has been deactivated. Please contact administrator.');
+      } else if (errorPayload?.status === 401) {
+        // Email not verified
+        toast.error(errorPayload.message || 'Please verify your email before logging in.');
+      } else if (errorPayload?.status === 404) {
+        // User not found
+        toast.error('Invalid credentials. Please check your email/identifier and password.');
+      } else if (errorPayload?.status === 400) {
+        // Invalid credentials
+        toast.error('Invalid credentials. Please check your email/identifier and password.');
+      } else {
+        // Generic error
+        toast.error(errorPayload?.message || 'Login failed. Please try again.');
+      }
     }
   };
 
@@ -37,8 +70,6 @@ const Login = () => {
     >
       <div className="w-full max-w-md p-8 bg-white bg-opacity-80 shadow-lg rounded-3xl border border-gray-300">
         <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">Welcome Back</h2>
-
-        {error && <p className="text-red-600 text-sm mb-4 text-center">{error}</p>}
 
         <form className="space-y-4" onSubmit={handleSubmit}>
           <div>

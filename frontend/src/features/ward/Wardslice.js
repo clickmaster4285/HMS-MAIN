@@ -133,6 +133,24 @@ export const getPatientByBedId = createAsyncThunk(
   }
 );
 
+export const getSuggestedWardNumber = createAsyncThunk(
+  "ward/getSuggestedWardNumber",
+  async (departmentId, { rejectWithValue }) => {
+    if (!departmentId) {
+      return rejectWithValue("Department ID is required");
+    }
+    try {
+      const response = await axios.get(
+        `${API_URL}/ward/suggest-ward-number/${departmentId}`,
+        { headers: getAuthHeaders() }
+      );
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
 const initialState = {
   allWards: [],
   wardsByDepartment: [],
@@ -190,7 +208,10 @@ const wardSlice = createSlice({
       })
       .addCase(createWard.rejected, (state, action) => {
         state.createStatus = 'failed';
-        state.error = action.payload;
+        // Ensure error is a string, not an object
+        state.error = typeof action.payload === 'object'
+          ? action.payload.message || 'Failed to create ward'
+          : action.payload;
       })
 
       // Get All Wards
@@ -299,6 +320,19 @@ const wardSlice = createSlice({
       })
       .addCase(getPatientByBedId.rejected, (state, action) => {
         state.bedPatientStatus = 'failed';
+        state.error = action.payload;
+      })
+      // Add this to your extraReducers
+      .addCase(getSuggestedWardNumber.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(getSuggestedWardNumber.fulfilled, (state, action) => {
+        state.loading = false;
+        state.suggestedWardNumber = action.payload.suggestedWardNumber;
+      })
+      .addCase(getSuggestedWardNumber.rejected, (state, action) => {
+        state.loading = false;
         state.error = action.payload;
       });
   }
