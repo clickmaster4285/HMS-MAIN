@@ -53,7 +53,6 @@ export const fetchAllDoctors = createAsyncThunk(
       const response = await axios.get(`${API_URL}/doctor/get-doctors`, {
         headers: getAuthHeader(),
       });
-      // console.log('the data is ', response.data?.information?.doctors)
       return response.data?.information?.doctors;
     } catch (error) {
       if (error.response) {

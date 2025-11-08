@@ -323,62 +323,152 @@ const getByMRNumber = async (req, res) => {
 
 const updateAdmission = async (req, res) => {
   try {
-    const { id } = req.params;
+    const { mrNo } = req.params; // Changed from id to mrNo
     const updateData = req.body;
 
-    // Get current admission record
-    const currentAdmission = await hospitalModel.AdmittedPatient.findById(id);
-    if (!currentAdmission || currentAdmission.deleted) {
+    console.log('Update request for patient MR:', mrNo);
+    console.log('Update data:', updateData);
+
+    // First find the patient by MR number
+    const patient = await hospitalModel.Patient.findOne({
+      patient_MRNo: mrNo,
+      deleted: false
+    });
+
+    if (!patient) {
       return res.status(404).json({
         success: false,
-        message: "Admission record not found"
+        message: "Patient not found with this MR number"
       });
     }
 
-    // Handle status changes
-    if (updateData.status === "Discharged") {
-      // Free up the bed when discharging
-      const ward = await hospitalModel.ward.findById(currentAdmission.ward_Information.ward_Id);
+    // Get current admission record using patient ID
+    const currentAdmission = await hospitalModel.AdmittedPatient.findOne({
+      patient: patient._id,
+      status: "Admitted",
+      deleted: false
+    });
 
-      if (ward) {
-        const bed = ward.beds.find(b => b.bedNumber.toString() === currentAdmission.ward_Information.bed_No.toString());
+    if (!currentAdmission) {
+      return res.status(404).json({
+        success: false,
+        message: "No active admission found for this patient"
+      });
+    }
 
-        if (bed) {
-          bed.occupied = false;
-          bed.currentPatient = null;
+    // Handle bed changes - if ward or bed is being updated
+    if (updateData.ward_Information &&
+      (updateData.ward_Information.ward_Id !== currentAdmission.ward_Information.ward_Id.toString() ||
+        updateData.ward_Information.bed_No !== currentAdmission.ward_Information.bed_No)) {
 
-          // Update discharge date in bed history
-          const currentStay = bed.history.find(
+      console.log('Bed change detected - updating bed occupancy');
+
+      // Free up the old bed
+      const oldWard = await hospitalModel.ward.findById(currentAdmission.ward_Information.ward_Id);
+      if (oldWard) {
+        const oldBed = oldWard.beds.find(b =>
+          b.bedNumber.toString() === currentAdmission.ward_Information.bed_No.toString()
+        );
+        if (oldBed) {
+          oldBed.occupied = false;
+          oldBed.currentPatient = null;
+
+          // Update discharge date in old bed history
+          const currentStay = oldBed.history.find(
             h => h.patientId.toString() === currentAdmission.patient.toString() && !h.dischargeDate
           );
-
           if (currentStay) {
             currentStay.dischargeDate = new Date();
-            if (!currentStay.patientMRNo && admission.patient) {
-              const patient = await hospitalModel.Patient.findById(admission.patient);
-              if (patient) {
-                currentStay.patientMRNo = patient.patient_MRNo;
-              }
+          }
+          await oldWard.save();
+        }
+      }
+
+      // Occupy the new bed
+      const newWard = await hospitalModel.ward.findById(updateData.ward_Information.ward_Id);
+      if (!newWard) {
+        return res.status(404).json({
+          success: false,
+          message: "New ward not found"
+        });
+      }
+
+      const newBed = newWard.beds.find(b =>
+        b.bedNumber.toString() === updateData.ward_Information.bed_No.toString()
+      );
+
+      if (!newBed) {
+        return res.status(400).json({
+          success: false,
+          message: `Bed ${updateData.ward_Information.bed_No} not found in ward`
+        });
+      }
+
+      if (newBed.occupied) {
+        return res.status(400).json({
+          success: false,
+          message: `Bed ${newBed.bedNumber} is already occupied`
+        });
+      }
+
+      newBed.occupied = true;
+      newBed.currentPatient = currentAdmission.patient;
+      newBed.history.push({
+        patientId: currentAdmission.patient,
+        patientMRNo: patient.patient_MRNo, // Use the patient's MR number
+        admissionDate: new Date()
+      });
+
+      await newWard.save();
+    }
+
+    // Handle status changes to Discharged
+    if (updateData.status === "Discharged") {
+      console.log('Discharging patient');
+
+      // Free up the current bed
+      const currentWard = await hospitalModel.ward.findById(currentAdmission.ward_Information.ward_Id);
+      if (currentWard) {
+        const currentBed = currentWard.beds.find(b =>
+          b.bedNumber.toString() === currentAdmission.ward_Information.bed_No.toString()
+        );
+        if (currentBed) {
+          currentBed.occupied = false;
+          currentBed.currentPatient = null;
+
+          // Update discharge date in bed history
+          const currentStay = currentBed.history.find(
+            h => h.patientId.toString() === currentAdmission.patient.toString() && !h.dischargeDate
+          );
+          if (currentStay) {
+            currentStay.dischargeDate = new Date();
+            // Ensure patientMRNo is set
+            if (!currentStay.patientMRNo) {
+              currentStay.patientMRNo = patient.patient_MRNo;
             }
           }
-
-          await ward.save();
+          await currentWard.save();
         }
       }
 
       // Set discharge date
-      updateData.admission_Details = updateData.admission_Details || {};
-      updateData.admission_Details.discharge_Date = new Date();
+      updateData.admission_Details = {
+        ...currentAdmission.admission_Details,
+        ...updateData.admission_Details,
+        discharge_Date: new Date()
+      };
     }
 
     // Update the admission record
     const updatedAdmission = await hospitalModel.AdmittedPatient.findByIdAndUpdate(
-      id,
+      currentAdmission._id, // Use the admission ID we found
       { $set: updateData },
       { new: true, runValidators: true }
     )
       .populate('patient', 'patient_MRNo patient_Name patient_CNIC patient_Gender patient_DateOfBirth patient_Address patient_Guardian')
-      .populate('admission_Details.admitting_Doctor', 'name specialty');
+      .populate('admission_Details.admitting_Doctor', 'user_Name user_Email user_Contact');
+
+    console.log('Admission updated successfully for MR:', mrNo);
 
     return res.status(200).json({
       success: true,

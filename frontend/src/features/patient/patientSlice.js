@@ -16,22 +16,42 @@ const getAuthHeaders = () => {
   };
 };
 
-// Async thunks
+// Async thunks with pagination support
 export const fetchPatients = createAsyncThunk(
   "patients/fetchPatients",
-  async (_, { rejectWithValue }) => {
+  async ({ page = 1, limit = 10, search = "", filters = {} } = {}, { rejectWithValue }) => {
     try {
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: limit.toString(),
+        ...(search && { search }),
+        ...(filters.fromDate && { fromDate: filters.fromDate }),
+        ...(filters.toDate && { toDate: filters.toDate }),
+        ...(filters.gender && { gender: filters.gender }),
+        ...(filters.bloodType && { bloodType: filters.bloodType }),
+        ...(filters.maritalStatus && { maritalStatus: filters.maritalStatus }),
+      });
+
       const response = await axios.get(
-        `${API_URL}/patient/get-patients`,
+        `${API_URL}/patient/get-patients?${params}`,
         getAuthHeaders()
       );
-      return response.data.information.patients;
+
+      // Assuming your backend returns paginated data like:
+      // {
+      //   information: {
+      //     patients: [...],
+      //     pagination: { currentPage, totalPages, totalPatients, limit }
+      //   }
+      // }
+      return response.data.information || response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || error.message);
     }
   }
 );
 
+// Keep other thunks the same...
 export const fetchPatientById = createAsyncThunk(
   "patients/fetchById",
   async (patientId, { rejectWithValue }) => {
@@ -72,7 +92,7 @@ export const updatePatient = createAsyncThunk(
         updatedData,
         getAuthHeaders()
       );
-      return response.data.information.patient; // Fixed: should be patient, not updatedPatient
+      return response.data.information.patient;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || error.message);
     }
@@ -111,7 +131,7 @@ export const deletePatient = createAsyncThunk(
   }
 );
 
-// Search patients async thunk (missing from your original)
+// Search patients async thunk
 export const searchPatients = createAsyncThunk(
   "patients/searchPatients",
   async (searchTerm, { rejectWithValue }) => {
@@ -151,15 +171,33 @@ const patientSlice = createSlice({
     patients: [],
     selectedPatient: null,
     searchResults: [],
-    status: "idle", // 'idle' | 'loading' | 'succeeded' | 'failed'
+    status: "idle",
     selectedPatientStatus: "idle",
     searchStatus: "idle",
-    patientData:null,
+    patientData: null,
     visits: [],
     refunds: [],
     refundSummary: null,
     loading: false,
     error: null,
+
+    // Pagination state
+    pagination: {
+      currentPage: 1,
+      totalPages: 1,
+      totalPatients: 0,
+      limit: 10,
+    },
+
+    // Filters state
+    filters: {
+      search: "",
+      gender: "",
+      bloodType: "",
+      maritalStatus: "",
+      fromDate: "",
+      toDate: "",
+    },
   },
   reducers: {
     clearSelectedPatient: (state) => {
@@ -173,7 +211,7 @@ const patientSlice = createSlice({
     clearError: (state) => {
       state.error = null;
     },
-    setSelectedPatient: (state, action) => {  
+    setSelectedPatient: (state, action) => {
       state.selectedPatient = action.payload;
     },
     clearPatientData: (state) => {
@@ -183,16 +221,49 @@ const patientSlice = createSlice({
       state.refundSummary = null;
     },
 
+    // Pagination actions
+    setPage: (state, action) => {
+      state.pagination.currentPage = action.payload;
+    },
+    setLimit: (state, action) => {
+      state.pagination.limit = action.payload;
+      state.pagination.currentPage = 1; // Reset to first page when limit changes
+    },
+
+    // Filter actions
+    setFilters: (state, action) => {
+      state.filters = { ...state.filters, ...action.payload };
+      state.pagination.currentPage = 1; // Reset to first page when filters change
+    },
+    clearFilters: (state) => {
+      state.filters = {
+        search: "",
+        gender: "",
+        bloodType: "",
+        maritalStatus: "",
+        fromDate: "",
+        toDate: "",
+      };
+      state.pagination.currentPage = 1;
+    },
   },
   extraReducers: (builder) => {
     builder
-      // Fetch all patients
+      // Fetch all patients with pagination
       .addCase(fetchPatients.pending, (state) => {
         state.status = "loading";
       })
       .addCase(fetchPatients.fulfilled, (state, action) => {
         state.status = "succeeded";
-        state.patients = action.payload;
+        state.patients = action.payload.patients || action.payload;
+
+        // Update pagination info if available from backend
+        if (action.payload.pagination) {
+          state.pagination = {
+            ...state.pagination,
+            ...action.payload.pagination,
+          };
+        }
       })
       .addCase(fetchPatients.rejected, (state, action) => {
         state.status = "failed";
@@ -218,7 +289,8 @@ const patientSlice = createSlice({
       })
       .addCase(createPatient.fulfilled, (state, action) => {
         state.status = "succeeded";
-        state.patients.push(action.payload);
+        state.patients.unshift(action.payload); // Add new patient at beginning
+        state.pagination.totalPatients += 1;
       })
       .addCase(createPatient.rejected, (state, action) => {
         state.status = "failed";
@@ -271,6 +343,8 @@ const patientSlice = createSlice({
         state.patients = state.patients.filter(
           (patient) => patient._id !== action.payload
         );
+        state.pagination.totalPatients -= 1;
+
         // Clear selected patient if it was the deleted one
         if (state.selectedPatient?._id === action.payload) {
           state.selectedPatient = null;
@@ -294,6 +368,7 @@ const patientSlice = createSlice({
         state.searchStatus = "failed";
         state.error = action.payload;
       })
+
       // Get Patient with Refund History
       .addCase(getPatientWithRefundHistory.pending, (state) => {
         state.loading = true;
@@ -323,8 +398,13 @@ export const {
   clearSearchResults,
   clearPatientData,
   clearError,
+  setPage,
+  setLimit,
+  setFilters,
+  clearFilters,
 } = patientSlice.actions;
 
+// Selectors
 export const selectAllPatients = (state) => state.patients.patients;
 export const selectPatients = (state) => state.patients.patients;
 export const selectPatientStatus = (state) => state.patients.status;
@@ -334,5 +414,9 @@ export const selectSearchResults = (state) => state.patients.searchResults;
 export const selectSearchStatus = (state) => state.patients.searchStatus;
 export const selectPatientError = (state) => state.patients.error;
 export const { setSelectedPatient } = patientSlice.actions;
+// New selectors for pagination and filters
+export const selectPagination = (state) => state.patients.pagination;
+export const selectFilters = (state) => state.patients.filters;
+export const selectPatientsStatus = (state) => state.patients.status;
 
 export default patientSlice.reducer;

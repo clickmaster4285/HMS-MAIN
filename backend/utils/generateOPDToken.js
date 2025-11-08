@@ -13,8 +13,9 @@ const generateOPDToken = async (doctorId, visitDate) => {
     }
 
     // Get department name or use 'General' as fallback
-    const departmentName = doctor.doctor_Department?.name || 'General';
-
+    const departmentName = doctor.doctor_Department || 'General';
+    console.log("the name is", departmentName)
+    console.log("the dep is", doctor.doctor_Department)
     // Get first two letters, uppercase, remove spaces/special chars
     const cleanDeptName = departmentName.replace(/[^a-zA-Z]/g, '');
     const prefix = cleanDeptName.substring(0, 2).toUpperCase();
@@ -69,12 +70,12 @@ const generateOPDToken = async (doctorId, visitDate) => {
     const nextTokenNumber = maxTokenNumber + 1;
     const token = `${finalPrefix}-${nextTokenNumber}`;
 
-    console.log('🏥 OPD Token Generation:');
-    console.log('Doctor:', doctorId);
-    console.log('Department:', departmentName);
-    console.log('Date:', dateString);
-    console.log('Max token found:', maxTokenNumber);
-    console.log('Generated token:', token);
+    // console.log('🏥 OPD Token Generation:');
+    // console.log('Doctor:', doctorId);
+    // console.log('Department:', departmentName);
+    // console.log('Date:', dateString);
+    // console.log('Max token found:', maxTokenNumber);
+    // console.log('Generated token:', token);
 
     return {
       token,

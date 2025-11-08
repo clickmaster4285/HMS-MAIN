@@ -7,27 +7,37 @@ import {
   selectSelectedPatientStatus,
   clearSelectedPatient,
   selectAllPatients,
+  selectPagination,
+  selectFilters,
+  selectPatientsStatus,
+  setFilters,
+  setPage
 } from "../../../features/patient/patientSlice";
 import { AiOutlineEdit, AiOutlineDelete, AiOutlineEye, AiOutlinePrinter } from "react-icons/ai";
 import { FiSearch } from "react-icons/fi";
 import PatientDetailModal from "./PatientDetailModal";
 import DeletePatientConfirmation from './DeletePatientConfirmation';
 import { useNavigate } from 'react-router-dom';
-import PrintOptionsModal from './components/PrintOptionsModal'; // New component for print options
+import PrintOptionsModal from './components/PrintOptionsModal';
+import Pagination from "./manageopd/pagination";
 
 const ManageOpd = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
+  // Redux selectors
+  const pagination = useSelector(selectPagination);
+  const filters = useSelector(selectFilters);
+  const status = useSelector(selectPatientsStatus);
   const patients = useSelector(selectAllPatients);
   const selectedPatient = useSelector(selectSelectedPatient);
   const patientLoading = useSelector(selectSelectedPatientStatus);
 
-  const [searchQuery, setSearchQuery] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [patientToDelete, setPatientToDelete] = useState(null);
-  const [patientToPrint, setPatientToPrint] = useState(null); // Patient selected for printing
-  const [showPrintModal, setShowPrintModal] = useState(false); // Controls print modal visibility
+  const [patientToPrint, setPatientToPrint] = useState(null);
+  const [showPrintModal, setShowPrintModal] = useState(false);
+  const [localSearch, setLocalSearch] = useState(filters.search || "");
 
   // Default date range = today
   const [dateRange, setDateRange] = useState(() => {
@@ -35,11 +45,65 @@ const ManageOpd = () => {
     return { start: today, end: today };
   });
 
+  // Initialize with today's date in filters
   useEffect(() => {
-    dispatch(fetchPatients()).unwrap().catch((err) => {
-      console.error("Error fetching all patients:", err);
-    });
-  }, [dispatch]);
+    if (!filters.fromDate && !filters.toDate) {
+      dispatch(setFilters({
+        fromDate: dateRange.start,
+        toDate: dateRange.end
+      }));
+    }
+  }, []);
+
+  // Sync date range with filters when both dates are set
+  useEffect(() => {
+    if (dateRange.start && dateRange.end) {
+      const timer = setTimeout(() => {
+        dispatch(setFilters({
+          fromDate: dateRange.start,
+          toDate: dateRange.end
+        }));
+      }, 500);
+
+      return () => clearTimeout(timer);
+    }
+  }, [dateRange, dispatch]);
+
+  // Debounced search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (localSearch !== filters.search) {
+        dispatch(setFilters({
+          search: localSearch,
+          fromDate: dateRange.start,
+          toDate: dateRange.end
+        }));
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [localSearch, dateRange, dispatch, filters.search]);
+
+  // Fetch patients when filters or page changes
+  useEffect(() => {
+    const fetchData = async () => {
+      await dispatch(fetchPatients({
+        page: pagination.currentPage,
+        limit: pagination.limit,
+        search: filters.search,
+        filters: {
+          fromDate: filters.fromDate,
+          toDate: filters.toDate,
+        },
+      }));
+    };
+
+    fetchData();
+  }, [dispatch, pagination.currentPage, filters]);
+
+  const handlePageChange = (newPage) => {
+    dispatch(setPage(newPage));
+  };
 
   const handleView = async (patientId) => {
     await dispatch(fetchPatientById(patientId));
@@ -73,6 +137,17 @@ const ManageOpd = () => {
     });
   };
 
+  const handleResetFilters = () => {
+    setLocalSearch("");
+    const today = new Date().toISOString().split('T')[0];
+    setDateRange({ start: today, end: today });
+    dispatch(setFilters({
+      search: "",
+      fromDate: today,
+      toDate: today
+    }));
+  };
+
   // helpers
   const toTitle = (g) => g ? (g[0].toUpperCase() + g.slice(1)) : '';
   const latestVisitOf = (p) => p?.visits?.[0] || null;
@@ -82,42 +157,11 @@ const ManageOpd = () => {
     return null;
   };
 
-  const filteredPatients = useMemo(() => {
-    const q = (searchQuery || '').toLowerCase();
+  // Use the patients from Redux (already paginated and filtered by backend)
+  const displayedPatients = patients || [];
 
-    return (patients || []).filter((p) => {
-      if (!p) return false;
-
-      // Search by name or MR#
-      const matchesSearch =
-        (p.patient_Name || '').toLowerCase().includes(q) ||
-        (p.patient_MRNo || '').toString().includes(searchQuery);
-
-      // Date filter by lastVisit (fallback createdAt)
-      let matchesDate = true;
-      const baseDate = new Date(p.lastVisit || p.createdAt);
-      if (isNaN(baseDate.getTime())) return matchesSearch;
-
-      if (dateRange.start || dateRange.end) {
-        if (dateRange.start && !dateRange.end) {
-          matchesDate = baseDate >= new Date(dateRange.start);
-        } else if (!dateRange.start && dateRange.end) {
-          const end = new Date(dateRange.end);
-          end.setHours(23, 59, 59, 999);
-          matchesDate = baseDate <= end;
-        } else if (dateRange.start && dateRange.end) {
-          const start = new Date(dateRange.start);
-          const end = new Date(dateRange.end);
-          end.setHours(23, 59, 59, 999);
-          matchesDate = baseDate >= start && baseDate <= end;
-        }
-      }
-
-      return matchesSearch && matchesDate;
-    });
-  }, [patients, searchQuery, dateRange]);
-
-  console.log("Filtered Patients:", filteredPatients);
+  console.log("Displayed Patients:", displayedPatients);
+  console.log("Pagination:", pagination);
 
   return (
     <div className="">
@@ -169,8 +213,8 @@ const ManageOpd = () => {
                   type="text"
                   className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   placeholder="Search by name or MR#"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  value={localSearch}
+                  onChange={(e) => setLocalSearch(e.target.value)}
                 />
               </div>
 
@@ -231,6 +275,13 @@ const ManageOpd = () => {
                     This Month
                   </button>
                 </div>
+
+                <button
+                  onClick={handleResetFilters}
+                  className="text-xs px-2 py-0.5 bg-red-100 text-red-700 rounded hover:bg-red-200"
+                >
+                  Reset All
+                </button>
               </div>
             </div>
           </div>
@@ -255,8 +306,8 @@ const ManageOpd = () => {
             </thead>
 
             <tbody className="bg-white divide-y divide-gray-200">
-              {filteredPatients.length > 0 ? (
-                filteredPatients.map((p) => {
+              {displayedPatients.length > 0 ? (
+                displayedPatients.map((p) => {
                   const v = latestVisitOf(p);
                   const doctorFullName = doctorNameOf(v);
                   const genderLabel = toTitle(p.patient_Gender);
@@ -371,16 +422,18 @@ const ManageOpd = () => {
           </table>
         </div>
 
-        {/* Footer / Showing */}
-        {filteredPatients.length > 0 && (
-          <div className="bg-gray-50 border rounded-xs border-t-gray-300 px-6 py-3 flex items-center justify-center border-primary-400">
-            <div className="text-sm text-gray-500 ">
-              Showing <span className="font-medium">{filteredPatients.length}</span> of{' '}
-              <span className="font-medium">{filteredPatients.length}</span> results
-            </div>
-          </div>
+        {/* Pagination */}
+        {displayedPatients.length > 0 && pagination.totalPages > 1 && (
+          <Pagination
+            currentPage={pagination.currentPage}
+            totalPages={pagination.totalPages}
+            totalItems={pagination.totalPatients}
+            itemsPerPage={pagination.limit}
+            onPageChange={handlePageChange}
+          />
         )}
 
+        {/* Footer */}
         <div className="flex flex-col sm:flex-row sm:justify-between justify-center sm:items-start gap-2 px-6 py-3 bg-gray-50 border-t border-gray-200">
           {dateRange.start && dateRange.end && (
             <div className="text-sm px-3 py-1.5 rounded-md bg-primary-600 text-white">
@@ -388,9 +441,9 @@ const ManageOpd = () => {
             </div>
           )}
 
-          {(dateRange.start || dateRange.end) && (
+          {(dateRange.start || dateRange.end || localSearch) && (
             <button
-              onClick={() => setDateRange({ start: '', end: '' })}
+              onClick={handleResetFilters}
               className="inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
             >
               Reset All Filters

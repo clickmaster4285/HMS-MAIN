@@ -4,7 +4,13 @@ const userSchema = new mongoose.Schema(
   {
     user_Identifier: { type: String, unique: true, },
     user_Name: { type: String },
-    user_Email: { type: String, unique: true,  sparse: true},
+    user_Email: { type: String, unique: true,  sparse: true,
+      default: null, // Add default null
+      set: function (email) {
+        // Convert empty strings to null
+        return email && email.trim() !== '' ? email.trim() : null;
+      }
+    },
     user_Password: { type: String, required: true },
     user_CNIC: { type: String, unique: true, },
     user_Contact: { type: String },

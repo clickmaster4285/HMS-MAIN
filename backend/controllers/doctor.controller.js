@@ -408,8 +408,7 @@ const updateDoctor = async (req, res) => {
         { new: true, runValidators: true }
       );
     }
-
-    console.log("the data is ", userUpdateData)
+    
     // Build doctor update data
     const doctorUpdateData = {
       doctor_Department: doctor_Department !== undefined ? doctor_Department : doctor.doctor_Department,

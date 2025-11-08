@@ -26,7 +26,7 @@ router.get(
 );
 
 router.put(
-  "/update-admission/:id",
+  "/update-admission/:mrNo",
   passportAuth.authenticate("jwt", { session: false }),
   checkRole(['Doctor', 'Admin', 'Receptionist', 'Nurse']),
   controller.admittedPatient.updateAdmission

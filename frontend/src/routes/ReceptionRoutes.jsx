@@ -48,8 +48,9 @@ const ReceptionRoutes = () => {
           <Route path="beds/:bedId" element={<BedDetails />} />
 
           {/* IPD routes */}
-          <Route path="ipd/ssp" element={<IPDForm />} />
-          <Route path="ipd/private" element={<IPDForm />} />
+          <Route path="ipd/ssp" element={<IPDForm mode="create" />} />
+          <Route path="ipd/private" element={<IPDForm mode="create" />} />
+          <Route path="ipd/edit/:mrNo" element={<IPDForm mode="edit" />} />
           <Route path="ipd/Admitted" element={<IPDAdmission />} />
           <Route path="patient-details/:mrno" element={<AdmittedPatientDetails />} />
 

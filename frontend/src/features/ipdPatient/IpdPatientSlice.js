@@ -90,10 +90,10 @@ export const getIpdPatientByMrno = createAsyncThunk(
 
 export const updatePatientAdmission = createAsyncThunk(
   'ipdPatient/updatePatientAdmission',
-  async ({ id, admissionData }, { rejectWithValue }) => {
+  async ({ mrno, admissionData }, { rejectWithValue }) => {
     try {
       const response = await axios.put(
-        `${API_URL}/admittedPatient/update-admission/${id}`,
+        `${API_URL}/admittedPatient/update-admission/${mrno}`,
         admissionData,
         { headers: getAuthHeaders() }
       );
@@ -387,6 +387,8 @@ export const selectSearchStatus = (state) => state.ipdPatient.status.search;
 export const selectIpdPagination = (state) => state.ipdPatient.pagination;
 export const selectIpdFilters = (state) => state.ipdPatient.filters;
 export const selectIpdError = (state) => state.ipdPatient.error;
+export const selectCurrentAdmission = (state) => state.ipdPatient.status.currentAdmission;
+export const selectGetAdmissionStatus = (state) => state.ipdPatient.status.getAdmission;
 
 // Actions
 export const {

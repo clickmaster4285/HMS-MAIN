@@ -1,40 +1,49 @@
-// components/FormActions.js
+// FormActions.js - Updated
 import React from 'react';
-import { Button, ButtonGroup } from "../../../../components/common/Buttons";
+import { Button } from "../../../../components/common/Buttons";
 
 const FormActions = ({
    onCancel,
    onSubmit,
    onSaveAndPrint,
-   isSubmitting
+   isSubmitting,
+   mode = "create"
 }) => {
    return (
-      <div className="flex justify-between pt-4 border-t border-gray-200">
+      <div className="flex justify-end gap-4 mt-8 pt-6 border-t border-gray-200">
          <Button
             type="button"
-            variant="secondary"
             onClick={onCancel}
+            variant="outline"
+            disabled={isSubmitting}
          >
             Cancel
          </Button>
-         <ButtonGroup>
-            <Button
-               type="submit"
-               variant="primary"
-               isSubmitting={isSubmitting}
-               onClick={onSubmit}
-            >
-               Save Admission
-            </Button>
+
+         {mode === "create" && onSaveAndPrint && (
             <Button
                type="button"
-               variant="success"
                onClick={onSaveAndPrint}
-               isSubmitting={isSubmitting}
+               variant="secondary"
+               disabled={isSubmitting}
+               isLoading={isSubmitting}
             >
-               Save & Print
+               {isSubmitting ? "Saving..." : "Save & Print"}
             </Button>
-         </ButtonGroup>
+         )}
+
+         <Button
+            type="submit"
+            onClick={onSubmit}
+            variant="primary"
+            disabled={isSubmitting}
+            isLoading={isSubmitting}
+         >
+            {isSubmitting
+               ? (mode === "create" ? "Submitting..." : "Updating...")
+               : (mode === "create" ? "Submit Admission" : "Update Admission")
+            }
+         </Button>
       </div>
    );
 };

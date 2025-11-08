@@ -20,22 +20,19 @@ import PatientsTable from './getall/PatientsTable';
 import EmptyState from './getall/EmptyState';
 import SuccessModal from './getall/modals/SuccessModal';
 import DeleteModal from './getall/modals/DeleteModal';
-import EditModal from './getall/modals/EditModal';
 import Pagination from "./getall/Pagination"
 
 const AdmittedPatients = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  // Get state from Redux - FIXED: Access pagination directly from state
+  // Get state from Redux
   const {
     patientsList,
     errorMessage,
     pagination
   } = useSelector(state => state.ipdPatient);
-console.log({patientsList})
-  const { departments } = useSelector(state => state.department);
-  const { wardsByDepartment } = useSelector(state => state.ward);
+
   const fetchStatus = useSelector(selectFetchStatus);
   const updateStatus = useSelector(selectUpdateStatus);
 
@@ -46,15 +43,9 @@ console.log({patientsList})
   const [currentPage, setCurrentPage] = useState(1);
   const [modals, setModals] = useState({
     delete: { show: false, patientId: null },
-    edit: { show: false, patient: null },
     success: { show: false, message: '' }
   });
-  const [editForm, setEditForm] = useState({
-    departmentId: '',
-    wardId: '',
-    bedNumber: '',
-    status: 'Admitted'
-  });
+  const [isUpdating, setIsUpdating] = useState(false);
 
   // Load data with pagination
   const loadPatients = (page = 1) => {
@@ -81,23 +72,21 @@ console.log({patientsList})
     loadPatients(1);
   }, [activeTab]);
 
+  // Handle success messages
   useEffect(() => {
-    if (updateStatus === 'succeeded') {
+    if (updateStatus === 'succeeded' && isUpdating) {
       setModals(prevModals => ({
         ...prevModals,
-        edit: { show: false, patient: null },
         success: {
           show: true,
-          message: editForm.status === 'Discharged'
-            ? 'Patient discharged successfully!'
-            : 'Patient updated successfully!'
+          message: 'Operation completed successfully!'
         }
       }));
 
-      loadPatients(currentPage); // Reload current page
+      setIsUpdating(false);
+      loadPatients(currentPage);
     }
-  }, [updateStatus, dispatch, editForm.status, currentPage]);
-
+  }, [updateStatus, isUpdating, currentPage]);
 
   // Memoized derived data
   const wardTypes = useMemo(() => {
@@ -107,22 +96,6 @@ console.log({patientsList})
       .filter(type => type && typeof type === 'string');
     return [...new Set(types)];
   }, [patientsList]);
-
-  // Get available beds for selected ward
-  const availableBeds = useMemo(() => {
-    if (!editForm.wardId || !Array.isArray(wardsByDepartment)) return [];
-
-    const selectedWard = wardsByDepartment.find(ward => ward._id === editForm.wardId);
-    if (!selectedWard || !selectedWard.beds) return [];
-
-    return selectedWard.beds
-      .filter(bed => bed && !bed.occupied)
-      .map(bed => ({
-        value: bed?.bedNumber?.toString()?.trim() || '',
-        label: `Bed ${bed?.bedNumber || ''}`,
-        className: 'text-green-600'
-      }));
-  }, [editForm.wardId, wardsByDepartment]);
 
   const filteredPatients = useMemo(() => {
     if (!Array.isArray(patientsList)) return [];
@@ -174,94 +147,8 @@ console.log({patientsList})
 
   // Handlers
   const handleEditClick = (patient) => {
-    const department = departments.find(dept =>
-      dept.name === patient.ward_Information?.ward_Type
-    );
-
-    setEditForm({
-      departmentId: department?._id || '',
-      wardId: patient.ward_Information?.ward_Id || '',
-      bedNumber: patient.ward_Information?.bed_No || '',
-      status: patient.status
-    });
-
-    setModals({ ...modals, edit: { show: true, patient } });
-
-    // Load wards for the department if department is found
-    if (department?._id) {
-      dispatch(getwardsbydepartmentId(department._id));
-    }
-  };
-
-  const handleDepartmentChange = (e) => {
-    const departmentId = e.target.value;
-    setEditForm(prev => ({
-      ...prev,
-      departmentId,
-      wardId: '',
-      bedNumber: ''
-    }));
-
-    if (departmentId) {
-      dispatch(getwardsbydepartmentId(departmentId));
-    }
-  };
-
-  const handleWardChange = (e) => {
-    const wardId = e.target.value;
-    setEditForm(prev => ({
-      ...prev,
-      wardId,
-      bedNumber: ''
-    }));
-  };
-
-  const handleSaveEdit = () => {
-    const { status } = editForm;
-    const patient = modals.edit.patient;
-
-    if (!patient?._id) {
-      console.error('Patient ID is missing!');
-      return;
-    }
-
-    if (status === 'Discharged') {
-      const dischargePayload = {
-        wardId: patient.ward_Information?.ward_Id,
-        bedNumber: patient.ward_Information?.bed_No,
-        patientMRNo: patient.patient_MRNo
-      };
-      dispatch(dischargePatient(dischargePayload));
-    } else {
-      const selectedDepartment = departments.find(dept => dept._id === editForm.departmentId);
-      const selectedWard = wardsByDepartment.find(ward => ward._id === editForm.wardId);
-
-      const payload = {
-        id: patient._id,
-        wardData: {
-          status,
-          departmentId: editForm.departmentId,
-          wardId: editForm.wardId,
-          ward_Type: selectedDepartment?.name || '',
-          ward_No: selectedWard?.wardNumber || '',
-          bed_No: editForm.bedNumber
-        }
-      };
-      dispatch(updatePatientAdmission(payload));
-    }
-  };
-
-  const handleDischargeToggle = (e) => {
-    const isDischarged = e.target.checked;
-    setEditForm(prev => ({
-      ...prev,
-      status: isDischarged ? 'Discharged' : 'Admitted',
-      ...(isDischarged ? {
-        departmentId: '',
-        wardId: '',
-        bedNumber: ''
-      } : {})
-    }));
+    // Navigate to the new IPD edit form with MR number
+    navigate(`/receptionist/ipd/edit/${patient.patient_MRNo}`);
   };
 
   const handleDeleteConfirm = () => {
@@ -273,6 +160,28 @@ console.log({patientsList})
 
   const handleView = (mrno) => {
     navigate(`/receptionist/patient-details/${mrno}`);
+  };
+
+  const handleDischarge = async (patient) => {
+    if (!patient?._id) {
+      console.error('Patient ID is missing!');
+      return;
+    }
+
+    setIsUpdating(true);
+
+    try {
+      const dischargePayload = {
+        id: patient._id,
+        wardId: patient.ward_Information?.ward_Id,
+        bedNumber: patient.ward_Information?.bed_No,
+        patientMRNo: patient.patient_MRNo
+      };
+      await dispatch(dischargePatient(dischargePayload));
+    } catch (error) {
+      console.error('Discharge error:', error);
+      setIsUpdating(false);
+    }
   };
 
   const handleDateRangeChange = (type, value) => {
@@ -293,6 +202,14 @@ console.log({patientsList})
     setSearchTerm('');
     setDateRange({ start: '', end: '' });
     setActiveTab('all-admitted');
+  };
+
+  // Close success modal handler
+  const handleCloseSuccessModal = () => {
+    setModals(prev => ({
+      ...prev,
+      success: { show: false, message: '' }
+    }));
   };
 
   return (
@@ -343,7 +260,9 @@ console.log({patientsList})
             filteredPatients={filteredPatients}
             handleView={handleView}
             handleEditClick={handleEditClick}
+            handleDischarge={handleDischarge}
             setModals={setModals}
+            isUpdating={isUpdating}
           />
 
           {/* Add Pagination */}
@@ -377,27 +296,13 @@ console.log({patientsList})
       <SuccessModal
         modals={modals}
         setModals={setModals}
+        onClose={handleCloseSuccessModal}
       />
 
       <DeleteModal
         modals={modals}
         setModals={setModals}
         handleDeleteConfirm={handleDeleteConfirm}
-      />
-
-      <EditModal
-        modals={modals}
-        setModals={setModals}
-        editForm={editForm}
-        setEditForm={setEditForm}
-        departments={departments}
-        wardsByDepartment={wardsByDepartment}
-        availableBeds={availableBeds}
-        handleDepartmentChange={handleDepartmentChange}
-        handleWardChange={handleWardChange}
-        handleDischargeToggle={handleDischargeToggle}
-        handleSaveEdit={handleSaveEdit}
-        updateStatus={updateStatus}
       />
     </div>
   );
