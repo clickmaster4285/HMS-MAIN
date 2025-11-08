@@ -10,6 +10,9 @@ import PatientInfoSection from "./addipd/PatientInfoSection";
 import AdmissionInfoSection from "./addipd/AdmissionInfoSection";
 
 const IpdForm = ({ mode = "create" }) => {
+  console.log("useIpdForm hook initialized");
+console.log("IPD Form mode:", mode);
+
   const {
     // State
     mrNo,
