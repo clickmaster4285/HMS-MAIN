@@ -90,10 +90,10 @@ export const getIpdPatientByMrno = createAsyncThunk(
 
 export const updatePatientAdmission = createAsyncThunk(
   'ipdPatient/updatePatientAdmission',
-  async ({ mrno, admissionData }, { rejectWithValue }) => {
+  async ({ mrNo, admissionData }, { rejectWithValue }) => {
     try {
       const response = await axios.put(
-        `${API_URL}/admittedPatient/update-admission/${mrno}`,
+        `${API_URL}/admittedPatient/update-admission/${mrNo}`,
         admissionData,
         { headers: getAuthHeaders() }
       );
@@ -152,6 +152,7 @@ export const deleteAdmission = createAsyncThunk(
 
 const initialState = {
   admissionData: null,
+  // currentAdmission: null,
   patientsList: [],
   currentPatient: null,
   dischargedPatients: [],
@@ -161,6 +162,7 @@ const initialState = {
     totalItems: 0,
     limit: 20
   },
+  isSuccess: false,
   isLoading: false,
   isError: false,
   error: null,
@@ -170,7 +172,8 @@ const initialState = {
     search: 'idle',
     delete: 'idle',
     discharge: 'idle',
-    update: 'idle'
+    update: 'idle',
+    // getAdmission: 'idle',
   },
   filters: {
     ward_Type: '',
@@ -224,6 +227,7 @@ const ipdPatientSlice = createSlice({
       })
       .addCase(admitPatient.fulfilled, (state, action) => {
         state.status.admit = 'succeeded';
+        state.isSuccess = true;
         state.isLoading = false;
         state.admissionData = action.payload;
         state.patientsList.unshift(action.payload);
@@ -231,6 +235,7 @@ const ipdPatientSlice = createSlice({
       // In extraReducers, add proper state cleaning for each rejection
       .addCase(admitPatient.rejected, (state, action) => {
         state.status.admit = 'failed';
+        state.isSuccess = false;
         state.isLoading = false;
         state.isError = true;
         state.error = {
@@ -297,6 +302,7 @@ const ipdPatientSlice = createSlice({
         state.error = null;
       })
       .addCase(updatePatientAdmission.fulfilled, (state, action) => {
+        state.isSuccess = true;
         state.status.update = 'succeeded';
         state.isLoading = false;
         state.patientsList = state.patientsList.map(patient =>
@@ -308,6 +314,7 @@ const ipdPatientSlice = createSlice({
       })
       .addCase(updatePatientAdmission.rejected, (state, action) => {
         state.status.update = 'failed';
+        state.isSuccess = false;
         state.isLoading = false;
         state.isError = true;
         state.error = {
@@ -378,17 +385,16 @@ const ipdPatientSlice = createSlice({
 // Selectors
 export const selectAllAdmittedPatients = (state) => state.ipdPatient.patientsList;
 export const selectCurrentIpdPatient = (state) => state.ipdPatient.currentPatient;
+export const selectCurrentAdmission = (state) => state.ipdPatient.currentPatient;
+export const selectGetAdmissionStatus = (state) => state.ipdPatient.status.search;
 export const selectAdmissionStatus = (state) => state.ipdPatient.status.admit;
 export const selectFetchStatus = (state) => state.ipdPatient.status.fetch;
 export const selectDischargeStatus = (state) => state.ipdPatient.status.discharge;
 export const selectUpdateStatus = (state) => state.ipdPatient.status.update;
 export const selectDeleteStatus = (state) => state.ipdPatient.status.delete;
-export const selectSearchStatus = (state) => state.ipdPatient.status.search;
 export const selectIpdPagination = (state) => state.ipdPatient.pagination;
 export const selectIpdFilters = (state) => state.ipdPatient.filters;
 export const selectIpdError = (state) => state.ipdPatient.error;
-export const selectCurrentAdmission = (state) => state.ipdPatient.status.currentAdmission;
-export const selectGetAdmissionStatus = (state) => state.ipdPatient.status.getAdmission;
 
 // Actions
 export const {

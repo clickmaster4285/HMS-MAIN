@@ -1,8 +1,6 @@
-// IpdForm.js - Clean and simplified version
+// IpdForm.js - WITH DEBUGGING
 import React from "react";
 import { useIpdForm } from "../../../hooks/useIpdForm";
-
-// Import your existing components
 import PatientSearch from "./addipd/PatientSearch";
 import MedicalInformation from "./addipd/MedicalInformation";
 import FormActions from "./addipd/FormActions";
@@ -10,18 +8,18 @@ import PatientInfoSection from "./addipd/PatientInfoSection";
 import AdmissionInfoSection from "./addipd/AdmissionInfoSection";
 
 const IpdForm = ({ mode = "create" }) => {
-  console.log("useIpdForm hook initialized");
-console.log("IPD Form mode:", mode);
+  const ipdFormData = useIpdForm(mode);
+
+  if (!ipdFormData) {
+    return <div>Loading form...</div>;
+  }
 
   const {
-    // State
     mrNo,
     setMrNo,
     formData,
     isSearching,
     bloodGroups,
-
-    // Redux state
     wardsByDepartment,
     doctors,
     departments,
@@ -29,18 +27,13 @@ console.log("IPD Form mode:", mode);
     isPatientError,
     patientErrorMessage,
     isAdmissionLoading,
-    isAdmissionError,
     currentAdmission,
     getAdmissionStatus,
-
-    // Handlers
     handleSearch,
     handleChange,
     handleSubmit,
-
-    // Mode
     mode: formMode,
-  } = useIpdForm(mode);
+  } = ipdFormData;
 
   // Loading states
   if (formMode === "edit" && getAdmissionStatus === 'pending') {

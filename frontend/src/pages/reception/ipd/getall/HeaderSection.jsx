@@ -7,6 +7,7 @@ const HeaderSection = ({
   searchTerm,
   setSearchTerm,
   dateRange,
+  setDateRange,
   handleDateRangeChange
 }) => {
   return (

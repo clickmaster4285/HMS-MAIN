@@ -7,11 +7,11 @@ import {
   resetOperationStatus,
   selectFetchStatus,
   selectUpdateStatus,
-  updatePatientAdmission
+  // updatePatientAdmission
 } from '../../../features/ipdPatient/IpdPatientSlice';
 import { useNavigate } from 'react-router-dom';
 import { getallDepartments } from '../../../features/department/DepartmentSlice';
-import { getwardsbydepartmentId } from '../../../features/ward/Wardslice';
+// import { getwardsbydepartmentId } from '../../../features/ward/Wardslice';
 
 // Components
 import HeaderSection from './getall/HeaderSection';
@@ -21,6 +21,7 @@ import EmptyState from './getall/EmptyState';
 import SuccessModal from './getall/modals/SuccessModal';
 import DeleteModal from './getall/modals/DeleteModal';
 import Pagination from "./getall/Pagination"
+import { useCallback } from 'react';
 
 const AdmittedPatients = () => {
   const dispatch = useDispatch();
@@ -48,7 +49,7 @@ const AdmittedPatients = () => {
   const [isUpdating, setIsUpdating] = useState(false);
 
   // Load data with pagination
-  const loadPatients = (page = 1) => {
+  const loadPatients = useCallback((page = 1) => {
     const params = {
       page,
       limit: 20,
@@ -56,7 +57,7 @@ const AdmittedPatients = () => {
     };
     dispatch(getAllAdmittedPatients(params));
     setCurrentPage(page);
-  };
+  }, [activeTab, dispatch]);
 
   // Effects
   useEffect(() => {
@@ -65,12 +66,12 @@ const AdmittedPatients = () => {
     return () => {
       dispatch(resetOperationStatus());
     };
-  }, [dispatch]);
+  }, [dispatch, loadPatients]);
 
   useEffect(() => {
     // Reload when tab changes
     loadPatients(1);
-  }, [activeTab]);
+  }, [activeTab, loadPatients]);
 
   // Handle success messages
   useEffect(() => {
@@ -86,7 +87,7 @@ const AdmittedPatients = () => {
       setIsUpdating(false);
       loadPatients(currentPage);
     }
-  }, [updateStatus, isUpdating, currentPage]);
+  }, [updateStatus, isUpdating, currentPage, loadPatients]);
 
   // Memoized derived data
   const wardTypes = useMemo(() => {

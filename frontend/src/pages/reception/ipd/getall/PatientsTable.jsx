@@ -3,7 +3,7 @@ import { FiUser, FiPrinter, FiEdit, FiTrash2 } from 'react-icons/fi';
 import { AiOutlineEye } from "react-icons/ai";
 import {printPatient} from "../../../../utils/printPatient.jsx"
 
-const PatientsTable = ({ filteredPatients, handleView, handleEditClick, setModals, handlePrintPatient }) => {
+const PatientsTable = ({ filteredPatients, handleView, handleEditClick, setModals, }) => {
 
   const handlePrint = async (patient) => {
     try {

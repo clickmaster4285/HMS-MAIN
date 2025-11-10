@@ -160,9 +160,6 @@ const ManageOpd = () => {
   // Use the patients from Redux (already paginated and filtered by backend)
   const displayedPatients = patients || [];
 
-  console.log("Displayed Patients:", displayedPatients);
-  console.log("Pagination:", pagination);
-
   return (
     <div className="">
       {/* Delete Confirmation */}
