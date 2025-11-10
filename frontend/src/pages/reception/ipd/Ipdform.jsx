@@ -1,4 +1,4 @@
-// IpdForm.js - WITH DEBUGGING
+// IpdForm.js - FIXED VERSION
 import React from "react";
 import { useIpdForm } from "../../../hooks/useIpdForm";
 import PatientSearch from "./addipd/PatientSearch";
@@ -35,25 +35,42 @@ const IpdForm = ({ mode = "create" }) => {
     mode: formMode,
   } = ipdFormData;
 
-  // Loading states
-  if (formMode === "edit" && getAdmissionStatus === 'pending') {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-xl font-semibold text-primary-600">
-          Loading admission details...
-        </div>
-      </div>
-    );
-  }
+  console.log("Form data:", formData);
+  console.log("Current admission:", currentAdmission);
+  console.log("Admission status:", getAdmissionStatus);
 
-  if (formMode === "edit" && getAdmissionStatus === 'failed') {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-xl font-semibold text-red-500">
-          Error loading admission details
+  // FIXED: Proper loading states for edit mode
+  if (formMode === "edit") {
+    if (getAdmissionStatus === 'pending' || getAdmissionStatus === 'idle') {
+      return (
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="text-xl font-semibold text-primary-600">
+            Loading admission details...
+          </div>
         </div>
-      </div>
-    );
+      );
+    }
+
+    if (getAdmissionStatus === 'failed') {
+      return (
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="text-xl font-semibold text-red-500">
+            Error loading admission details
+          </div>
+        </div>
+      );
+    }
+
+    // Check if we have the admission data but form is still empty
+    if (getAdmissionStatus === 'succeeded' && currentAdmission && !formData.patientId) {
+      return (
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="text-xl font-semibold text-primary-600">
+            Preparing form data...
+          </div>
+        </div>
+      );
+    }
   }
 
   if (isPatientError) {
@@ -143,7 +160,7 @@ const IpdForm = ({ mode = "create" }) => {
           <FormActions
             onCancel={() => window.history.back()}
             onSubmit={handleSubmit}
-            onSaveAndPrint={formMode === "create" ? undefined : null} // You can add this back if needed
+            onSaveAndPrint={formMode === "create" ? undefined : null}
             isSubmitting={isAdmissionLoading}
             mode={formMode}
           />

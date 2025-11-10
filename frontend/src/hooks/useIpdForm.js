@@ -13,6 +13,7 @@ import { fetchPatientByMrNo } from "../features/patient/patientSlice";
 import { getwardsbydepartmentId } from "../features/ward/Wardslice";
 
 export const useIpdForm = (mode = "create") => {
+  const [hasPopulatedForm, setHasPopulatedForm] = useState(false);
   const { mrNo: mrNoFromParams } = useParams();
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -39,7 +40,7 @@ export const useIpdForm = (mode = "create") => {
 
   const currentAdmission = useSelector((state) => state.ipdPatient.currentPatient);
   const getAdmissionStatus = useSelector((state) => state.ipdPatient.status.search);
-
+  console.log("the status is ", getAdmissionStatus)
   // State
   const [mrNo, setMrNo] = useState(mode === "edit" ? mrNoFromParams : "");
   const [isSearching, setIsSearching] = useState(false);
@@ -111,9 +112,27 @@ export const useIpdForm = (mode = "create") => {
 
   const populateFormFromAdmission = (admission) => {
     const patient = admission.patient;
+    const wardInfo = admission.ward_Information || {};
 
-    setFormData(prev => ({
-      ...prev,
+    console.log("Populating form from admission:", admission);
+    console.log("Ward info:", wardInfo);
+    console.log("Available departments:", departments);
+
+    // FIXED: Better department matching
+    const department = departments.find(dept => {
+      // Try multiple matching strategies
+      const deptName = dept.name?.toLowerCase();
+      const wardType = wardInfo.ward_Type?.toLowerCase();
+
+      return deptName === wardType ||
+        deptName?.includes(wardType) ||
+        wardType?.includes(deptName) ||
+        dept.name === wardInfo.ward_Type;
+    });
+
+    console.log("Found department:", department);
+
+    const formDataUpdate = {
       patientId: patient?._id || '',
       mrNumber: patient?.patient_MRNo || "",
       patientName: patient?.patient_Name || "",
@@ -139,17 +158,28 @@ export const useIpdForm = (mode = "create") => {
       doctorId: admission.admission_Details?.admitting_Doctor?._id || "",
       diagnosis: admission.admission_Details?.diagnosis || "",
 
-      // Ward information
-      departmentId: "",
-      wardId: admission.ward_Information?.ward_Id || "",
-      bedNumber: admission.ward_Information?.bed_No || "",
+      // Ward information - FIXED: Include departmentId
+      departmentId: department?._id || "",
+      wardId: wardInfo.ward_Id || "",
+      bedNumber: wardInfo.bed_No || "",
 
       // Financials
       admissionFee: admission.financials?.admission_Fee || "",
       discount: admission.financials?.discount || 0,
       totalFee: admission.financials?.total_Charges || 0,
       paymentStatus: admission.financials?.payment_Status || "Unpaid",
-    }));
+    };
+
+    console.log("Setting form data:", formDataUpdate);
+    setFormData(prev => ({ ...prev, ...formDataUpdate }));
+
+    // Load wards for the department if department is found
+    if (department?._id) {
+      console.log("Dispatching getwardsbydepartmentId for department:", department._id);
+      dispatch(getwardsbydepartmentId(department._id));
+    } else {
+      console.warn("No department found for ward type:", wardInfo.ward_Type);
+    }
   };
 
   const resetForm = useCallback(() => {
@@ -384,6 +414,27 @@ export const useIpdForm = (mode = "create") => {
     }
   }, []);
 
+  useEffect(() => {
+    if (mode === "edit" && mrNoFromParams) {
+      console.log("Dispatching getIpdPatientByMrno with MR:", mrNoFromParams);
+      dispatch(getIpdPatientByMrno(mrNoFromParams));
+    }
+  }, [mode, mrNoFromParams, getAdmissionStatus, dispatch]);
+
+  useEffect(() => {
+    console.log("Current admission changed:", currentAdmission);
+    if (mode === "edit" && currentAdmission && !hasPopulatedForm) {
+      console.log("Populating form with admission data");
+      populateFormFromAdmission(currentAdmission);
+      setHasPopulatedForm(true);
+    }
+  }, [mode, currentAdmission, hasPopulatedForm]);
+
+  useEffect(() => {
+    console.log("Form data updated:", formData);
+  }, [formData]);
+
+  // In handleSubmit function - Fix error handling
   const handleSubmit = useCallback(async (e) => {
     e.preventDefault();
 
@@ -402,40 +453,28 @@ export const useIpdForm = (mode = "create") => {
 
     try {
       const payload = preparePayload();
+      console.log("Submitting payload:", payload);
 
       if (mode === "create") {
         const result = await dispatch(admitPatient(payload));
         if (admitPatient.rejected.match(result)) {
-          if (result.payload?.message) {
-            if (result.payload.message.includes("already admitted")) {
-              toast.error("This patient is already admitted");
-            } else if (result.payload.message.includes("Bed")) {
-              toast.error(result.payload.message);
-            } else {
-              toast.error(`Admission error: ${result.payload.message}`);
-            }
-          } else {
-            toast.error("Admission failed. Please try again.");
-          }
+          const errorMsg = result.payload?.message || result.error?.message || "Admission failed";
+          toast.error(`Admission error: ${errorMsg}`);
         }
       } else {
         const updatePayload = {
           mrNo: formData.mrNumber,
           admissionData: payload
         };
+        console.log("Update payload:", updatePayload);
+
         const result = await dispatch(updatePatientAdmission(updatePayload));
         if (updatePatientAdmission.rejected.match(result)) {
-          if (result.payload?.message) {
-            if (result.payload.message.includes("already admitted")) {
-              toast.error("This patient is already admitted");
-            } else if (result.payload.message.includes("Bed")) {
-              toast.error(result.payload.message);
-            } else {
-              toast.error(`Update error: ${result.payload.message}`);
-            }
-          } else {
-            toast.error("Update failed. Please try again.");
-          }
+          // FIXED: Proper error message extraction
+          const errorMsg = result.payload?.message ||
+            result.error?.message ||
+            (typeof result.payload === 'string' ? result.payload : "Update failed");
+          toast.error(`Update error: ${errorMsg}`);
         }
       }
     } catch (error) {

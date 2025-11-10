@@ -149,9 +149,9 @@ const AdmittedPatients = () => {
   // Handlers
   const handleEditClick = (patient) => {
     // Navigate to the new IPD edit form with MR number
-    navigate(`/receptionist/ipd/edit/${patient.patient_MRNo}`);
+    navigate(`/receptionist/ipd/edit/${patient.patient.patient_MRNo}`);
   };
-
+console.log("the patient data",patientsList)
   const handleDeleteConfirm = () => {
     if (modals.delete.patientId) {
       dispatch(deleteAdmission(modals.delete.patientId));

@@ -39,9 +39,6 @@ const ReceptionRoutes = () => {
           {/* Dashboard routes */}
           <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard" element={<AdminDashboard />} />
-          {/* <Route path="hr-dashboard" element={<HRDashboard />} />
-          <Route path="patient-dashboard" element={<PatientDashboard />} />
-          <Route path="admin-dashboard" element={<AdminDashboard />} /> */}
 
           {/* Rooms management */}
           <Route path="ward-management" element={<Ward />} />
