@@ -30,6 +30,7 @@ connectDB()
     process.exit(1);
   });
 
+  
 // Serve static uploads
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/', indexRouter);
