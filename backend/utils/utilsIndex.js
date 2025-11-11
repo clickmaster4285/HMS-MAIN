@@ -5,6 +5,7 @@ const generateUniqueAdmissionNo = require("./generaetUniqueAdmissionNo");
 const generateOPDToken = require("./generateOPDToken");
 const generateUniqueId = require("./generateUniqueId");
 const generateUniqueStaffId = require("./generateUniqueStaffId")
+const generateUniqueToken = require("./generateUniqueToken")
 
 const utils = {
   generateUniqueUserId,
@@ -14,6 +15,7 @@ const utils = {
   generateOPDToken,
   generateUniqueId,
   generateUniqueStaffId,
+  generateUniqueToken,
   
 };
 

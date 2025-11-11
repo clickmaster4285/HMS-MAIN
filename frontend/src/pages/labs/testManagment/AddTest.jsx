@@ -197,7 +197,7 @@ const LabTestForm = ({ mode = 'create' }) => {
 
     testFields.forEach((f, i) => {
       if (!f.name) errs[`field-name-${i}`] = 'Field name required';
-      if (!f.unit) errs[`field-unit-${i}`] = 'Unit is required';
+      // if (!f.unit) errs[`field-unit-${i}`] = 'Unit is required';
 
       // Object.entries(f.ranges).forEach(([type, range]) => {
       //   if (range.min && isNaN(range.min))
@@ -549,7 +549,7 @@ const LabTestForm = ({ mode = 'create' }) => {
                         }
                         options={unitsList}
                         error={errors[`field-unit-${fieldIdx}`]}
-                        required
+                        // required
                       />
                     </div>
 
