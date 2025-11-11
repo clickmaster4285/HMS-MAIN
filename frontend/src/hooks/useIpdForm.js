@@ -14,6 +14,7 @@ import { getwardsbydepartmentId } from "../features/ward/Wardslice";
 
 export const useIpdForm = (mode = "create") => {
   const [hasPopulatedForm, setHasPopulatedForm] = useState(false);
+  const [hasSubmitted, setHasSubmitted] = useState(false); 
   const { mrNo: mrNoFromParams } = useParams();
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -110,7 +111,7 @@ export const useIpdForm = (mode = "create") => {
     return formattedValue.substring(0, 15);
   };
 
-  const populateFormFromAdmission = (admission) => {
+  const populateFormFromAdmission = useCallback((admission) => {
     const patient = admission.patient;
     const wardInfo = admission.ward_Information || {};
 
@@ -180,7 +181,7 @@ export const useIpdForm = (mode = "create") => {
     } else {
       console.warn("No department found for ward type:", wardInfo.ward_Type);
     }
-  };
+  }, [departments, dispatch]);
 
   const resetForm = useCallback(() => {
     setFormData({
@@ -243,12 +244,18 @@ export const useIpdForm = (mode = "create") => {
       }
     };
 
+    // ✅ ADD DISCHARGE LOGIC
+    if (mode === "edit" && formData.dischargePatient) {
+      payload.status = "Discharged";
+      payload.admission_Details.discharge_Date = new Date();
+    }
+
     if (formData.doctorId) {
       payload.admission_Details.admitting_Doctor = formData.doctorId;
     }
 
     return payload;
-  }, [formData, wardsByDepartment, departments]);
+  }, [formData, wardsByDepartment, departments, mode]);
 
   const validateForm = useCallback(() => {
     const errors = {};
@@ -419,7 +426,7 @@ export const useIpdForm = (mode = "create") => {
       console.log("Dispatching getIpdPatientByMrno with MR:", mrNoFromParams);
       dispatch(getIpdPatientByMrno(mrNoFromParams));
     }
-  }, [mode, mrNoFromParams, getAdmissionStatus, dispatch]);
+  }, [mode, mrNoFromParams, dispatch]);
 
   useEffect(() => {
     console.log("Current admission changed:", currentAdmission);
@@ -428,11 +435,18 @@ export const useIpdForm = (mode = "create") => {
       populateFormFromAdmission(currentAdmission);
       setHasPopulatedForm(true);
     }
-  }, [mode, currentAdmission, hasPopulatedForm]);
+  }, [mode, currentAdmission, hasPopulatedForm, populateFormFromAdmission]);
 
   useEffect(() => {
-    console.log("Form data updated:", formData);
-  }, [formData]);
+    return () => {
+      // Reset when component unmounts or mode changes
+      setHasPopulatedForm(false);
+    };
+  }, [mode, mrNoFromParams]);
+
+  useEffect(() => {
+      dispatch(resetAdmissionState());
+  }, [mode, dispatch]);
 
   // In handleSubmit function - Fix error handling
   const handleSubmit = useCallback(async (e) => {
@@ -450,6 +464,8 @@ export const useIpdForm = (mode = "create") => {
       });
       return;
     }
+
+    setHasSubmitted(true); // ✅ MARK THAT WE'VE SUBMITTED
 
     try {
       const payload = preparePayload();
@@ -470,7 +486,6 @@ export const useIpdForm = (mode = "create") => {
 
         const result = await dispatch(updatePatientAdmission(updatePayload));
         if (updatePatientAdmission.rejected.match(result)) {
-          // FIXED: Proper error message extraction
           const errorMsg = result.payload?.message ||
             result.error?.message ||
             (typeof result.payload === 'string' ? result.payload : "Update failed");
@@ -483,6 +498,7 @@ export const useIpdForm = (mode = "create") => {
         ? "Failed to submit form. Please try again."
         : "Failed to update admission. Please try again.";
       toast.error(errorMessage);
+      setHasSubmitted(false); // ✅ RESET ON ERROR
     }
   }, [
     formData.patientId,
@@ -493,20 +509,10 @@ export const useIpdForm = (mode = "create") => {
     dispatch,
   ]);
 
-  // Effects
   useEffect(() => {
-    if (mode === "edit" && mrNoFromParams) {
-      dispatch(getIpdPatientByMrno(mrNoFromParams));
-    }
-  }, [mode, mrNoFromParams, getAdmissionStatus, dispatch]);
+    // ✅ ONLY process success/error if we actually submitted the form
+    if (!hasSubmitted) return;
 
-  useEffect(() => {
-    if (mode === "edit" && currentAdmission) {
-      populateFormFromAdmission(currentAdmission);
-    }
-  }, [mode, currentAdmission]);
-
-  useEffect(() => {
     if (isAdmissionSuccess) {
       const successMessage = mode === "create"
         ? "Patient admitted successfully!"
@@ -514,9 +520,16 @@ export const useIpdForm = (mode = "create") => {
 
       toast.success(successMessage);
       dispatch(resetAdmissionState());
-      resetForm();
-      setTimeout(() => navigate("/receptionist/ipd/Admitted"), 1000);
+
+      if (mode === "create") {
+        resetForm();
+        setTimeout(() => navigate("/receptionist/ipd/Admitted"), 1000);
+      } else {
+        setTimeout(() => navigate("/receptionist/ipd/Admitted"), 1000);
+        setHasSubmitted(false);
+      }
     }
+
     if (isAdmissionError) {
       const errorMessage = mode === "create"
         ? `Admission failed: ${admissionError}`
@@ -524,11 +537,19 @@ export const useIpdForm = (mode = "create") => {
 
       toast.error(errorMessage);
       dispatch(resetAdmissionState());
+      setHasSubmitted(false); // ✅ RESET ON ERROR
     }
-  }, [isAdmissionSuccess, isAdmissionError, admissionError, dispatch, navigate, mode, resetForm]);
+  }, [
+    hasSubmitted, // ✅ ADD THIS DEPENDENCY
+    isAdmissionSuccess,
+    isAdmissionError,
+    admissionError,
+    dispatch,
+    navigate,
+    mode,
+    resetForm,
+  ]);
 
-
-  // FIXED: Return plain object - NO useMemo wrapper
   return {
     // State
     mrNo,

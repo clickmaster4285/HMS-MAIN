@@ -7,6 +7,15 @@ import FormActions from "./addipd/FormActions";
 import PatientInfoSection from "./addipd/PatientInfoSection";
 import AdmissionInfoSection from "./addipd/AdmissionInfoSection";
 
+const LoadingState = ({ message }) => (
+  <div className="min-h-screen flex items-center justify-center">
+    <div className="text-center">
+      <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary-600 mb-4"></div>
+      <div className="text-xl font-semibold text-primary-600">{message}</div>
+    </div>
+  </div>
+);
+
 const IpdForm = ({ mode = "create" }) => {
   const ipdFormData = useIpdForm(mode);
 
@@ -42,13 +51,13 @@ const IpdForm = ({ mode = "create" }) => {
   // FIXED: Proper loading states for edit mode
   if (formMode === "edit") {
     if (getAdmissionStatus === 'pending' || getAdmissionStatus === 'idle') {
-      return (
-        <div className="min-h-screen flex items-center justify-center">
-          <div className="text-xl font-semibold text-primary-600">
-            Loading admission details...
-          </div>
-        </div>
-      );
+      return <LoadingState message="Loading admission details..." />;
+    }
+
+    // Wait for form to be properly populated
+    if (getAdmissionStatus === 'succeeded' && currentAdmission &&
+      (!formData.patientId || !formData.mrNumber || !formData.departmentId)) {
+      return <LoadingState message="Preparing form data..." />;
     }
 
     if (getAdmissionStatus === 'failed') {
@@ -61,12 +70,11 @@ const IpdForm = ({ mode = "create" }) => {
       );
     }
 
-    // Check if we have the admission data but form is still empty
-    if (getAdmissionStatus === 'succeeded' && currentAdmission && !formData.patientId) {
+    if (getAdmissionStatus === 'succeeded' && !currentAdmission) {
       return (
         <div className="min-h-screen flex items-center justify-center">
-          <div className="text-xl font-semibold text-primary-600">
-            Preparing form data...
+          <div className="text-xl font-semibold text-red-500">
+            No admission data found for this patient
           </div>
         </div>
       );

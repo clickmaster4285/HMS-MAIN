@@ -356,26 +356,84 @@ const updateAdmission = async (req, res) => {
       });
     }
 
-    // Handle bed changes - if ward or bed is being updated
+    // ✅ HANDLE DISCHARGE - Free up the bed when discharging
+    if (updateData.status === "Discharged" && currentAdmission.status === "Admitted") {
+      console.log('Discharging patient and freeing up bed');
+
+      // Free up the current bed
+      const currentWard = await hospitalModel.ward.findById(currentAdmission.ward_Information.ward_Id);
+      if (currentWard) {
+        const currentBed = currentWard.beds.find(b => {
+          if (!b || !b.bedNumber || !currentAdmission.ward_Information.bed_No) {
+            return false;
+          }
+          return b.bedNumber.toString() === currentAdmission.ward_Information.bed_No.toString();
+        });
+
+        if (currentBed) {
+          currentBed.occupied = false;
+          currentBed.currentPatient = null;
+
+          // Update discharge date in bed history
+          const currentStay = currentBed.history.find(
+            h => h.patientId && h.patientId.toString() === currentAdmission.patient.toString() && !h.dischargeDate
+          );
+          if (currentStay) {
+            currentStay.dischargeDate = new Date();
+            if (!currentStay.patientMRNo) {
+              currentStay.patientMRNo = patient.patient_MRNo;
+            }
+          }
+          await currentWard.save();
+          console.log(`Bed ${currentBed.bedNumber} freed up for patient discharge`);
+        }
+      }
+
+      // Set discharge date if not provided
+      if (!updateData.admission_Details?.discharge_Date) {
+        updateData.admission_Details = {
+          ...currentAdmission.admission_Details,
+          ...updateData.admission_Details,
+          discharge_Date: new Date()
+        };
+      }
+    }
+
     if (updateData.ward_Information &&
       (updateData.ward_Information.ward_Id !== currentAdmission.ward_Information.ward_Id.toString() ||
         updateData.ward_Information.bed_No !== currentAdmission.ward_Information.bed_No)) {
 
       console.log('Bed change detected - updating bed occupancy');
 
+      // Declare variables at the function scope level
+      let oldWard = null;
+      let newWard = null;
+
       // Free up the old bed
-      const oldWard = await hospitalModel.ward.findById(currentAdmission.ward_Information.ward_Id);
-      if (oldWard) {
-        const oldBed = oldWard.beds.find(b =>
-          b.bedNumber.toString() === currentAdmission.ward_Information.bed_No.toString()
-        );
+      oldWard = await hospitalModel.ward.findById(currentAdmission.ward_Information.ward_Id);
+
+      // ✅ MOVE DEBUG LOGS INSIDE THE BLOCK
+      console.log('Old ward beds:', oldWard?.beds?.map(b => ({
+        bedNumber: b.bedNumber,
+        hasBedNumber: !!b.bedNumber
+      })));
+      console.log('Current admission bed No:', currentAdmission.ward_Information.bed_No);
+
+      if (oldWard && oldWard.beds) {
+        const oldBed = oldWard.beds.find(b => {
+          if (!b || !b.bedNumber || !currentAdmission.ward_Information.bed_No) {
+            return false;
+          }
+          return b.bedNumber.toString() === currentAdmission.ward_Information.bed_No.toString();
+        });
+
         if (oldBed) {
           oldBed.occupied = false;
           oldBed.currentPatient = null;
 
           // Update discharge date in old bed history
           const currentStay = oldBed.history.find(
-            h => h.patientId.toString() === currentAdmission.patient.toString() && !h.dischargeDate
+            h => h.patientId && h.patientId.toString() === currentAdmission.patient.toString() && !h.dischargeDate
           );
           if (currentStay) {
             currentStay.dischargeDate = new Date();
@@ -385,7 +443,7 @@ const updateAdmission = async (req, res) => {
       }
 
       // Occupy the new bed
-      const newWard = await hospitalModel.ward.findById(updateData.ward_Information.ward_Id);
+      newWard = await hospitalModel.ward.findById(updateData.ward_Information.ward_Id);
       if (!newWard) {
         return res.status(404).json({
           success: false,
@@ -393,9 +451,19 @@ const updateAdmission = async (req, res) => {
         });
       }
 
-      const newBed = newWard.beds.find(b =>
-        b.bedNumber.toString() === updateData.ward_Information.bed_No.toString()
-      );
+      if (!newWard.beds) {
+        return res.status(400).json({
+          success: false,
+          message: "No beds found in the new ward"
+        });
+      }
+
+      const newBed = newWard.beds.find(b => {
+        if (!b || !b.bedNumber || !updateData.ward_Information.bed_No) {
+          return false;
+        }
+        return b.bedNumber.toString() === updateData.ward_Information.bed_No.toString();
+      });
 
       if (!newBed) {
         return res.status(400).json({
@@ -415,49 +483,20 @@ const updateAdmission = async (req, res) => {
       newBed.currentPatient = currentAdmission.patient;
       newBed.history.push({
         patientId: currentAdmission.patient,
-        patientMRNo: patient.patient_MRNo, // Use the patient's MR number
+        patientMRNo: patient.patient_MRNo,
         admissionDate: new Date()
       });
 
       await newWard.save();
     }
 
-    // Handle status changes to Discharged
-    if (updateData.status === "Discharged") {
-      console.log('Discharging patient');
+    // Set discharge date
+    updateData.admission_Details = {
+      ...currentAdmission.admission_Details,
+      ...updateData.admission_Details,
+      discharge_Date: new Date()
+    };
 
-      // Free up the current bed
-      const currentWard = await hospitalModel.ward.findById(currentAdmission.ward_Information.ward_Id);
-      if (currentWard) {
-        const currentBed = currentWard.beds.find(b =>
-          b.bedNumber.toString() === currentAdmission.ward_Information.bed_No.toString()
-        );
-        if (currentBed) {
-          currentBed.occupied = false;
-          currentBed.currentPatient = null;
-
-          // Update discharge date in bed history
-          const currentStay = currentBed.history.find(
-            h => h.patientId.toString() === currentAdmission.patient.toString() && !h.dischargeDate
-          );
-          if (currentStay) {
-            currentStay.dischargeDate = new Date();
-            // Ensure patientMRNo is set
-            if (!currentStay.patientMRNo) {
-              currentStay.patientMRNo = patient.patient_MRNo;
-            }
-          }
-          await currentWard.save();
-        }
-      }
-
-      // Set discharge date
-      updateData.admission_Details = {
-        ...currentAdmission.admission_Details,
-        ...updateData.admission_Details,
-        discharge_Date: new Date()
-      };
-    }
 
     // Update the admission record
     const updatedAdmission = await hospitalModel.AdmittedPatient.findByIdAndUpdate(
