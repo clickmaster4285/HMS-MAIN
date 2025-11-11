@@ -25,6 +25,12 @@ router.put(
   passport.authenticate('jwt', { session: false }),
   controller.updateReport
 );
+
+router.patch(
+  '/update-final-content/:id',
+  passport.authenticate('jwt', { session: false }),
+  controller.updateFinalContent
+);
 router.get(
   '/get-reports-byid/:id',
   passport.authenticate('jwt', { session: false }),
@@ -37,10 +43,16 @@ router.get(
   controller.getRadiologyReportSummary
 );
 
+// routes
 router.get(
-  '/get-report-by-mrno/:mrno',
+  '/reports-by-mrno/:mrno',
   passport.authenticate('jwt', { session: false }),
   controller.getReportByMrno
+);
+router.delete(
+  '/delete-template/:studyId',
+  passport.authenticate('jwt', { session: false }),
+  controller.softDeleteStudyById
 );
 
 module.exports = router;

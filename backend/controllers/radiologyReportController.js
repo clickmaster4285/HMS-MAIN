@@ -1,16 +1,210 @@
 const fs = require('fs');
 const path = require('path');
+const mongoose = require('mongoose');
 // const RadiologyReport = require("../models/RadiologyReport");
 const utils = require('../utils/utilsIndex');
 const hospitalModel = require('../models/index.model');
+const {
+  getStaticPrice,
+  normalizeTemplateName,
+} = require('../utils/priceHelper');
 
 // Utility functions
-const loadTemplate = (templateName) => {
-  const filePath = path.join(__dirname, '../templates', `${templateName}.html`);
+const loadTemplate = (templateNameRaw) => {
+  const templateName = normalizeTemplateName(templateNameRaw);
+  const filePath = path.join(__dirname, '../templates', templateName);
   try {
     return fs.readFileSync(filePath, 'utf-8');
+  } catch {
+    throw new Error(`Template file not found: ${templateName}`);
+  }
+};
+
+const createReport = async (req, res) => {
+  try {
+    const { patient = {}, studies = [] } = req.body;
+    if (!Array.isArray(studies) || studies.length === 0) {
+      return res
+        .status(400)
+        .json({ success: false, message: 'At least one study is required' });
+    }
+
+    // Ensure MRNO + ensure patient exists (no transaction)
+    const todayISO = new Date().toISOString().split('T')[0];
+    let finalMRNO = (patient.patientMRNO || '').trim();
+
+    if (!finalMRNO) {
+      finalMRNO = await utils.generateUniqueMrNo(todayISO);
+      await hospitalModel.Patient.updateOne(
+        { patient_MRNo: finalMRNO, deleted: false },
+        {
+          $setOnInsert: {
+            patient_MRNo: finalMRNO,
+            patient_Name: patient.patientName || 'Unknown',
+            gender: patient.sex || '',
+            patient_ContactNo: patient.patient_ContactNo || '',
+            age: patient.age || null,
+            deleted: false,
+          },
+        },
+        { upsert: true }
+      );
+    } else {
+      const exists = await hospitalModel.Patient.findOne({
+        patient_MRNo: finalMRNO,
+        deleted: false,
+      }).lean();
+      if (!exists) {
+        return res
+          .status(400)
+          .json({ success: false, message: 'MRNO not found in any patient' });
+      }
+      // optional header update
+      await hospitalModel.Patient.updateOne(
+        { patient_MRNo: finalMRNO, deleted: false },
+        {
+          $set: {
+            patient_Name: patient.patientName ?? exists.patient_Name,
+            gender: patient.sex ?? exists.gender,
+            patient_ContactNo:
+              patient.patient_ContactNo ?? exists.patient_ContactNo,
+            age: patient.age ?? exists.age,
+          },
+        }
+      );
+    }
+
+    const now = new Date();
+    const performerName = req.user?.user_Name || 'Unknown';
+    const performerId = req.user?.id || undefined;
+
+    const toInt = (v) => Math.max(0, Math.floor(Number(v) || 0));
+
+    // Build studies[]
+    const builtStudies = studies.map((s) => {
+      if (!s.templateName)
+        throw new Error('templateName is required for each study');
+
+      const html = loadTemplate(s.templateName);
+
+      // amount: prefer incoming totalAmount/amount; else static price
+      const incomingAmount = s.totalAmount ?? s.amount ?? 0;
+      let amount = toInt(incomingAmount);
+      let normalizedTemplate = '';
+
+      if (!amount) {
+        const { amount: defAmt, templateName: normalized } = getStaticPrice(
+          s.templateName
+        );
+        amount = toInt(defAmt);
+        normalizedTemplate = normalized; // ensured ".html"
+      } else {
+        normalizedTemplate = normalizeTemplateName(s.templateName);
+      }
+
+      // accept both totalPaid and paidAmount (for backward compat)
+      const discountRaw = s.discount ?? 0;
+      const paidRaw = s.totalPaid ?? s.paidAmount ?? s.advanceAmount ?? 0;
+
+      // clamp
+      const disc = Math.min(toInt(discountRaw), amount);
+      const maxPayable = Math.max(0, amount - disc);
+      const paid = Math.min(toInt(paidRaw), maxPayable);
+      const remain = Math.max(0, amount - disc - paid);
+
+      const status =
+        remain === 0 ? 'paid' : paid > 0 || disc > 0 ? 'partial' : 'pending';
+
+      return {
+        templateName: normalizedTemplate,
+        finalContent: html,
+        referBy: s.referBy || '',
+
+        totalAmount: amount,
+        discount: disc,
+        advanceAmount: paid, // keep if you use it elsewhere
+        totalPaid: paid, // <-- correct key
+        remainingAmount: remain,
+        refundableAmount: paid, // or 0 if you don’t treat advance as refundable
+        paymentStatus: status,
+
+        refunded: [],
+        history: [
+          { action: 'created', performedBy: performerName, createdAt: now },
+        ],
+      };
+    });
+
+    // Aggregate totals across studies
+    const totals = builtStudies.reduce(
+      (acc, st) => {
+        acc.aggTotalAmount += toInt(st.totalAmount);
+        acc.aggTotalDiscount += toInt(st.discount);
+        acc.aggTotalPaid += toInt(st.totalPaid);
+        acc.aggRemainingAmount += toInt(st.remainingAmount);
+        return acc;
+      },
+      {
+        aggTotalAmount: 0,
+        aggTotalDiscount: 0,
+        aggTotalPaid: 0,
+        aggRemainingAmount: 0,
+      }
+    );
+
+    const aggStatus =
+      totals.aggRemainingAmount === 0
+        ? 'paid'
+        : totals.aggTotalPaid > 0 || totals.aggTotalDiscount > 0
+        ? 'partial'
+        : 'pending';
+
+    // Save ONE document (also set top-level totals so they’re not 0)
+    const saved = await hospitalModel.RadiologyReport.create({
+      patientMRNO: finalMRNO,
+      patientName: patient.patientName || '',
+      patient_ContactNo: patient.patient_ContactNo || '',
+      age: patient.age || null,
+      sex: patient.sex || '',
+      date: now,
+      deleted: false,
+
+      studies: builtStudies,
+
+      // top-level totals (mirror of aggregates)
+      totalAmount: totals.aggTotalAmount,
+      discount: totals.aggTotalDiscount,
+      totalPaid: totals.aggTotalPaid,
+      remainingAmount: totals.aggRemainingAmount,
+      paymentStatus: aggStatus,
+      advanceAmount: totals.aggTotalPaid, // optional
+      refundableAmount: totals.aggTotalPaid, // optional
+      paidAfterReport: 0, // initial
+
+      // also keep agg* if your UI reads these
+      ...totals,
+      aggPaymentStatus: aggStatus,
+
+      performedBy: { name: performerName, id: performerId },
+      createdBy: performerId,
+      history: [
+        {
+          action: 'bundle_created',
+          performedBy: performerName,
+          createdAt: now,
+        },
+      ],
+    });
+
+    return res
+      .status(201)
+      .json({ success: true, patientMRNO: finalMRNO, data: saved });
   } catch (error) {
-    throw new Error(`Template ${templateName} not found`);
+    console.error('createBundleReport error:', error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to create bundle report',
+    });
   }
 };
 
@@ -35,265 +229,514 @@ const getAvailableTemplates = async (req, res) => {
     });
   }
 };
-
-// ---- helpers ----
-const normalizeTemplates = (t) => {
-  const list = Array.isArray(t) ? t : [t];
-  return list.filter(Boolean).map((x) => {
-    const name = String(x).trim();
-    return name.toLowerCase().endsWith('.html') ? name : `${name}.html`;
-  });
-};
-
-const toStringArray = (v) =>
-  (Array.isArray(v) ? v : [v]).map((x) => (x == null ? '' : String(x)));
-
-const genHtmlFromTemplate = (tpl) =>
-  `<h2 style="text-align:center;"><strong>${tpl.replace(
-    '.html',
-    ''
-  )}</strong></h2>`;
-
-const safeNum = (v, def = 0) => {
-  const n = Number(v);
-  return Number.isFinite(n) ? n : def;
-};
-
-const createReport = async (req, res) => {
-  try {
-    const {
-      patientMRNO,
-      patientName,
-      patient_ContactNo,
-      age, // NOTE: schema is Date; pass DOB/ISO date if you really use it
-      sex,
-      date, // optional report date
-      templateName, // string | string[]
-      finalContent, // string | string[] (optional now)
-      referBy,
-
-      totalAmount, // required (number)
-      paidAmount, // legacy field -> we map to advanceAmount
-      discount, // number
-    } = req.body;
-
-    // basic validation
-    if (
-      !templateName ||
-      (Array.isArray(templateName) && templateName.length === 0)
-    ) {
-      return res
-        .status(400)
-        .json({ message: 'Template name is required', statusCode: 400 });
-    }
-    if (totalAmount === undefined || totalAmount === null) {
-      return res
-        .status(400)
-        .json({ message: 'totalAmount is required', statusCode: 400 });
-    }
-
-    // normalize arrays
-    const templateArr = normalizeTemplates(templateName);
-
-    // build/generate finalContent array
-    let finalContentArr;
-    if (finalContent == null) {
-      // auto-generate HTML per template if frontend didn't send it
-      finalContentArr = templateArr.map((t) => genHtmlFromTemplate(t));
-    } else {
-      finalContentArr = toStringArray(finalContent);
-      if (finalContentArr.length !== templateArr.length) {
-        return res.status(400).json({
-          message: 'templateName and finalContent must be the same length.',
-          statusCode: 400,
-          details: {
-            templateCount: templateArr.length,
-            contentCount: finalContentArr.length,
-          },
-        });
-      }
-    }
-
-    // patient MRNO resolution / generation
-    const now = new Date();
-    const currentDate = now.toISOString().split('T')[0];
-
-    let finalMRNO = (patientMRNO || '').trim();
-    if (!finalMRNO) {
-      finalMRNO = await utils.generateUniqueMrNo(currentDate);
-    } else {
-      // verify MRNO exists in patients (optional)
-      const exists = await hospitalModel.Patient.exists({
-        deleted: false,
-        patient_MRNo: finalMRNO,
-      });
-    }
-
-    // user
-    const createdBy = req.user?.id || null;
-    const performedBy = {
-      name: req.user?.user_Name || 'Unknown',
-      id: req.user?.id || null,
-    };
-
-    // billing
-    const totalAmt = safeNum(totalAmount);
-    const discountAmt = safeNum(discount);
-    const totalPaid = safeNum(paidAmount); // we treat this as upfront/advance
-    const remainingAmount = Math.max(0, totalAmt - (totalPaid + discountAmt));
-    const paymentStatus =
-      remainingAmount <= 0 ? 'paid' : totalPaid > 0 ? 'partial' : 'pending';
-
-    // create report (one document per call)
-    const saved = await hospitalModel.RadiologyReport.create({
-      patientMRNO: finalMRNO,
-      patientName: patientName || '',
-      patient_ContactNo: patient_ContactNo || '',
-      age: age ? new Date(age) : null, // if this is DOB
-      sex: sex || '',
-      date: date ? new Date(date) : now,
-
-      templateName: templateArr, // array
-      finalContent: finalContentArr, // array
-
-      referBy: referBy || '',
-      deleted: false,
-
-      // Billing Info
-      totalAmount: totalAmt,
-      discount: discountAmt,
-      advanceAmount: totalPaid, // map paidAmount -> advanceAmount for consistency
-      paidAfterReport: 0,
-      totalPaid: totalPaid,
-      remainingAmount,
-      refundableAmount: totalPaid,
-      paymentStatus,
-
-      refunded: [],
-      history: [
-        {
-          action: 'created',
-          performedBy: performedBy.name || 'Unknown',
-          createdAt: now,
-        },
-      ],
-
-      performedBy,
-      createdBy,
-      createdAt: now,
-      updatedAt: now,
-    });
-
-    // shape response (kept close to your prior format)
-    const formattedResponse = {
-      ...saved.toObject(),
-      patientId: {
-        name: saved.patientName,
-        patient_ContactNo: saved.patient_ContactNo,
-        mrNo: saved.patientMRNO,
-        gender: saved.sex,
-        contactNo: saved.patient_ContactNo || '',
-      },
-      procedures: saved.templateName.map((t) => ({
-        name: t.replace('.html', ''),
-        price: null, // if you need per-procedure prices, send them and sum on total
-        advanceAmount: null,
-        discountAmount: null,
-        status: saved.paymentStatus,
-      })),
-    };
-
-    return res.status(201).json({ success: true, data: formattedResponse });
-  } catch (error) {
-    console.error('Error creating report:', error);
-    const msg = error?.message?.startsWith?.('Template')
-      ? error.message
-      : error?.message || 'Failed to create report.';
-    return res.status(500).json({ message: msg, statusCode: 500 });
-  }
-};
-
+// GET controller: hide deleted reports + hide deleted studies
+// GET: hide deleted reports and any studies with _delete/_deleted set to true or "true"
 const getReport = async (req, res) => {
   try {
-    const reports = await hospitalModel.RadiologyReport.find().sort({
-      createdAt: -1,
+    const [reportsRaw, patients] = await Promise.all([
+      hospitalModel.RadiologyReport.find({ deleted: { $ne: true } })
+        .sort({ createdAt: -1 })
+        .lean(),
+      hospitalModel.Patient.find({ deleted: false })
+        .sort({ createdAt: -1 })
+        .lean(),
+    ]);
+
+    const reports = reportsRaw.map((r) => {
+      const studies = (r.studies || [])
+        .filter((s) => {
+          const del =
+            s?._delete === true ||
+            s?._delete === 'true' ||
+            s?._deleted === true ||
+            s?._deleted === 'true';
+          return !del;
+        })
+        .map((s) => {
+          // strip flags so frontend never sees them
+          const { _delete, _deleted, ...rest } = s || {};
+          return rest;
+        });
+
+      return { ...r, studies };
     });
-    const patientlist = await hospitalModel.Patient.find({
-      deleted: false,
-    }).sort({ createdAt: -1 });
-    // console.log("sdf", reports);
+
     res.status(200).json({
       success: true,
       count: reports.length,
-      data: { reports, totalPatients: patientlist },
+      data: { reports, totalPatients: patients },
     });
   } catch (error) {
-    console.error('Error fetching reports:', error.message);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch reports.',
-    });
+    console.error('Error fetching reports:', error);
+    res
+      .status(500)
+      .json({ success: false, message: 'Failed to fetch reports.' });
   }
 };
 
 const updateReport = async (req, res) => {
   try {
     const { id } = req.params;
+    if (!id || !/^[0-9a-fA-F]{24}$/.test(id)) {
+      return res
+        .status(400)
+        .json({ success: false, message: 'Invalid report ID format' });
+    }
+
+    const report = await hospitalModel.RadiologyReport.findById(id);
+    if (!report) {
+      return res
+        .status(404)
+        .json({ success: false, message: 'Report not found' });
+    }
+    report.studies = Array.isArray(report.studies) ? report.studies : [];
+
+    const now = new Date();
+    const performerName = req.user?.user_Name || 'Unknown';
+    const performerId = req.user?.id;
+    const toInt = (v) => Math.max(0, Math.floor(Number(v) || 0));
+
+    // ---- normalize template once (.html only once) ----
+    const safeNormalizeTemplateName = (name) => {
+      const raw = String(name || '').trim();
+      if (!raw) return '';
+      const base = raw.replace(/(\.html)+$/i, '');
+      return `${base}.html`;
+    };
+
+    // optional wrappers (safe if helpers not present)
+    const getStaticPriceSafe = (templateName) => {
+      try {
+        if (typeof getStaticPrice === 'function') {
+          const out = getStaticPrice(templateName) || {};
+          if (out.templateName)
+            out.templateName = safeNormalizeTemplateName(out.templateName);
+          return out;
+        }
+      } catch (_) {}
+      return {
+        amount: 0,
+        templateName: safeNormalizeTemplateName(templateName),
+      };
+    };
+
+    const loadTemplateSafe = (templateName) => {
+      try {
+        if (typeof loadTemplate === 'function')
+          return loadTemplate(templateName) ?? '';
+      } catch (_) {}
+      return '';
+    };
+
+    const computeMoneyForStudy = (base, patch = {}) => {
+      const amount = toInt(
+        patch.totalAmount ?? patch.amount ?? base.totalAmount ?? 0
+      );
+
+      const newDiscountRaw =
+        patch.discount != null
+          ? toInt(patch.discount)
+          : toInt(base.discount || 0);
+      const addDiscount = toInt(patch.addDiscount || 0);
+      let discount = newDiscountRaw + addDiscount;
+
+      let paid = (() => {
+        if (patch.totalPaid != null) return toInt(patch.totalPaid);
+        if (patch.advanceAmount != null) return toInt(patch.advanceAmount);
+        if (patch.paidAmount != null) return toInt(patch.paidAmount);
+        return toInt(base.totalPaid || base.advanceAmount || 0);
+      })();
+      const addPayment = toInt(patch.addPayment || 0);
+      paid += addPayment;
+
+      discount = Math.min(discount, amount);
+      const maxPayable = Math.max(0, amount - discount);
+      paid = Math.min(paid, maxPayable);
+
+      const remaining = Math.max(0, amount - discount - paid);
+      const status =
+        remaining === 0
+          ? 'paid'
+          : paid > 0 || discount > 0
+          ? 'partial'
+          : 'pending';
+
+      return {
+        totalAmount: amount,
+        discount,
+        totalPaid: paid,
+        advanceAmount: paid,
+        remainingAmount: remaining,
+        refundableAmount: paid,
+        paymentStatus: status,
+      };
+    };
+
+    const buildNewStudy = (s) => {
+      if (!s?.templateName)
+        throw new Error('templateName is required for each study');
+
+      const normalizedTemplate = safeNormalizeTemplateName(s.templateName);
+      let amount = toInt(s.totalAmount ?? s.amount ?? 0);
+      if (!amount) {
+        const { amount: defAmt } = getStaticPriceSafe(normalizedTemplate);
+        amount = toInt(defAmt);
+      }
+
+      const html =
+        s.finalContent != null
+          ? s.finalContent
+          : loadTemplateSafe(normalizedTemplate);
+      const money = computeMoneyForStudy(
+        { totalAmount: amount, discount: 0, totalPaid: 0, advanceAmount: 0 },
+        s
+      );
+
+      return {
+        templateName: normalizedTemplate,
+        finalContent: html,
+        referBy: s.referBy || '',
+        ...money,
+        refunded: [],
+        history: [
+          { action: 'created', performedBy: performerName, createdAt: now },
+        ],
+      };
+    };
+
+    // ---------- 1) PATIENT HEADER ----------
     const {
+      patient = {},
       patientName,
+      patient_ContactNo,
       age,
       sex,
       date,
-      finalContent,
-      templateName,
-      patient_ContactNo,
-    } = req.body;
+    } = req.body || {};
 
-    const report = await hospitalModel.RadiologyReport.findById(id);
-    if (!report) return res.status(404).json({ message: 'Report not found' });
+    const newHeader = {
+      patientName: patient.patientName ?? patientName,
+      patient_ContactNo: patient.patient_ContactNo ?? patient_ContactNo,
+      age: patient.age ?? age,
+      sex: patient.sex ?? sex,
+      date,
+    };
 
-    // Update basic fields
-    report.patientName = patientName || report.patientName;
-    report.patient_ContactNo = patient_ContactNo || report.patient_ContactNo;
-    report.age = age || report.age;
-    report.sex = sex || report.sex;
-    report.date = date || report.date;
+    if (newHeader.patientName != null)
+      report.patientName = newHeader.patientName;
+    if (newHeader.patient_ContactNo != null)
+      report.patient_ContactNo = newHeader.patient_ContactNo;
+    if (newHeader.age != null) report.age = newHeader.age;
+    if (newHeader.sex != null) report.sex = newHeader.sex;
+    if (newHeader.date != null) report.date = newHeader.date;
 
-    // Handle template change
+    // keep patient doc in sync (no soft-delete filter anymore)
     if (
-      templateName &&
-      templateName !== report.templateName.replace('.html', '')
+      newHeader.patientName != null ||
+      newHeader.patient_ContactNo != null ||
+      newHeader.age != null ||
+      newHeader.sex != null
     ) {
-      const rawTemplate = loadTemplate(templateName);
-      report.finalContent = rawTemplate; //fillTemplate(rawTemplate);
-      report.templateName = `${templateName}.html`;
+      await hospitalModel.Patient.updateOne(
+        { patient_MRNo: report.patientMRNO },
+        {
+          $set: {
+            patient_Name:
+              newHeader.patientName ?? report.patientName ?? undefined,
+            patient_ContactNo:
+              newHeader.patient_ContactNo ??
+              report.patient_ContactNo ??
+              undefined,
+            age: newHeader.age ?? report.age ?? undefined,
+            gender: newHeader.sex ?? report.sex ?? undefined,
+          },
+        }
+      );
     }
 
-    // Manual content update takes precedence
-    if (finalContent) {
-      report.finalContent = finalContent;
+    // ---------- 2) STUDIES: HARD DELETE / EDIT / ADD ----------
+    const {
+      studies = undefined,
+      replaceStudies = false,
+      // Explicit hard removals
+      removeStudies = [], // mixed: ids or template names
+      removeById = [],
+      removeByTemplate = [],
+    } = req.body || {};
+
+    const isHex24 = (x) => typeof x === 'string' && /^[0-9a-fA-F]{24}$/.test(x);
+
+    // (A) Explicit removals before any edits/additions
+    const toRemoveIds = new Set(
+      [...removeById, ...removeStudies.filter(isHex24)].map(String)
+    );
+    const toRemoveNames = new Set(
+      [...removeByTemplate, ...removeStudies.filter((x) => !isHex24(x))].map(
+        safeNormalizeTemplateName
+      )
+    );
+
+    if (toRemoveIds.size || toRemoveNames.size) {
+      const before = report.studies.length;
+      report.studies = report.studies.filter(
+        (st) =>
+          !toRemoveIds.has(String(st._id)) &&
+          !toRemoveNames.has(safeNormalizeTemplateName(st.templateName))
+      );
+      const removed = before - report.studies.length;
+      if (removed > 0) {
+        report.history = report.history || [];
+        report.history.push({
+          action: `removed_${removed}_studies`,
+          performedBy: performerName,
+          createdAt: now,
+        });
+      }
     }
+
+    if (Array.isArray(studies)) {
+      if (replaceStudies) {
+        // Full replacement
+        const rebuilt = studies.map((s) => buildNewStudy(s));
+        const byName = new Map();
+        for (const st of rebuilt)
+          byName.set(safeNormalizeTemplateName(st.templateName), st);
+        report.studies = Array.from(byName.values()); // last wins
+      } else {
+        // Edit / Add in place
+        const byId = new Map(report.studies.map((st) => [String(st._id), st]));
+        const byName = new Map(
+          report.studies.map((st) => [
+            safeNormalizeTemplateName(st.templateName),
+            st,
+          ])
+        );
+
+        for (const s of studies) {
+          const incomingName = s?.templateName
+            ? safeNormalizeTemplateName(s.templateName)
+            : '';
+
+          if (s?._id && byId.has(String(s._id))) {
+            // EDIT by _id (with dedupe on rename)
+            const ex = byId.get(String(s._id));
+
+            // rename handling
+            if (incomingName) {
+              const currentName = safeNormalizeTemplateName(ex.templateName);
+              if (incomingName !== currentName) {
+                const target = byName.get(incomingName);
+                if (target && String(target._id) !== String(ex._id)) {
+                  // merge into target then drop ex
+                  const money = computeMoneyForStudy(
+                    target.toObject ? target.toObject() : target,
+                    s
+                  );
+                  if (s.finalContent != null)
+                    target.finalContent = s.finalContent;
+                  if (s.referBy != null) target.referBy = s.referBy;
+                  Object.assign(target, money);
+                  target.history = target.history || [];
+                  target.history.push({
+                    action: 'edited',
+                    performedBy: performerName,
+                    createdAt: now,
+                  });
+
+                  report.studies = report.studies.filter(
+                    (it) => String(it._id) !== String(ex._id)
+                  );
+                  byId.delete(String(ex._id));
+                  byName.delete(currentName);
+                  byName.set(incomingName, target);
+                  continue;
+                } else {
+                  ex.templateName = incomingName;
+                  byName.delete(currentName);
+                  byName.set(incomingName, ex);
+                }
+              }
+            }
+
+            if (s.finalContent != null) ex.finalContent = s.finalContent;
+            if (s.referBy != null) ex.referBy = s.referBy;
+
+            const money = computeMoneyForStudy(
+              ex.toObject ? ex.toObject() : ex,
+              s
+            );
+            Object.assign(ex, money);
+
+            ex.history = ex.history || [];
+            ex.history.push({
+              action: 'edited',
+              performedBy: performerName,
+              createdAt: now,
+            });
+          } else {
+            // ADD new or EDIT by name (no _id)
+            if (incomingName && byName.has(incomingName)) {
+              const ex = byName.get(incomingName);
+              if (s.finalContent != null) ex.finalContent = s.finalContent;
+              if (s.referBy != null) ex.referBy = s.referBy;
+              const money = computeMoneyForStudy(
+                ex.toObject ? ex.toObject() : ex,
+                s
+              );
+              Object.assign(ex, money);
+              ex.history = ex.history || [];
+              ex.history.push({
+                action: 'edited',
+                performedBy: performerName,
+                createdAt: now,
+              });
+            } else {
+              const fresh = buildNewStudy(s);
+              report.studies.push(fresh);
+              const key = safeNormalizeTemplateName(fresh.templateName);
+              byName.set(key, fresh);
+            }
+          }
+        }
+
+        // safety: collapse any duplicates by templateName (last wins)
+        const folded = new Map();
+        for (const st of report.studies) {
+          folded.set(safeNormalizeTemplateName(st.templateName), st);
+        }
+        report.studies = Array.from(folded.values());
+      }
+    }
+
+    // ---------- 2.5) REFER BY CASCADE (change one => change all) ----------
+    const pickCascadedReferBy = () => {
+      const top = (
+        req.body?.referBy ??
+        req.body?.patient?.ReferredBy ??
+        ''
+      ).trim();
+      if (top) return top;
+      if (Array.isArray(req.body?.studies)) {
+        for (const s of req.body.studies) {
+          const v = (s?.referBy ?? '').trim();
+          if (v) return v;
+        }
+      }
+      return '';
+    };
+
+    const candidateReferBy = pickCascadedReferBy();
+    const shouldCascade =
+      (req.body?.cascadeReferBy ?? true) && candidateReferBy; // default: cascade ON
+
+    if (shouldCascade) {
+      for (const st of report.studies) {
+        st.referBy = candidateReferBy;
+        st.history = st.history || [];
+        st.history.push({
+          action: 'referby_cascaded',
+          performedBy: performerName,
+          createdAt: now,
+        });
+      }
+      report.markModified('studies');
+    }
+
+    // ---------- 3) TOTALS ----------
+    const totals = (report.studies || []).reduce(
+      (acc, st) => {
+        acc.aggTotalAmount += toInt(st.totalAmount);
+        acc.aggTotalDiscount += toInt(st.discount);
+        acc.aggTotalPaid += toInt(st.totalPaid);
+        acc.aggRemainingAmount += toInt(st.remainingAmount);
+        return acc;
+      },
+      {
+        aggTotalAmount: 0,
+        aggTotalDiscount: 0,
+        aggTotalPaid: 0,
+        aggRemainingAmount: 0,
+      }
+    );
+
+    const aggStatus =
+      totals.aggRemainingAmount === 0
+        ? 'paid'
+        : totals.aggTotalPaid > 0 || totals.aggTotalDiscount > 0
+        ? 'partial'
+        : 'pending';
+
+    report.totalAmount = totals.aggTotalAmount;
+    report.discount = totals.aggTotalDiscount;
+    report.totalPaid = totals.aggTotalPaid;
+    report.remainingAmount = totals.aggRemainingAmount;
+    report.paymentStatus = aggStatus;
+    report.advanceAmount = totals.aggTotalPaid;
+    report.refundableAmount = totals.aggTotalPaid;
+
+    report.aggTotalAmount = totals.aggTotalAmount;
+    report.aggTotalDiscount = totals.aggTotalDiscount;
+    report.aggTotalPaid = totals.aggTotalPaid;
+    report.aggRemainingAmount = totals.aggRemainingAmount;
+    report.aggPaymentStatus = aggStatus;
+
+    report.history = report.history || [];
+    report.history.push({
+      action: 'bundle_updated',
+      performedBy: performerName,
+      createdAt: now,
+    });
+
+    if (!report.createdBy) report.createdBy = performerId;
+    report.performedBy = { name: performerName, id: performerId };
 
     await report.save();
 
-    res.status(200).json({ message: 'Report updated', report });
+    return res
+      .status(200)
+      .json({ success: true, message: 'Report updated', data: report });
   } catch (error) {
-    console.error('Update report error:', error.message);
-    res.status(500).json({ message: 'Failed to update report' });
+    console.error('updateReport error:', error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to update report',
+    });
   }
 };
 
 const getReportById = async (req, res) => {
   try {
     const { id } = req.params;
-    const report = await hospitalModel.RadiologyReport.findById(id);
 
-    if (!report) {
+    // also ignore deleted reports
+    const reportRaw = await hospitalModel.RadiologyReport.findOne({
+      _id: id,
+      deleted: { $ne: true },
+    }).lean();
+
+    if (!reportRaw) {
       return res.status(404).json({
         success: false,
         message: 'Report not found',
       });
     }
+
+    // filter out deleted studies
+    const studies = (reportRaw.studies || [])
+      .filter((s) => {
+        const del =
+          s?._delete === true ||
+          s?._delete === 'true' ||
+          s?._deleted === true ||
+          s?._deleted === 'true';
+        return !del;
+      })
+      .map((s) => {
+        const { _delete, _deleted, ...rest } = s || {};
+        return rest;
+      });
+
+    const report = { ...reportRaw, studies };
 
     res.status(200).json({
       success: true,
@@ -360,15 +803,17 @@ const getRadiologyReportSummary = async (req, res) => {
   }
 };
 
-// GET /radiology/get-report-by-mrno/:mrno
+// controller
 const getReportByMrno = async (req, res) => {
   try {
     const { mrno } = req.params;
-    if (!mrno)
+    if (!mrno) {
       return res
         .status(400)
         .json({ success: false, message: 'mrno is required' });
+    }
 
+    // NOTE: ensure your RadiologyReport schema has { timestamps: true } to use updatedAt
     const doc = await hospitalModel.RadiologyReport.findOne({
       patientMRNO: mrno,
       deleted: false,
@@ -379,12 +824,195 @@ const getReportByMrno = async (req, res) => {
         .status(404)
         .json({ success: false, message: 'No report found for this MRNO' });
     }
+
     return res.json({ success: true, data: doc });
   } catch (e) {
     console.error('getReportByMrno error:', e);
     return res
       .status(500)
       .json({ success: false, message: 'Failed to fetch report' });
+  }
+};
+
+// GET: only return reports & studies that are marked deleted
+const softDeleteStudyById = async (req, res) => {
+  try {
+    const { studyId } = req.params;
+
+    const updated = await hospitalModel.RadiologyReport.findOneAndUpdate(
+      { 'studies._id': studyId, deleted: { $ne: true } },
+      {
+        $set: { 'studies.$._delete': true }, // store as boolean
+        $push: {
+          'studies.$.history': {
+            action: 'soft_deleted',
+            performedBy: req.user?.user_Name || 'Unknown',
+            createdAt: new Date(),
+          },
+        },
+      },
+      { new: true, projection: { studies: { $elemMatch: { _id: studyId } } } }
+    ).lean();
+
+    if (!updated || !updated.studies?.[0]) {
+      return res
+        .status(404)
+        .json({ success: false, message: 'Study not found' });
+    }
+
+    res
+      .status(200)
+      .json({ success: true, message: 'Study soft-deleted', studyId });
+  } catch (e) {
+    console.error('softDeleteStudyById error:', e);
+    res.status(500).json({ success: false, message: 'Failed to delete study' });
+  }
+};
+
+
+
+const safeNormalizeTemplateName = (name) => {
+  const raw = String(name || '')
+    .trim()
+    .toLowerCase();;
+  if (!raw) return '';
+  const base = raw.replace(/(\.html)+$/i, '');
+  return `${base}.html`;
+};
+
+const isHex24 = (x) => typeof x === 'string' && /^[0-9a-fA-F]{24}$/.test(x);
+
+const updateFinalContent = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!id || !isHex24(id)) {
+      return res
+        .status(400)
+        .json({ success: false, message: 'Invalid report ID format' });
+    }
+
+    // Accept either:
+    // 1) { studyId, finalContent }
+    // 2) { templateName, finalContent }
+    // 3) { studies: [{ _id | templateName, finalContent }, ...] }
+    // finalContent is required for each target.
+    const payload = req.body || {};
+    const performerName = req.user?.user_Name || 'Unknown';
+    const performerId = req.user?.id;
+    const now = new Date();
+
+    // collect update intents into a uniform array
+    let intents = [];
+    if (Array.isArray(payload.studies)) {
+      intents = payload.studies.map((s) => ({
+        _id: s?._id || payload.studyId, // allow per-item _id
+        templateName: s?.templateName,
+        finalContent: s?.finalContent,
+      }));
+    } else {
+      intents.push({
+        _id: payload.studyId,
+        templateName: payload.templateName,
+        finalContent: payload.finalContent,
+      });
+    }
+
+    // validate intents
+    intents = intents
+      .map((it) => ({
+        _id: it?._id,
+        templateName: it?.templateName
+          ? safeNormalizeTemplateName(it.templateName)
+          : '',
+        finalContent: it?.finalContent,
+      }))
+      .filter((it) => typeof it.finalContent === 'string');
+
+    if (intents.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message:
+          'Provide at least one target with `finalContent` and either `_id` or `templateName`.',
+      });
+    }
+
+    const report = await hospitalModel.RadiologyReport.findById(id);
+    if (!report) {
+      return res
+        .status(404)
+        .json({ success: false, message: 'Report not found' });
+    }
+
+    report.studies = Array.isArray(report.studies) ? report.studies : [];
+
+    // index existing studies by id and by normalized templateName
+    const byId = new Map(report.studies.map((st) => [String(st._id), st]));
+    const byName = new Map(
+      report.studies.map((st) => [safeNormalizeTemplateName(st.templateName), st])
+    );
+
+    let updatedCount = 0;
+
+    for (const it of intents) {
+      let target = null;
+
+      if (it._id && byId.has(String(it._id))) {
+        target = byId.get(String(it._id));
+      } else if (it.templateName && byName.has(it.templateName)) {
+        target = byName.get(it.templateName);
+      }
+
+      if (!target) {
+        // If strict, skip silently. If you prefer a hard error, collect and report.
+        continue;
+      }
+
+      // ONLY update the HTML content; do not alter money/headers/totals.
+      target.finalContent = it.finalContent;
+
+      target.history = target.history || [];
+      target.history.push({
+        action: 'content_updated',
+        performedBy: performerName,
+        createdAt: now,
+      });
+
+      updatedCount += 1;
+    }
+
+    if (updatedCount === 0) {
+      return res.status(404).json({
+        success: false,
+        message:
+          'No matching studies were found by provided `_id` or `templateName`.',
+      });
+    }
+
+    // mark nested path modified so Mongoose persists changes
+    report.markModified('studies');
+
+    // optional: set performer meta without changing createdBy/etc.
+    report.performedBy = { name: performerName, id: performerId };
+    report.history = report.history || [];
+    report.history.push({
+      action: `final_content_updated_${updatedCount}_studies`,
+      performedBy: performerName,
+      createdAt: now,
+    });
+
+    await report.save();
+
+    return res.status(200).json({
+      success: true,
+      message: `Updated finalContent for ${updatedCount} stud${updatedCount > 1 ? 'ies' : 'y'}.`,
+      data: report,
+    });
+  } catch (error) {
+    console.error('updateFinalContent error:', error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to update final content',
+    });
   }
 };
 
@@ -396,4 +1024,6 @@ module.exports = {
   getReportById,
   getRadiologyReportSummary,
   getReportByMrno,
+  softDeleteStudyById,
+  updateFinalContent,
 };

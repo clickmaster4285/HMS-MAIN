@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+const mongoose = require('mongoose');
 
 const criticalTestSchema = new mongoose.Schema({
   testName: { type: String, required: true },
@@ -12,6 +12,7 @@ const criticalResultSchema = new mongoose.Schema(
     gender: { type: String },
     age: { type: String },
     mrNo: { type: String, required: true, index: true },
+    contactNo: { type: String, required: true },
     sampleCollectionTime: { type: String },
     reportDeliveryTime: { type: String },
     informedTo: { type: String },
@@ -22,4 +23,4 @@ const criticalResultSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-module.exports = mongoose.model("CriticalResult", criticalResultSchema);
+module.exports = mongoose.model('CriticalResult', criticalResultSchema);

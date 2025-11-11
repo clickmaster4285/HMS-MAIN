@@ -1,19 +1,14 @@
-import React, { useEffect, useState, useRef } from 'react';
+// src/pages/radiology/RadiologyPanel.jsx
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import {
   fetchAllRadiologyReports,
   fetchAvailableTemplates,
-  createRadiologyReport,
-  updateRadiologyReport,
 } from '../../features/Radiology/RadiologySlice';
-import { format } from 'date-fns';
-import RadiologyReportForm from './RadiologyReportForm';
 import {
   Box,
   Button,
-  Dialog,
-  DialogTitle,
-  DialogContent,
   TextField,
   MenuItem,
   Table,
@@ -34,16 +29,10 @@ import {
   TableFooter,
   TablePagination,
 } from '@mui/material';
-
-// Alias the inline date range picker
-import ReactDatePicker from 'react-datepicker';
-import 'react-datepicker/dist/react-datepicker.css';
-
-// MUI X pickers for the filter fields
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { DatePicker as MUIDatePicker } from '@mui/x-date-pickers/DatePicker';
-
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
 import {
   FiEye,
   FiFilter,
@@ -52,73 +41,33 @@ import {
   FiPlus,
   FiUser,
   FiCalendar,
-  FiEdit2,
   FiChevronLeft,
   FiChevronRight,
 } from 'react-icons/fi';
-import { useNavigate } from 'react-router-dom';
+import { format } from 'date-fns';
 import doctorList from '../../utils/doctors';
 import { motion } from 'framer-motion';
-
-// ---------- SAFE HELPERS ----------
-const s = (v) => (v ?? '').toString();
-
-const formatTemplates = (tplArr) => {
-  if (!Array.isArray(tplArr)) {
-    return s(tplArr).replace('.html', '').replace(/-/g, ' ');
-  }
-  return tplArr
-    .map((t) => s(t).replace('.html', '').replace(/-/g, ' '))
-    .filter(Boolean)
-    .join(', ');
-};
-
-const normalizeTemplates = (t) => {
-  const list = Array.isArray(t) ? t : [t];
-  return list.filter(Boolean).map((x) => {
-    const name = String(x).trim();
-    return name.toLowerCase().endsWith('.html') ? name : `${name}.html`;
-  });
-};
-// ----------------------------------
-
+// at the top of the file
+import { FlaskConical } from 'lucide-react';
+import { Pencil } from 'lucide-react';
 const RadiologyPanel = () => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
+
   const { reports, templates, isLoading, isError, error } = useSelector(
     (state) => state.radiology
   );
 
-  // FIX: correct user selection and guards
-  const user = useSelector((state) => state.auth?.user);
-  const access = user?.user_Access;
-  const isRadiology = access === 'Radiology';
-  const isAdmin = access === 'Admin';
+  const { user } = useSelector((state) => state.auth);
+  const isRadiology = user?.user_Access === 'Radiology';
+  const isAdmin = user?.user_Access === 'Admin';
+  const basePath = isRadiology ? '/radiology' : isAdmin ? '/admin' : '/lab';
 
-  const navigate = useNavigate();
-  const [errors, setErrors] = useState({});
-  const [isMRNLocked, setIsMRNLocked] = useState(false);
-  const [openDialog, setOpenDialog] = useState(false);
+  // Summary date picker (popover)
   const [showSummaryDatePicker, setShowSummaryDatePicker] = useState(false);
   const [summaryDates, setSummaryDates] = useState({
     startDate: new Date(),
     endDate: null,
-  });
-  const filterRef = useRef(null);
-
-  // Dialog form state: keep arrays to match API
-  const [newReport, setNewReport] = useState({
-    patientMRNO: '',
-    patientName: '',
-    patient_ContactNo: '',
-    age: null,
-    sex: '',
-    date: new Date(),
-    templateName: [], // array
-    finalContent: [], // array (optional; send only if you collect per-template HTML)
-    referBy: '',
-    totalAmount: '',
-    paidAmount: '',
-    discount: '',
   });
 
   // Pagination
@@ -140,144 +89,27 @@ const RadiologyPanel = () => {
     dispatch(fetchAvailableTemplates());
   }, [dispatch]);
 
-  const handleOpenDialog = () => setOpenDialog(true);
-
-  const handleCloseDialog = () => {
-    setOpenDialog(false);
-    setNewReport({
-      patientMRNO: '',
-      patientName: '',
-      patient_ContactNo: '',
-      age: null,
-      sex: '',
-      date: new Date(),
-      templateName: [], // keep arrays on reset
-      finalContent: [],
-      referBy: '',
-      totalAmount: '',
-      paidAmount: '',
-      discount: '',
-    });
-    setIsMRNLocked(false);
-  };
-
-  // Pagination handlers
-  const handleChangePage = (_event, newPage) => setPage(newPage);
-  const handleChangeRowsPerPage = (event) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
+  const handleChangePage = (_e, newPage) => setPage(newPage);
+  const handleChangeRowsPerPage = (e) => {
+    setRowsPerPage(parseInt(e.target.value, 10));
     setPage(0);
   };
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-
-    if (name === 'patientMRNO' && !isMRNLocked) {
-      const matchedPatient = (reports?.totalPatients || []).find(
-        (p) => s(p?.patient_MRNo) === s(value)
-      );
-
-      if (matchedPatient) {
-        setNewReport((prev) => ({
-          ...prev,
-          patientMRNO: value,
-          patientName: matchedPatient.patient_Name,
-          patient_ContactNo: matchedPatient.patient_ContactNo,
-          age: matchedPatient.patient_Age,
-          sex: matchedPatient.patient_Gender,
-        }));
-      } else {
-        setNewReport((prev) => ({
-          ...prev,
-          patientMRNO: value,
-          patientName: '',
-          patient_ContactNo: '',
-          age: null,
-          sex: '',
-        }));
-      }
-    } else {
-      setNewReport((prev) => ({
-        ...prev,
-        [name]: value,
-      }));
-    }
-  };
-
-  const handleAgeChange = (newDate) => {
-    setNewReport((prev) => ({
-      ...prev,
-      age: newDate,
-    }));
-  };
-
-  const handleSubmit = (formData) => {
-    // Normalize template names to array of ".html"
-    const templateArr = normalizeTemplates(formData.templateName);
-
-    // If you also collect per-template HTML, ensure same length and attach:
-    // const finalContent =
-    //   Array.isArray(formData.finalContent) && formData.finalContent.length === templateArr.length
-    //     ? formData.finalContent
-    //     : undefined; // omit to let backend auto-generate
-
-    const payload = {
-      patientMRNO: formData.patientMRNO,
-      patientName: formData.patientName,
-      patient_ContactNo: formData.patient_ContactNo,
-      age: formData.age ? formData.age.toISOString() : null,
-      sex: formData.sex,
-      date: formData.date
-        ? formData.date.toISOString()
-        : new Date().toISOString(),
-      referBy: formData.referBy,
-      templateName: templateArr, // send normalized array
-      // ...(finalContent ? { finalContent } : {}), // include only if you have it
-      totalAmount: Number(formData.totalAmount) || 0,
-      paidAmount: Number(formData.paidAmount) || 0,
-      discount: Number(formData.discount) || 0,
-    };
-
-    dispatch(createRadiologyReport(payload))
-      .unwrap()
-      .then(() => {
-        handleCloseDialog();
-        dispatch(fetchAllRadiologyReports());
-      })
-      .catch((err) => {
-        console.error('Error creating report:', err);
-        setErrors({
-          submit: 'Failed to create report. Please try again.',
-        });
-      });
-  };
-
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
-  };
-
-  const getInitials = (name) =>
-    s(name)
-      .trim()
-      .split(/\s+/)
-      .map((n) => n[0])
-      .join('')
-      .toUpperCase();
-
-  // Filters
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
     setFilters((prev) => ({ ...prev, [name]: value }));
     setPage(0);
   };
-
   const handleDateFilterChange = (name, value) => {
     setFilters((prev) => ({ ...prev, [name]: value }));
     setPage(0);
+  };
+  // Helper (put near your component)
+  const capFirst = (str) => {
+    const s = String(str || '')
+      .replace(/\.html$/i, '')
+      .replace(/-/g, ' ')
+      .trim();
+    return s ? s[0].toUpperCase() + s.slice(1) : '';
   };
 
   const resetFilters = () => {
@@ -290,37 +122,44 @@ const RadiologyPanel = () => {
     });
     setPage(0);
   };
+  const mode = 'edit';
+  const formatDateCell = (dateString) => {
+    const d = new Date(dateString);
+    return d.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+  };
+  const formatTemplateName = (name) =>
+    Array.isArray(name)
+      ? name
+          .map((n) => String(n).replace('.html', '').replace(/-/g, ' '))
+          .join(', ')
+      : typeof name === 'string'
+      ? name.replace('.html', '').replace(/-/g, ' ')
+      : 'N/A';
 
-  // Filter reports based on filter criteria
-  const filteredReports = (
-    Array.isArray(reports?.reports) ? reports.reports : []
-  ).filter((report) => {
-    // Search term filter
-    if (filters.searchTerm) {
-      const q = s(filters.searchTerm).toLowerCase();
-      const hit =
-        s(report?.patientMRNO).toLowerCase().includes(q) ||
-        s(report?.patientName).toLowerCase().includes(q) ||
-        s(report?.patientCNIC).includes(filters.searchTerm);
-      if (!hit) return false;
+  const filteredReports = (reports?.reports || []).filter((report) => {
+    const term = filters.searchTerm?.toLowerCase();
+    if (term) {
+      const match =
+        report.patientMRNO?.toLowerCase().includes(term) ||
+        report.patientName?.toLowerCase().includes(term) ||
+        (report.patientCNIC &&
+          String(report.patientCNIC).includes(filters.searchTerm));
+      if (!match) return false;
     }
-
-    // Gender
     if (filters.gender && report.sex !== filters.gender) return false;
-
-    // Doctor
     if (filters.doctor && report.referBy !== filters.doctor) return false;
 
-    // Date range
     const reportDate = new Date(report.date);
     if (filters.fromDate && reportDate < new Date(filters.fromDate))
       return false;
     if (filters.toDate && reportDate > new Date(filters.toDate)) return false;
-
     return true;
   });
 
-  // Pagination
   const paginatedReports = filteredReports.slice(
     page * rowsPerPage,
     page * rowsPerPage + rowsPerPage
@@ -328,6 +167,7 @@ const RadiologyPanel = () => {
 
   return (
     <Box sx={{ padding: 3, backgroundColor: '#f9fafb', minHeight: '100vh' }}>
+      {/* Header */}
       <Box
         sx={{
           display: 'flex',
@@ -343,6 +183,7 @@ const RadiologyPanel = () => {
         >
           Radiology Reports
         </Typography>
+
         <Box sx={{ display: 'flex', gap: 2 }}>
           <TextField
             variant="outlined"
@@ -364,6 +205,7 @@ const RadiologyPanel = () => {
             value={filters.searchTerm}
             onChange={handleFilterChange}
           />
+
           <Button
             variant="outlined"
             onClick={() => setShowFilters(!showFilters)}
@@ -382,6 +224,7 @@ const RadiologyPanel = () => {
           >
             Filters
           </Button>
+
           <motion.div className="relative">
             <Button
               variant="contained"
@@ -392,7 +235,7 @@ const RadiologyPanel = () => {
                 color: 'white',
                 textTransform: 'none',
                 px: 3,
-                marginX: 1,
+                mx: 1,
                 boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
                 '&:hover': {
                   backgroundColor: '#004B44',
@@ -402,7 +245,8 @@ const RadiologyPanel = () => {
             >
               Summary
             </Button>
-            {/* Summary Date Picker Popover */}
+
+            {/* Summary date picker popover */}
             {showSummaryDatePicker && (
               <Box
                 sx={{
@@ -417,14 +261,13 @@ const RadiologyPanel = () => {
                   p: 2,
                 }}
               >
-                <ReactDatePicker
+                <DatePicker
                   selectsRange
                   startDate={summaryDates.startDate}
                   endDate={summaryDates.endDate}
-                  onChange={(dates) => {
-                    const [start, end] = dates;
-                    setSummaryDates({ startDate: start, endDate: end });
-                  }}
+                  onChange={([start, end]) =>
+                    setSummaryDates({ startDate: start, endDate: end })
+                  }
                   inline
                 />
                 <Box
@@ -446,33 +289,19 @@ const RadiologyPanel = () => {
                     onClick={() => {
                       const { startDate, endDate } = summaryDates;
                       const fmt = (d) => format(d, 'yyyy-MM-dd');
-
                       if (startDate && endDate) {
-                        if (isRadiology) {
-                          navigate(
-                            `/radiology/radiology-summer/${fmt(
-                              startDate
-                            )}_${fmt(endDate)}`
-                          );
-                        } else {
-                          navigate(
-                            `/lab/radiology-summer/${fmt(startDate)}_${fmt(
-                              endDate
-                            )}`
-                          );
-                        }
+                        navigate(
+                          `${basePath}/radiology-summer/${fmt(startDate)}_${fmt(
+                            endDate
+                          )}`
+                        );
                       } else if (startDate) {
-                        if (isRadiology) {
-                          navigate(
-                            `/radiology/radiology-summer/${fmt(startDate)}`
-                          );
-                        } else {
-                          navigate(`/lab/radiology-summer/${fmt(startDate)}`);
-                        }
+                        navigate(
+                          `${basePath}/radiology-summer/${fmt(startDate)}`
+                        );
                       } else {
                         alert('Please select at least one date.');
                       }
-
                       setShowSummaryDatePicker(false);
                     }}
                     variant="contained"
@@ -484,11 +313,34 @@ const RadiologyPanel = () => {
                 </Box>
               </Box>
             )}
+
+            {/* New Report now routes to a page */}
+            {isRadiology || (
+              <Button
+                variant="contained"
+                onClick={() => navigate(`${basePath}/RadiologyForm`)}
+                startIcon={<FiPlus />}
+                sx={{
+                  borderRadius: '8px',
+                  backgroundColor: '#009689',
+                  color: 'white',
+                  textTransform: 'none',
+                  px: 3,
+                  boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+                  '&:hover': {
+                    backgroundColor: '#004B44',
+                    boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
+                  },
+                }}
+              >
+                New Report
+              </Button>
+            )}
           </motion.div>
         </Box>
       </Box>
 
-      {/* Filter Section */}
+      {/* Filters */}
       <Collapse in={showFilters}>
         <Paper
           sx={{
@@ -500,7 +352,7 @@ const RadiologyPanel = () => {
           }}
         >
           <Grid container spacing={3}>
-            <Grid item className="w-24">
+            <Grid item xs="auto">
               <TextField
                 fullWidth
                 size="small"
@@ -517,7 +369,8 @@ const RadiologyPanel = () => {
                 <MenuItem value="Other">Other</MenuItem>
               </TextField>
             </Grid>
-            <Grid item className="w-24">
+
+            <Grid item xs="auto">
               <TextField
                 fullWidth
                 size="small"
@@ -529,53 +382,52 @@ const RadiologyPanel = () => {
                 sx={{ '& .MuiOutlinedInput-root': { borderRadius: '8px' } }}
               >
                 <MenuItem value="">All Doctors</MenuItem>
-                {doctorList.map((doctor, index) => (
-                  <MenuItem key={index} value={doctor}>
-                    {doctor}
+                {doctorList.map((d, i) => (
+                  <MenuItem key={i} value={d}>
+                    {d}
                   </MenuItem>
                 ))}
               </TextField>
             </Grid>
+
             <Grid item xs={12} sm={6} md={3}>
               <LocalizationProvider dateAdapter={AdapterDateFns}>
-                <MUIDatePicker
-                  label="From Date"
-                  value={filters.fromDate}
-                  onChange={(newValue) =>
-                    handleDateFilterChange('fromDate', newValue)
-                  }
-                  slotProps={{
-                    textField: {
-                      fullWidth: true,
-                      size: 'small',
-                      sx: {
+                <DatePicker
+                  selected={filters.fromDate}
+                  onChange={(val) => handleDateFilterChange('fromDate', val)}
+                  customInput={
+                    <TextField
+                      fullWidth
+                      size="small"
+                      label="From Date"
+                      sx={{
                         '& .MuiOutlinedInput-root': { borderRadius: '8px' },
-                      },
-                    },
-                  }}
+                      }}
+                    />
+                  }
                 />
               </LocalizationProvider>
             </Grid>
+
             <Grid item xs={12} sm={6} md={3}>
               <LocalizationProvider dateAdapter={AdapterDateFns}>
-                <MUIDatePicker
-                  label="To Date"
-                  value={filters.toDate}
-                  onChange={(newValue) =>
-                    handleDateFilterChange('toDate', newValue)
-                  }
-                  slotProps={{
-                    textField: {
-                      fullWidth: true,
-                      size: 'small',
-                      sx: {
+                <DatePicker
+                  selected={filters.toDate}
+                  onChange={(val) => handleDateFilterChange('toDate', val)}
+                  customInput={
+                    <TextField
+                      fullWidth
+                      size="small"
+                      label="To Date"
+                      sx={{
                         '& .MuiOutlinedInput-root': { borderRadius: '8px' },
-                      },
-                    },
-                  }}
+                      }}
+                    />
+                  }
                 />
               </LocalizationProvider>
             </Grid>
+
             <Grid
               item
               xs={12}
@@ -597,6 +449,7 @@ const RadiologyPanel = () => {
         </Paper>
       </Collapse>
 
+      {/* Loading / Error */}
       {isLoading && (
         <Box sx={{ display: 'flex', justifyContent: 'center', mt: 8 }}>
           <CircularProgress sx={{ color: '#4f46e5' }} />
@@ -616,6 +469,7 @@ const RadiologyPanel = () => {
         </Box>
       )}
 
+      {/* Table */}
       <Paper
         sx={{
           borderRadius: '12px',
@@ -628,73 +482,30 @@ const RadiologyPanel = () => {
           <Table>
             <TableHead sx={{ backgroundColor: '#f9fafb' }}>
               <TableRow>
-                <TableCell
-                  sx={{
-                    color: '#374151',
-                    fontWeight: 600,
-                    borderBottom: '1px solid #e5e7eb',
-                  }}
-                >
-                  Patient
-                </TableCell>
-                <TableCell
-                  sx={{
-                    color: '#374151',
-                    fontWeight: 600,
-                    borderBottom: '1px solid #e5e7eb',
-                  }}
-                >
-                  MRN
-                </TableCell>
-                <TableCell
-                  sx={{
-                    color: '#374151',
-                    fontWeight: 600,
-                    borderBottom: '1px solid #e5e7eb',
-                  }}
-                >
-                  Details
-                </TableCell>
-                <TableCell
-                  sx={{
-                    color: '#374151',
-                    fontWeight: 600,
-                    borderBottom: '1px solid #e5e7eb',
-                  }}
-                >
-                  Procedure
-                </TableCell>
-                <TableCell
-                  sx={{
-                    color: '#374151',
-                    fontWeight: 600,
-                    borderBottom: '1px solid #e5e7eb',
-                  }}
-                >
-                  Referred By
-                </TableCell>
-                <TableCell
-                  sx={{
-                    color: '#374151',
-                    fontWeight: 600,
-                    borderBottom: '1px solid #e5e7eb',
-                  }}
-                >
-                  Date
-                </TableCell>
-                <TableCell
-                  sx={{
-                    color: '#374151',
-                    fontWeight: 600,
-                    borderBottom: '1px solid #e5e7eb',
-                  }}
-                >
-                  Actions
-                </TableCell>
+                {[
+                  'Patient',
+                  'MRN',
+                  'Details',
+                  'Procedure',
+                  'Referred By',
+                  'Date',
+                  'Actions',
+                ].map((h) => (
+                  <TableCell
+                    key={h}
+                    sx={{
+                      color: '#374151',
+                      fontWeight: 600,
+                      borderBottom: '1px solid #e5e7eb',
+                    }}
+                  >
+                    {h}
+                  </TableCell>
+                ))}
               </TableRow>
             </TableHead>
             <TableBody>
-              {paginatedReports.length > 0 ? (
+              {paginatedReports.length ? (
                 paginatedReports.map((report) => (
                   <TableRow
                     key={report._id}
@@ -709,33 +520,28 @@ const RadiologyPanel = () => {
                         sx={{ display: 'flex', alignItems: 'center', gap: 2 }}
                       >
                         <Avatar
-                          sx={{
-                            backgroundColor: '#009689',
-                            color: 'white',
-                          }}
+                          sx={{ backgroundColor: '#009689', color: 'white' }}
                         >
-                          {getInitials(report.patientName)}
+                          {(report.patientName || '')
+                            .split(' ')
+                            .map((n) => n[0])
+                            .join('')
+                            .toUpperCase()}
                         </Avatar>
                         <Box>
                           <Typography sx={{ fontWeight: 500 }}>
                             {report.patientName}
                           </Typography>
                           <Typography variant="body2" sx={{ color: '#6b7280' }}>
-                            {report.sex},{' '}
+                            {report.sex || 'N/A'},{' '}
                             {report.age
-                              ? new Date(report.age).toLocaleDateString(
-                                  'en-US',
-                                  {
-                                    year: 'numeric',
-                                    month: 'numeric',
-                                    day: 'numeric',
-                                  }
-                                )
+                              ? new Date(report.age).toLocaleDateString('en-US')
                               : 'N/A'}
                           </Typography>
                         </Box>
                       </Box>
                     </TableCell>
+
                     <TableCell>
                       <Chip
                         label={report.patientMRNO}
@@ -747,6 +553,7 @@ const RadiologyPanel = () => {
                         }}
                       />
                     </TableCell>
+
                     <TableCell>
                       <Box sx={{ display: 'flex', gap: 1 }}>
                         <Chip
@@ -758,53 +565,108 @@ const RadiologyPanel = () => {
                         />
                       </Box>
                     </TableCell>
+
+                    {/* teemplate name */}
+
                     <TableCell>
-                      <Typography sx={{ fontWeight: 500 }}>
-                        {formatTemplates(report?.templateName)}
+                      {report.studies?.length > 0 ? (
+                        <>
+                          {report.studies.slice(0, 2).map((s, idx) => (
+                            <div
+                              key={s._id || idx}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 6,
+                              }}
+                            >
+                              <FlaskConical
+                                size={14}
+                                className="text-primary-600"
+                              />
+                              <Typography sx={{ fontWeight: 500 }}>
+                                {capFirst(formatTemplateName(s.templateName))}
+                              </Typography>
+                            </div>
+                          ))}
+
+                          {report.studies.length > 2 && (
+                            <Typography
+                              sx={{
+                                color: '#6b7280',
+                                fontSize: 13,
+                                marginTop: 1,
+                              }}
+                            >
+                              +{report.studies.length - 2} more
+                            </Typography>
+                          )}
+                        </>
+                      ) : (
+                        <Typography sx={{ color: '#9ca3af' }}>N/A</Typography>
+                      )}
+                    </TableCell>
+
+                    <TableCell>
+                      <Typography>
+                        {report.studies?.[1]?.referBy?.trim() || 'N/A'}
                       </Typography>
                     </TableCell>
-                    <TableCell>
-                      <Typography>{report.referBy || 'N/A'}</Typography>
-                    </TableCell>
+
                     <TableCell>
                       <Box
                         sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
                       >
                         <FiCalendar color="#9ca3af" size={16} />
                         <Typography sx={{ color: '#6b7280' }}>
-                          {formatDate(report.date)}
+                          {formatDateCell(report.date)}
                         </Typography>
                       </Box>
                     </TableCell>
+
                     <TableCell>
-                      <Button
-                        onClick={() => {
-                          if (isRadiology) {
-                            navigate(
-                              `/radiology/RediologyPatientDetail/${report._id}`
-                            );
-                          } else if (isAdmin) {
-                            navigate(
-                              `/admin/RediologyPatientDetail/${report._id}`
-                            );
-                          } else {
-                            navigate(
-                              `/lab/RediologyPatientDetail/${report._id}`
-                            );
-                          }
-                        }}
-                        startIcon={<FiEye size={18} />}
-                        sx={{
-                          color: 'black',
-                          textTransform: 'none',
-                          '&:hover': {
-                            backgroundColor: 'rgba(79, 70, 229, 0.04)',
-                            color: '#004B44',
-                          },
-                        }}
-                      >
-                        View
-                      </Button>
+                      <div className="flex">
+                        <Button
+                          onClick={() => {
+                            if (isRadiology)
+                              navigate(
+                                `/radiology/RediologyPatientDetail/${report._id}`
+                              );
+                            else if (isAdmin)
+                              navigate(
+                                `/admin/RediologyPatientDetail/${report._id}`
+                              );
+                            else
+                              navigate(
+                                `/lab/RediologyPatientDetail/${report._id}`
+                              );
+                          }}
+                          startIcon={<FiEye size={18} />}
+                          sx={{
+                            color: 'black',
+                            textTransform: 'none',
+                            '&:hover': {
+                              backgroundColor: 'rgba(79,70,229,0.04)',
+                              color: '#004B44',
+                            },
+                          }}
+                        >
+                          View
+                        </Button>
+
+                        {isRadiology || (
+                          <Button
+                            onClick={() =>
+                              navigate(
+                                `${basePath}/RadiologyForm?mode=edit&id=${report._id}`
+                              )
+                            }
+                          >
+                            <Pencil className="w-4 h-4 text-primary-600" />
+                            <span className="ml-2 text-primary-600">Edit</span>
+                          </Button>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))
@@ -831,6 +693,7 @@ const RadiologyPanel = () => {
                 </TableRow>
               )}
             </TableBody>
+
             <TableFooter>
               <TableRow>
                 <TablePagination
@@ -864,62 +727,12 @@ const RadiologyPanel = () => {
                       </IconButton>
                     </Box>
                   )}
-                  sx={{
-                    '& .MuiTablePagination-selectLabel': { marginBottom: 0 },
-                    '& .MuiTablePagination-displayedRows': { marginBottom: 0 },
-                  }}
                 />
               </TableRow>
             </TableFooter>
           </Table>
         </TableContainer>
       </Paper>
-
-      {/* Dialog for adding report */}
-      <Dialog
-        open={openDialog}
-        onClose={handleCloseDialog}
-        fullWidth
-        maxWidth="sm"
-        PaperProps={{
-          sx: {
-            borderRadius: '16px',
-            boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)',
-          },
-        }}
-      >
-        <DialogTitle
-          sx={{
-            backgroundColor: '#00897b',
-            color: 'white',
-            fontWeight: 700,
-            py: 2,
-            px: 3,
-            fontSize: '1.25rem',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 1.5,
-            borderTopLeftRadius: '16px',
-            borderTopRightRadius: '16px',
-          }}
-        >
-          <FiEdit2 size={22} />
-          <span>New Radiology Report</span>
-        </DialogTitle>
-
-        <DialogContent sx={{ p: 3 }}>
-          <RadiologyReportForm
-            formData={newReport}
-            setFormData={setNewReport}
-            errors={errors}
-            setErrors={setErrors}
-            templates={templates}
-            onCancel={handleCloseDialog}
-            onSubmit={handleSubmit}
-            totalPatients={reports.totalPatients || []}
-          />
-        </DialogContent>
-      </Dialog>
     </Box>
   );
 };
