@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   getAllAdmittedPatients,
@@ -7,11 +7,9 @@ import {
   resetOperationStatus,
   selectFetchStatus,
   selectUpdateStatus,
-  // updatePatientAdmission
 } from '../../../features/ipdPatient/IpdPatientSlice';
 import { useNavigate } from 'react-router-dom';
 import { getallDepartments } from '../../../features/department/DepartmentSlice';
-// import { getwardsbydepartmentId } from '../../../features/ward/Wardslice';
 
 // Components
 import HeaderSection from './getall/HeaderSection';
@@ -21,7 +19,6 @@ import EmptyState from './getall/EmptyState';
 import SuccessModal from './getall/modals/SuccessModal';
 import DeleteModal from './getall/modals/DeleteModal';
 import Pagination from "./getall/Pagination"
-import { useCallback } from 'react';
 
 const AdmittedPatients = () => {
   const dispatch = useDispatch();
@@ -48,13 +45,24 @@ const AdmittedPatients = () => {
   });
   const [isUpdating, setIsUpdating] = useState(false);
 
-  // Load data with pagination
-  const loadPatients = useCallback((page = 1) => {
+  // Load data with pagination and status filter
+  const loadPatients = useCallback((page = 1, statusFilter = null) => {
+    let status = 'Admitted';
+
+    // Determine status based on active tab
+    if (activeTab === 'all-discharge') {
+      status = 'Discharged';
+    } else if (activeTab === 'all') {
+      status = 'Admitted,Discharged'; // Get both
+    }
+
     const params = {
       page,
       limit: 20,
-      ward_Type: activeTab !== 'all-admitted' && activeTab !== 'all-discharge' ? activeTab : undefined
+      status, // Add status parameter
+      ward_Type: activeTab !== 'all-admitted' && activeTab !== 'all-discharge' && activeTab !== 'all' ? activeTab : undefined
     };
+
     dispatch(getAllAdmittedPatients(params));
     setCurrentPage(page);
   }, [activeTab, dispatch]);
@@ -106,9 +114,9 @@ const AdmittedPatients = () => {
     return patientsList.filter(patient => {
       // Search filter applies to all tabs
       const matchesSearch = (
-        (patient.patient_MRNo || '').toLowerCase().includes(term) ||
-        (patient.patient_CNIC || '').toLowerCase().includes(term) ||
-        (patient.patient_Name || '').toLowerCase().includes(term) ||
+        (patient.patient?.patient_MRNo || '').toLowerCase().includes(term) ||
+        (patient.patient?.patient_CNIC || '').toLowerCase().includes(term) ||
+        (patient.patient?.patient_Name || '').toLowerCase().includes(term) ||
         (patient.ward_Information?.ward_Type || '').toLowerCase().includes(term) ||
         (patient.ward_Information?.ward_No || '').toLowerCase().includes(term) ||
         (patient.ward_Information?.bed_No || '').toLowerCase().includes(term) ||
@@ -133,25 +141,18 @@ const AdmittedPatients = () => {
         }
       }
 
-      // Tab-specific filtering
-      if (activeTab === 'all-admitted') {
-        return matchesSearch && matchesDate && patient.status?.toLowerCase() === 'admitted';
-      } else if (activeTab === 'all-discharge') {
-        return matchesSearch && matchesDate && patient.status?.toLowerCase() === 'discharged';
-      } else {
-        return matchesSearch && matchesDate &&
-          patient.status?.toLowerCase() === 'admitted' &&
-          (patient.ward_Information?.ward_Type || '').toLowerCase() === activeTab;
-      }
+      // Tab-specific filtering is now handled by the API
+      return matchesSearch && matchesDate;
     });
-  }, [patientsList, searchTerm, activeTab, dateRange]);
+  }, [patientsList, searchTerm, dateRange]);
 
   // Handlers
   const handleEditClick = (patient) => {
-    // Navigate to the new IPD edit form with MR number
-    navigate(`/receptionist/ipd/edit/${patient.patient.patient_MRNo}`);
+    if (patient.status === 'Admitted') {
+      navigate(`/receptionist/ipd/edit/${patient.patient.patient_MRNo}`);
+    }
   };
-console.log("the patient data",patientsList)
+
   const handleDeleteConfirm = () => {
     if (modals.delete.patientId) {
       dispatch(deleteAdmission(modals.delete.patientId));
@@ -176,7 +177,7 @@ console.log("the patient data",patientsList)
         id: patient._id,
         wardId: patient.ward_Information?.ward_Id,
         bedNumber: patient.ward_Information?.bed_No,
-        patientMRNo: patient.patient_MRNo
+        patientMRNo: patient.patient?.patient_MRNo
       };
       await dispatch(dischargePatient(dischargePayload));
     } catch (error) {
@@ -223,11 +224,51 @@ console.log("the patient data",patientsList)
         handleDateRangeChange={handleDateRangeChange}
       />
 
-      <WardTypeTabs
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        wardTypes={wardTypes}
-      />
+      {/* Updated tabs to include all patients */}
+      <div className="border-b border-gray-200 mb-6">
+        <nav className="-mb-px flex space-x-8">
+          <button
+            onClick={() => setActiveTab('all-admitted')}
+            className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'all-admitted'
+                ? 'border-primary-500 text-primary-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+          >
+            Admitted Patients
+          </button>
+          <button
+            onClick={() => setActiveTab('all-discharge')}
+            className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'all-discharge'
+                ? 'border-primary-500 text-primary-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+          >
+            Discharged Patients
+          </button>
+          <button
+            onClick={() => setActiveTab('all')}
+            className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'all'
+                ? 'border-primary-500 text-primary-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+          >
+            All Patients
+          </button>
+          {/* Ward type tabs */}
+          {wardTypes.map(wardType => (
+            <button
+              key={wardType}
+              onClick={() => setActiveTab(wardType)}
+              className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${activeTab === wardType
+                  ? 'border-primary-500 text-primary-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+            >
+              {wardType}
+            </button>
+          ))}
+        </nav>
+      </div>
 
       {/* Status Indicators */}
       {fetchStatus === 'pending' && (
@@ -264,6 +305,7 @@ console.log("the patient data",patientsList)
             handleDischarge={handleDischarge}
             setModals={setModals}
             isUpdating={isUpdating}
+            activeTab={activeTab} // Pass active tab to table
           />
 
           {/* Add Pagination */}

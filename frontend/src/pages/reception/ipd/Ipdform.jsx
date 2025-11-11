@@ -44,10 +44,6 @@ const IpdForm = ({ mode = "create" }) => {
     mode: formMode,
   } = ipdFormData;
 
-  console.log("Form data:", formData);
-  console.log("Current admission:", currentAdmission);
-  console.log("Admission status:", getAdmissionStatus);
-
   // FIXED: Proper loading states for edit mode
   if (formMode === "edit") {
     if (getAdmissionStatus === 'pending' || getAdmissionStatus === 'idle') {

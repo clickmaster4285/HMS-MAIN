@@ -54,14 +54,32 @@ export const getAllAdmittedPatients = createAsyncThunk(
   'ipdPatient/getAllAdmittedPatients',
   async (params = {}, { rejectWithValue }) => {
     try {
-      const { page = 1, limit = 20, ward_Type, search, ward_id, admission_Type } = params;
+      const {
+        page = 1,
+        limit = 20,
+        ward_Type,
+        search,
+        ward_id,
+        admission_Type,
+        status // ADD THIS PARAMETER
+      } = params;
+
       const response = await axios.get(
         `${API_URL}/admittedPatient/get-admitted-patients`,
         {
-          params: { page, limit, ward_Type, search, ward_id, admission_Type },
+          params: {
+            page,
+            limit,
+            ward_Type,
+            search,
+            ward_id,
+            admission_Type,
+            status // ADD THIS PARAMETER
+          },
           headers: getAuthHeaders()
         }
       );
+      console.log("API Response:", response.data);
       return response.data;
     } catch (error) {
       const message = error.response?.data?.message || 'Failed to fetch admitted patients';

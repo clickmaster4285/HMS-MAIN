@@ -138,13 +138,37 @@ const admittedPatient = async (req, res) => {
 
 const getAllAdmittedPatients = async (req, res) => {
   try {
-    const { ward_Type, search, ward_id, admission_Type, page = 1, limit = 20 } = req.query;
+    const {
+      ward_Type,
+      search,
+      ward_id,
+      admission_Type,
+      status = "Admitted", // Add status filter with default
+      page = 1,
+      limit = 20
+    } = req.query;
+
     const skip = (page - 1) * limit;
 
     let query = {
-      deleted: false,
-      status: "Admitted" // Only show admitted patients
+      deleted: false
     };
+
+    // Status filter - allow multiple statuses
+    if (status) {
+      if (status === 'all') {
+        // Show all non-deleted patients
+      } else if (status.includes(',')) {
+        // Multiple statuses (e.g., "Admitted,Discharged")
+        query.status = { $in: status.split(',').map(s => s.trim()) };
+      } else {
+        // Single status
+        query.status = status;
+      }
+    } else {
+      // Default to admitted only
+      query.status = "Admitted";
+    }
 
     if (ward_Type) {
       query["ward_Information.ward_Type"] = ward_Type;
@@ -158,10 +182,47 @@ const getAllAdmittedPatients = async (req, res) => {
       query["ward_Information.ward_Id"] = ward_id;
     }
 
+    // Search functionality across multiple fields
+    if (search) {
+      const searchRegex = new RegExp(search, 'i');
+
+      // Get patient IDs that match the search
+      const matchingPatients = await hospitalModel.Patient.find({
+        $or: [
+          { patient_MRNo: searchRegex },
+          { patient_Name: searchRegex },
+          { patient_CNIC: searchRegex }
+        ],
+        deleted: false
+      }).select('_id').lean();
+
+      const patientIds = matchingPatients.map(p => p._id);
+
+      if (patientIds.length > 0) {
+        query.patient = { $in: patientIds };
+      } else {
+        // If no matching patients found, return empty result
+        return res.status(200).json({
+          success: true,
+          count: 0,
+          total: 0,
+          page: parseInt(page),
+          pages: 0,
+          data: []
+        });
+      }
+    }
+
+    // Get total count for pagination
+    const total = await hospitalModel.AdmittedPatient.countDocuments(query);
+
     // Get patients with populated patient data
     let patients = await hospitalModel.AdmittedPatient.find(query)
       .populate('patient', 'patient_MRNo patient_Name patient_CNIC patient_Gender patient_DateOfBirth patient_Address patient_Guardian')
-      .sort({ "admission_Details.admission_Date": -1 })
+      .sort({
+        "admission_Details.admission_Date": -1,
+        "admission_Details.discharge_Date": -1
+      })
       .skip(skip)
       .limit(parseInt(limit))
       .lean();
@@ -181,7 +242,14 @@ const getAllAdmittedPatients = async (req, res) => {
     // Calculate days admitted and add ward details
     const patientsWithDetails = patients.map(patient => {
       const admissionDate = patient.admission_Details.admission_Date;
-      const daysAdmitted = Math.ceil((new Date() - admissionDate) / (1000 * 60 * 60 * 24));
+      const dischargeDate = patient.admission_Details.discharge_Date;
+
+      let daysAdmitted = 0;
+      if (patient.status === "Admitted") {
+        daysAdmitted = Math.ceil((new Date() - admissionDate) / (1000 * 60 * 60 * 24));
+      } else if (patient.status === "Discharged" && dischargeDate) {
+        daysAdmitted = Math.ceil((dischargeDate - admissionDate) / (1000 * 60 * 60 * 24));
+      }
 
       const wardId = patient.ward_Information?.ward_Id?.toString();
       const wardDetails = wardId ? wardMap[wardId] : null;
@@ -213,8 +281,6 @@ const getAllAdmittedPatients = async (req, res) => {
       };
     });
 
-    const total = await hospitalModel.AdmittedPatient.countDocuments(query);
-
     return res.status(200).json({
       success: true,
       count: patients.length,
@@ -227,7 +293,7 @@ const getAllAdmittedPatients = async (req, res) => {
     console.error("Fetch error:", error);
     return res.status(500).json({
       success: false,
-      message: "Failed to fetch admitted patients",
+      message: "Failed to fetch patients",
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
