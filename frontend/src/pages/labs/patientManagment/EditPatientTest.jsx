@@ -13,10 +13,13 @@ import PatientInfoForm from './PatientIno';
 import TestInformationForm from './TestInfo';
 
 // Helpers
+// put at top of EditPatientTest.jsx
 const getId = (v) => {
   if (!v) return '';
   if (typeof v === 'string') return v;
   if (v.$oid) return v.$oid;
+  if (v._id && typeof v._id === 'string') return v._id;
+  if (v._id && typeof v._id === 'object' && v._id.$oid) return v._id.$oid;
   if (v.$id) return v.$id;
   return String(v);
 };
@@ -76,6 +79,7 @@ const EditPatientTest = () => {
   const [additionalPayment, setAdditionalPayment] = useState(0);
   const [paymentHistory, setPaymentHistory] = useState([]);
   const [totalPayments, setTotalPayments] = useState(0);
+  const [additionalDiscount, setAdditionalDiscount] = useState(0);
 
   useEffect(() => {
     dispatch(fetchPatientTestById(id));
@@ -107,7 +111,7 @@ const EditPatientTest = () => {
       const disc = Number(td.discountAmount ?? 0);
       const paid = Number(td.advanceAmount ?? 0);
       const final = Math.max(0, price - disc);
-      const remaining = Number(td.remainingAmount ?? Math.max(0, final - paid));
+      const remaining = Math.max(0, final - paid);
 
       return {
         srNo: idx + 1,
@@ -131,10 +135,11 @@ const EditPatientTest = () => {
 
     setTestRows(rows);
 
-    // Recalculate totals from rows to keep UI consistent
+    // Recalculate totals from rows
+    const sumAmount = rows.reduce((s, r) => s + (r.amount || 0), 0);
     const sumDiscount = rows.reduce((s, r) => s + (r.discount || 0), 0);
+    const sumFinal = sumAmount - sumDiscount;
     const sumPaid = rows.reduce((s, r) => s + (r.paid || 0), 0);
-    const sumFinal = rows.reduce((s, r) => s + (r.finalAmount || 0), 0);
     const sumRemaining = Math.max(0, sumFinal - sumPaid);
 
     let paymentStatus = 'unpaid';
@@ -148,7 +153,7 @@ const EditPatientTest = () => {
     });
 
     setBilling({
-      totalAmount: sumFinal,
+      totalAmount: sumAmount,
       discountAmount: sumDiscount,
       advanceAmount: sumPaid,
       remainingAmount: sumRemaining,
@@ -157,7 +162,7 @@ const EditPatientTest = () => {
       paidAfterReport: rec.paidAfterReport ?? 0,
     });
 
-    // Seed history (optional)
+    // Seed history
     const initialPayments = [];
     if (sumPaid > 0) {
       initialPayments.push({
@@ -224,7 +229,6 @@ const EditPatientTest = () => {
       const disc = Number(rows[i].discount || 0);
       const paid = Number(rows[i].paid || 0);
       const final = Math.max(0, price - disc);
-
       rows[i].finalAmount = final;
       rows[i].remaining = Math.max(0, final - paid);
     } else {
@@ -233,74 +237,168 @@ const EditPatientTest = () => {
 
     setTestRows(rows);
 
-    const totalAmount = rows.reduce((s, r) => s + (r.finalAmount || 0), 0);
+    const totalAmount = rows.reduce((s, r) => s + (r.amount || 0), 0);
+    const totalDiscount = rows.reduce((s, r) => s + (r.discount || 0), 0);
+    const totalFinal = totalAmount - totalDiscount;
     const totalPaid = rows.reduce((s, r) => s + (r.paid || 0), 0);
-    const totalDisc = rows.reduce((s, r) => s + (r.discount || 0), 0);
-    const remaining = Math.max(0, totalAmount - totalPaid);
+    const remaining = Math.max(0, totalFinal - totalPaid);
 
-    setBilling((b) => ({
-      ...b,
+    setBilling((prev) => ({
+      ...prev,
       totalAmount,
-      discountAmount: totalDisc,
+      discountAmount: totalDiscount,
       advanceAmount: totalPaid,
       remainingAmount: remaining,
     }));
 
-    setMeta((m) => ({
-      ...m,
-      paymentStatus:
-        remaining === 0 && totalPaid > 0
-          ? 'paid'
-          : totalPaid > 0
-          ? 'partial'
-          : 'unpaid',
-    }));
+    let paymentStatus = 'unpaid';
+    if (remaining === 0 && totalPaid > 0) paymentStatus = 'paid';
+    else if (totalPaid > 0) paymentStatus = 'partial';
+    setMeta((prev) => ({ ...prev, paymentStatus }));
   };
 
   const handleRemoveRow = (i) => {
-    const updated = testRows
-      .filter((_, idx) => idx !== i)
-      .map((row, idx) => ({ ...row, quantity: idx + 1 }));
-    setTestRows(updated);
-  };
+    const updatedRows = testRows.filter((_, idx) => idx !== i);
+    const reNumbered = updatedRows.map((row, idx) => ({
+      ...row,
+      srNo: idx + 1,
+    }));
+    setTestRows(reNumbered);
 
-  const handleAdditionalPaymentChange = (e) => {
-    const value = Math.max(0, Number(e.target.value));
-    setAdditionalPayment(value);
-  };
+    const totalAmount = reNumbered.reduce((s, r) => s + (r.amount || 0), 0);
+    const totalDiscount = reNumbered.reduce((s, r) => s + (r.discount || 0), 0);
+    const totalFinal = totalAmount - totalDiscount;
+    const totalPaid = reNumbered.reduce((s, r) => s + (r.paid || 0), 0);
+    const remaining = Math.max(0, totalFinal - totalPaid);
 
-  const applyAdditionalPayment = () => {
-    if (additionalPayment <= 0) return;
-
-    const rows = [...testRows];
-    let remainingPayment = additionalPayment;
-
-    for (let i = 0; i < rows.length && remainingPayment > 0; i++) {
-      if (rows[i].remaining > 0) {
-        const paymentToApply = Math.min(remainingPayment, rows[i].remaining);
-        rows[i].paid += paymentToApply;
-        rows[i].remaining -= paymentToApply;
-        remainingPayment -= paymentToApply;
-      }
-    }
-
-    setTestRows(rows);
-
-    const totalAmount = rows.reduce((s, r) => s + (r.finalAmount || 0), 0);
-    const totalPaid = rows.reduce((s, r) => s + (r.paid || 0), 0);
-    const totalDisc = rows.reduce((s, r) => s + (r.discount || 0), 0);
-    const remaining = Math.max(0, totalAmount - totalPaid);
-
-    setBilling((b) => ({
-      ...b,
+    setBilling((prev) => ({
+      ...prev,
       totalAmount,
-      discountAmount: totalDisc,
+      discountAmount: totalDiscount,
       advanceAmount: totalPaid,
       remainingAmount: remaining,
     }));
 
-    setMeta((m) => ({
-      ...m,
+    let paymentStatus = 'unpaid';
+    if (remaining === 0 && totalPaid > 0) paymentStatus = 'paid';
+    else if (totalPaid > 0) paymentStatus = 'partial';
+    setMeta((prev) => ({ ...prev, paymentStatus }));
+  };
+
+  const applyOverallDiscount = (overallDiscount) => {
+    if (!testRows.length) return;
+
+    // Keep the original rows and totals to preserve totalPaid
+    const prevRows = testRows.map((r) => ({ ...r }));
+    const prevTotalPaid = prevRows.reduce((s, r) => s + asNum(r.paid), 0);
+
+    // Work on a fresh clone
+    const rows = prevRows.map((r) => ({ ...r }));
+
+    // Capacity for discount on each row = its amount
+    const caps = rows.map((r) => Math.max(0, asNum(r.amount)));
+    const totalCapacity = caps.reduce((s, c) => s + c, 0);
+
+    // Clamp target to what we can actually discount
+    const target = Math.max(0, Math.min(asNum(overallDiscount), totalCapacity));
+
+    // ---- Allocate the target discount (proportional, with full redistribution) ----
+    let alloc = rows.map((r, i) =>
+      Math.floor(target * (caps[i] / (totalCapacity || 1)))
+    );
+    let allocated = alloc.reduce((s, a) => s + a, 0);
+    let leftover = target - allocated;
+
+    // Spread rounding leftovers to largest capacity rows
+    const orderByCap = rows.map((_, i) => i).sort((a, b) => caps[b] - caps[a]);
+    for (const i of orderByCap) {
+      if (leftover <= 0) break;
+      if (alloc[i] < caps[i]) {
+        alloc[i] += 1;
+        leftover -= 1;
+      }
+    }
+
+    // Cap per row and collect overflow
+    let overflow = 0;
+    for (let i = 0; i < alloc.length; i++) {
+      if (alloc[i] > caps[i]) {
+        overflow += alloc[i] - caps[i];
+        alloc[i] = caps[i];
+      }
+    }
+
+    // Redistribute any overflow to rows with remaining room
+    if (overflow > 0) {
+      const byRemaining = rows
+        .map((_, i) => i)
+        .sort((a, b) => caps[b] - alloc[b] - (caps[a] - alloc[a]));
+      for (const i of byRemaining) {
+        if (overflow <= 0) break;
+        const room = caps[i] - alloc[i];
+        if (room <= 0) continue;
+        const give = Math.min(room, overflow);
+        alloc[i] += give;
+        overflow -= give;
+      }
+    }
+
+    // Apply discounts and compute new finals
+    for (let i = 0; i < rows.length; i++) {
+      const amount = asNum(rows[i].amount);
+      const rowDiscount = Math.max(0, Math.min(alloc[i], amount));
+      const final = Math.max(0, amount - rowDiscount);
+      rows[i].discount = rowDiscount;
+      rows[i].finalAmount = final;
+    }
+
+    // ---- Preserve total paid: redistribute previous total paid across new finals ----
+    const maxPayable = rows.reduce((s, r) => s + asNum(r.finalAmount), 0);
+    const targetPaid = Math.min(prevTotalPaid, maxPayable);
+
+    // Start from zero paid, then fill up to each row's final
+    for (const r of rows) {
+      r.paid = 0;
+      r.remaining = r.finalAmount;
+    }
+
+    // Greedy: pay rows with most remaining final first
+    let toPay = targetPaid;
+    const byCapacity = rows
+      .map((_, i) => i)
+      .sort((a, b) => rows[b].finalAmount - rows[a].finalAmount);
+
+    for (const i of byCapacity) {
+      if (toPay <= 0) break;
+      const cap = Math.max(0, asNum(rows[i].finalAmount) - asNum(rows[i].paid));
+      if (cap <= 0) continue;
+      const give = Math.min(cap, toPay);
+      rows[i].paid += give;
+      rows[i].remaining = Math.max(0, rows[i].finalAmount - rows[i].paid);
+      toPay -= give;
+    }
+
+    // Any excess beyond new finals becomes refundable
+    const refundableExtra = Math.max(0, prevTotalPaid - targetPaid);
+
+    // Recompute totals
+    const totalAmount = rows.reduce((s, r) => s + asNum(r.amount), 0);
+    const totalDiscount = rows.reduce((s, r) => s + asNum(r.discount), 0);
+    const totalPaid = rows.reduce((s, r) => s + asNum(r.paid), 0);
+    const remaining = Math.max(0, totalAmount - totalDiscount - totalPaid);
+
+    setTestRows(rows);
+    setBilling((prev) => ({
+      ...prev,
+      totalAmount,
+      discountAmount: totalDiscount,
+      advanceAmount: totalPaid, // ✅ stays the same unless overpaid overall
+      remainingAmount: remaining,
+      refundableAmount: asNum(prev.refundableAmount) + refundableExtra, // ✅ extra goes here
+    }));
+
+    setMeta((prev) => ({
+      ...prev,
       paymentStatus:
         remaining === 0 && totalPaid > 0
           ? 'paid'
@@ -308,324 +406,258 @@ const EditPatientTest = () => {
           ? 'partial'
           : 'unpaid',
     }));
-
-    setPaymentHistory((h) => [
-      ...h,
-      {
-        date: new Date().toISOString(),
-        amount: additionalPayment,
-        type: 'additional',
-        description: 'Remaining payment',
-      },
-    ]);
-    setTotalPayments((tp) => tp + additionalPayment);
-    setAdditionalPayment(0);
   };
 
-  // helpers in AddPatienttest.jsx
-  // helpers in EditPatientTest.jsx
-  const toNum = (v) => (Number.isFinite(Number(v)) ? Number(v) : 0);
-  const round2 = (n) => Math.round(n * 100) / 100;
+  // Put this helper inside the component
+  const asNum = (v) => {
+    const n = Number(v);
+    return Number.isFinite(n) ? n : 0;
+  };
+  const applyAdditionalDiscount = () => {
+    const add = Math.max(0, Number(additionalDiscount) || 0);
 
-  const applyOverallDiscount = (requestedDiscount) => {
+    // current totals from rows (source of truth)
+    const totalAmount = testRows.reduce((s, r) => s + asNum(r.amount), 0);
+    const currentDiscount = testRows.reduce((s, r) => s + asNum(r.discount), 0);
+
+    // you can never discount more than totalAmount
+    const maxExtra = Math.max(0, totalAmount - currentDiscount);
+
+    if (add <= 0 || add > maxExtra) {
+      toast.error('Invalid additional discount amount');
+      return;
+    }
+
+    // target overall discount = current + add
+    const targetOverallDiscount = currentDiscount + add;
+
+    // use your existing distributor to apply proportionally and clamp per-row
+    applyOverallDiscount(targetOverallDiscount);
+
+    // reset field
+    setAdditionalDiscount(0);
+  };
+  // --- REPLACE your current applyOverallPaid with this ---
+  const applyOverallPaid = (overallPaid) => {
+    // Clone rows so we can mutate safely
     const rows = [...testRows];
-    if (rows.length === 0) return;
 
-    const amounts = rows.map((r) => Math.max(0, toNum(r.amount)));
-    const totalAmount = amounts.reduce((s, n) => s + n, 0);
+    // Totals
+    const totalAmount = rows.reduce((s, r) => s + asNum(r.amount), 0);
+    const totalDiscount = rows.reduce((s, r) => s + asNum(r.discount), 0);
+    const maxFinal = Math.max(0, totalAmount - totalDiscount);
 
-    let remaining = Math.min(
-      Math.max(0, toNum(requestedDiscount)),
-      totalAmount
-    );
+    // Clamp the target overall paid
+    const target = Math.min(Math.max(0, asNum(overallPaid)), maxFinal);
 
-    // If nothing to apply, still normalize rows AND update billing/meta
-    if (totalAmount === 0 || remaining === 0) {
-      const fixed = rows.map((r, i) => {
-        const amount = amounts[i];
-        const discount = Math.min(amount, Math.max(0, toNum(r.discount)));
-        const final = round2(Math.max(0, amount - discount));
-        const paid = round2(toNum(r.paid));
-        return {
-          ...r,
-          amount,
-          discount,
-          finalAmount: final,
-          paid,
-          remaining: round2(Math.max(0, final - paid)),
-        };
-      });
-      setTestRows(fixed);
+    // Current sum paid from rows
+    const currentTotalPaid = rows.reduce((s, r) => s + asNum(r.paid), 0);
+    let delta = target - currentTotalPaid;
 
-      // 🔧 keep Billing Details & Payment Status in sync
-      const sumFinal = fixed.reduce((s, r) => s + (r.finalAmount || 0), 0);
-      const sumPaid = fixed.reduce((s, r) => s + (r.paid || 0), 0);
-      const sumDisc = fixed.reduce((s, r) => s + (r.discount || 0), 0);
-      const sumRemain = Math.max(0, sumFinal - sumPaid);
-
-      setBilling((b) => ({
-        ...b,
-        totalAmount: sumFinal,
-        discountAmount: sumDisc,
-        advanceAmount: sumPaid,
-        remainingAmount: sumRemain,
+    // If no positive increase, just recompute billing and exit
+    if (delta <= 0) {
+      const newRemaining = Math.max(0, maxFinal - currentTotalPaid);
+      setBilling((prev) => ({
+        ...prev,
+        totalAmount,
+        discountAmount: totalDiscount,
+        advanceAmount: currentTotalPaid,
+        remainingAmount: newRemaining,
       }));
-      setMeta((m) => ({
-        ...m,
+      setMeta((prev) => ({
+        ...prev,
         paymentStatus:
-          sumRemain === 0 && sumPaid > 0
+          newRemaining === 0 && currentTotalPaid > 0
             ? 'paid'
-            : sumPaid > 0
+            : currentTotalPaid > 0
             ? 'partial'
             : 'unpaid',
       }));
       return;
     }
 
-    // proportional spread
-    const targets = amounts.map((a) =>
-      totalAmount > 0 ? (remaining * a) / totalAmount : 0
-    );
-    const discounts = new Array(rows.length).fill(0);
-    let assigned = 0;
+    // Greedy distribute the delta to rows with the largest remaining capacity
+    const idxs = rows
+      .map((_, i) => i)
+      .sort((a, b) => {
+        const capA =
+          Math.max(0, asNum(rows[a].amount) - asNum(rows[a].discount)) -
+          asNum(rows[a].paid);
+        const capB =
+          Math.max(0, asNum(rows[b].amount) - asNum(rows[b].discount)) -
+          asNum(rows[b].paid);
+        return capB - capA; // descending by remaining cap
+      });
 
-    for (let i = 0; i < rows.length; i++) {
-      const cap = amounts[i];
-      const want = round2(targets[i]);
-      const give = Math.min(cap, want);
-      discounts[i] = give;
-      assigned += give;
+    for (const i of idxs) {
+      if (delta <= 0) break;
+      const final = Math.max(
+        0,
+        asNum(rows[i].amount) - asNum(rows[i].discount)
+      );
+      const cap = Math.max(0, final - asNum(rows[i].paid));
+      if (cap <= 0) continue;
+
+      const give = Math.min(cap, delta);
+      rows[i].paid = asNum(rows[i].paid) + give;
+      rows[i].finalAmount = final;
+      rows[i].remaining = Math.max(0, final - rows[i].paid);
+      delta -= give;
     }
 
-    let leftover = round2(remaining - assigned);
-    while (leftover > 0.000001) {
-      let progressed = false;
-      for (let i = 0; i < rows.length && leftover > 0.000001; i++) {
-        const room = round2(amounts[i] - discounts[i]);
-        if (room <= 0.000001) continue;
-        const give = round2(Math.min(room, leftover, 0.01));
-        discounts[i] = round2(discounts[i] + give);
-        leftover = round2(leftover - give);
-        progressed = true;
-      }
-      if (!progressed) break;
+    // Update rows
+    setTestRows(rows);
+
+    // Recompute totals
+    const newTotalPaid = rows.reduce((s, r) => s + asNum(r.paid), 0);
+    const newRemaining = Math.max(0, maxFinal - newTotalPaid);
+
+    // ✅ Record only the delta in history (not the overall total)
+    const added = newTotalPaid - currentTotalPaid;
+    if (added > 0) {
+      setPaymentHistory((prev) => [
+        ...prev,
+        {
+          date: new Date().toISOString(),
+          amount: added,
+          type: 'additional',
+          description: 'Additional payment',
+        },
+      ]);
+      setTotalPayments((prev) => prev + added);
     }
 
-    const out = rows.map((r, i) => {
-      const amount = amounts[i];
-      const discount = Math.min(amount, round2(discounts[i]));
-      const final = round2(Math.max(0, amount - discount));
-      const paid = round2(toNum(r.paid));
-      return {
-        ...r,
-        amount,
-        discount,
-        finalAmount: final,
-        paid,
-        remaining: round2(Math.max(0, final - paid)),
-      };
-    });
-
-    setTestRows(out);
-
-    // 🔧 keep Billing Details & Payment Status in sync
-    const sumFinal = out.reduce((s, r) => s + (r.finalAmount || 0), 0);
-    const sumPaid = out.reduce((s, r) => s + (r.paid || 0), 0);
-    const sumDisc = out.reduce((s, r) => s + (r.discount || 0), 0);
-    const sumRemain = Math.max(0, sumFinal - sumPaid);
-
-    setBilling((b) => ({
-      ...b,
-      totalAmount: sumFinal,
-      discountAmount: sumDisc,
-      advanceAmount: sumPaid,
-      remainingAmount: sumRemain,
+    // Update billing & payment status
+    setBilling((prev) => ({
+      ...prev,
+      totalAmount,
+      discountAmount: totalDiscount,
+      advanceAmount: newTotalPaid,
+      remainingAmount: newRemaining,
     }));
-    setMeta((m) => ({
-      ...m,
+
+    setMeta((prev) => ({
+      ...prev,
       paymentStatus:
-        sumRemain === 0 && sumPaid > 0
+        newRemaining === 0 && newTotalPaid > 0
           ? 'paid'
-          : sumPaid > 0
+          : newTotalPaid > 0
           ? 'partial'
           : 'unpaid',
     }));
   };
 
-  // B) Apply overall paid (never reduce existing paid)
-  const applyOverallPaid = (overallPaidRaw) => {
-    const overallPaid = Math.max(0, Number(overallPaidRaw) || 0);
+  const applyAdditionalPayment = () => {
+    const add = Math.max(0, Number(additionalPayment) || 0);
 
-    setTestRows((prev) => {
-      // Recompute finalAmount but KEEP existing paid as-is
-      const rows = prev.map((r) => {
-        const amount = Math.max(0, Number(r.amount) || 0);
-        const discount = Math.min(amount, Math.max(0, Number(r.discount) || 0));
-        const finalAmount = Math.max(0, amount - discount);
-        const paid = Number(r.paid) || 0; // <-- don't clamp or reset
-        return { ...r, finalAmount, paid };
-      });
+    // Compute current totals from rows (source of truth)
+    const amount = testRows.reduce((s, r) => s + asNum(r.amount), 0);
+    const discount = testRows.reduce((s, r) => s + asNum(r.discount), 0);
+    const maxFinal = Math.max(0, amount - discount);
+    const currentPaid = testRows.reduce((s, r) => s + asNum(r.paid), 0);
+    const canPayMore = Math.max(0, maxFinal - currentPaid);
 
-      const currSumPaid = rows.reduce((s, r) => s + (Number(r.paid) || 0), 0);
+    if (add <= 0) {
+      toast.error('Enter a payment greater than 0');
+      return;
+    }
+    if (add > canPayMore) {
+      toast.error(
+        `Payment cannot exceed remaining balance (${formatCurrency(
+          canPayMore
+        )})`
+      );
+      return;
+    }
 
-      // If the requested overallPaid is <= current sum, do NOT shrink paid.
-      if (overallPaid <= currSumPaid) {
-        return rows.map((r) => ({
-          ...r,
-          remaining: Math.max(
-            0,
-            Math.round((r.finalAmount - (Number(r.paid) || 0)) * 100) / 100
-          ),
-        }));
-      }
-
-      // Otherwise, distribute ONLY the extra over current sum across rows (first→last)
-      let extra = overallPaid - currSumPaid;
-
-      const next = rows.map((r) => {
-        if (extra <= 0 || r.finalAmount === 0) {
-          return {
-            ...r,
-            remaining: Math.max(
-              0,
-              Math.round((r.finalAmount - (Number(r.paid) || 0)) * 100) / 100
-            ),
-          };
-        }
-        const headroom = Math.max(0, r.finalAmount - (Number(r.paid) || 0));
-        const add = Math.min(headroom, extra);
-        const newPaid = Math.round(((Number(r.paid) || 0) + add) * 100) / 100;
-        extra -= add;
-
-        return {
-          ...r,
-          paid: newPaid,
-          remaining: Math.max(
-            0,
-            Math.round((r.finalAmount - newPaid) * 100) / 100
-          ),
-        };
-      });
-
-      return next;
-    });
+    applyOverallPaid(currentPaid + add);
+    setAdditionalPayment(0);
   };
-
-  // ===== Derived totals for passing to TestInformationForm =====
-  const totalAmountCalc = testRows.reduce((s, r) => s + (r.amount || 0), 0);
-  const totalDiscountCalc = testRows.reduce((s, r) => s + (r.discount || 0), 0);
-  const totalFinalAmountCalc = testRows.reduce(
-    (s, r) => s + (r.finalAmount || 0),
-    0
-  );
-  const totalPaidCalc = testRows.reduce((s, r) => s + (r.paid || 0), 0);
-  const overallRemainingCalc = Math.max(
-    0,
-    totalFinalAmountCalc - totalPaidCalc
-  );
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const sumDiscount = testRows.reduce((s, r) => s + (r.discount || 0), 0);
-    const sumPaid = testRows.reduce((s, r) => s + (r.paid || 0), 0);
-    const sumFinal = testRows.reduce((s, r) => s + (r.finalAmount || 0), 0);
-    const sumRemain = Math.max(0, sumFinal - sumPaid);
+    if (!patient.Name || !patient.Gender || !patient.ContactNo) {
+      toast.error('Please fill all required patient fields');
+      return;
+    }
 
-    let paymentStatus = 'unpaid';
-    if (sumRemain === 0 && sumPaid > 0) paymentStatus = 'paid';
-    else if (sumPaid > 0) paymentStatus = 'partial';
+    if (testRows.length === 0) {
+      toast.error('Please add at least one test');
+      return;
+    }
+
+    const totalAmount = testRows.reduce((s, r) => s + (r.amount || 0), 0);
+    const totalDiscount = testRows.reduce((s, r) => s + (r.discount || 0), 0);
+    const totalFinal = totalAmount - totalDiscount;
+    const totalPaid = testRows.reduce((s, r) => s + (r.paid || 0), 0);
+    const remaining = Math.max(0, totalFinal - totalPaid);
 
     const payload = {
-      isExternalPatient: meta.isExternalPatient,
-      tokenNumber: meta.tokenNumber,
+      patientTestId: id,
       patient_Detail: {
-        patient_MRNo: patient.MRNo || '',
-        patient_CNIC: patient.CNIC || '',
-        patient_Name: patient.Name || '',
-        patient_ContactNo: patient.ContactNo || '',
-        patient_Gender: patient.Gender || '',
-        patient_Age: patient.Age || '',
-        referredBy: patient.ReferredBy || '',
-        patient_Guardian: patient.Guardian || '',
-        maritalStatus: patient.MaritalStatus || '',
+        patient_MRNo: patient.MRNo,
+        patient_CNIC: patient.CNIC,
+        patient_Name: patient.Name,
+        patient_Guardian: patient.Guardian,
+        patient_ContactNo: patient.ContactNo,
+        patient_Gender: patient.Gender,
+        patient_Age: patient.Age,
+        referredBy: patient.ReferredBy,
+        maritalStatus: patient.MaritalStatus,
       },
-      selectedTests: testRows.map((r) => ({
-        test: r.testId,
-        testStatus: r.testStatus || 'registered',
+      isExternalPatient: meta.isExternalPatient,
+      selectedTests: testRows.map((row) => ({
+        test: row.testId,
         testDetails: {
-          testName: r.testName,
-          testCode: r.testCode,
-          testPrice: Number(r.amount || 0),
-          discountAmount: Number(r.discount || 0),
-          advanceAmount: Number(r.paid || 0),
-          remainingAmount: Math.max(
-            0,
-            Number(r.finalAmount || 0) - Number(r.paid || 0)
-          ),
-          sampleStatus: r.sampleStatus || 'pending',
-          reportStatus: r.reportStatus || 'not_started',
-          testDate: r.sampleDate
-            ? new Date(r.sampleDate).toISOString()
-            : new Date().toISOString(),
+          testName: row.testName,
+          testCode: row.testCode,
+          testPrice: row.amount,
+          discountAmount: row.discount,
+          advanceAmount: row.paid,
+          remainingAmount: row.remaining,
+          testDate: row.sampleDate,
+          sampleStatus: row.sampleStatus,
+          reportStatus: row.reportStatus,
         },
-        statusHistory: r.statusHistory || [],
-        notes: r.notes || '',
+        testStatus: row.testStatus,
+        statusHistory: row.statusHistory,
+        notes: row.notes,
       })),
-      totalAmount: sumFinal,
-      discountAmount: sumDiscount,
-      advanceAmount: sumPaid,
-      remainingAmount: sumRemain,
-      totalPaid: sumPaid,
-      paymentStatus, // client view — server should still recompute
-      paidAfterReport: billing.paidAfterReport || 0,
-      cancelledAmount: billing.cancelledAmount || 0,
-      refundableAmount: billing.refundableAmount || 0,
-      performedBy: 'current_user',
+      financialSummary: {
+        totalAmount,
+        totalDiscount,
+        totalPaid,
+        totalRemaining: remaining,
+        cancelledAmount: billing.cancelledAmount,
+        refundableAmount: billing.refundableAmount,
+        paidAfterReport: billing.paidAfterReport,
+        paymentStatus: meta.paymentStatus,
+      },
+      tokenNumber: meta.tokenNumber,
     };
-   
+
     try {
-      await dispatch(updatepatientTest({ id, updateData: payload })).unwrap();
+      await dispatch(updatepatientTest(payload)).unwrap();
       toast.success('Patient test updated successfully');
       navigate(-1);
     } catch (err) {
-      console.error('Full error object:', err);
-      toast.error(
-        `Error updating patient test: ${err.message || err.payload?.message}`
-      );
+      console.error('❌ Update error:', err);
+      toast.error(`Update failed: ${err.message}`);
     }
   };
-
-  const amountAfterDiscount = Math.max(
-    0,
-    (patientTestById?.patientTest?.totalAmount ??
-      patientTestById?.totalAmount ??
-      0) - (billing?.discountAmount ?? 0)
+  const totalAmount = testRows.reduce((s, r) => s + (Number(r.amount) || 0), 0);
+  const currentDiscount = testRows.reduce(
+    (s, r) => s + (Number(r.discount) || 0),
+    0
   );
-
-  // put inside EditPatientTest component
-  const handleFormKeyDown = (e) => {
-    if (e.key !== 'Enter') return;
-
-    const el = e.target;
-    const tag = el.tagName; // 'INPUT' | 'TEXTAREA' | 'SELECT' | ...
-    const type = (el.type || '').toLowerCase();
-
-    // allow Enter inside textarea or on explicit buttons
-    const allow = tag === 'TEXTAREA' || type === 'button' || type === 'submit';
-
-    if (!allow) {
-      e.preventDefault(); // stops implicit form submit
-    }
-  };
-
+  const discountCapacity = Math.max(0, totalAmount - currentDiscount);
   return (
     <form
       onSubmit={handleSubmit}
-      onKeyDown={handleFormKeyDown}
       className="p-6 bg-white rounded shadow-md space-y-10"
     >
-      <div className=" -ml-6  bg-teal-600 py-6 text-white text-3xl font-bold shadow">
+      <div className="w-screen -ml-6 bg-teal-600 py-6 text-white text-3xl font-bold shadow">
         <h1 className="ml-4">Edit Patient Test</h1>
       </div>
 
@@ -641,6 +673,9 @@ const EditPatientTest = () => {
           handleSearch={() => {}}
           handleDobChange={setDob}
           setMode={() => {}}
+          useDefaultContact={false}
+          setUseDefaultContact={() => {}}
+          defaultContactNumber=""
         />
       </FormSection>
 
@@ -653,77 +688,28 @@ const EditPatientTest = () => {
           handleTestAdd={handleTestAdd}
           handleTestRowChange={handleTestRowChange}
           handleRemoveRow={handleRemoveRow}
-          totalAmount={totalAmountCalc}
-          totalDiscount={totalDiscountCalc}
-          totalFinalAmount={totalFinalAmountCalc}
-          totalPaid={totalPaidCalc}
-          overallRemaining={overallRemainingCalc}
-          applyOverallPaid={applyOverallPaid}
+          totalAmount={billing.totalAmount}
+          totalDiscount={billing.discountAmount}
+          totalFinalAmount={billing.totalAmount - billing.discountAmount}
+          totalPaid={billing.advanceAmount}
+          overallRemaining={billing.remainingAmount}
           applyOverallDiscount={applyOverallDiscount}
-          paidBoxValue={totalPaidCalc}
-          discountBoxValue={totalDiscountCalc}
+          applyOverallPaid={applyOverallPaid}
           mode="edit"
+          paidBoxValue={billing.advanceAmount}
+          discountBoxValue={billing.discountAmount}
         />
       </FormSection>
 
-      {/* Payment Summary */}
-      <FormSection title="Payment Summary" bgColor="bg-primary-700 text-white">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-          <div className="bg-gray-50 p-4 rounded-md">
-            <h3 className="text-lg font-medium mb-2">Billing Details</h3>
-            <div className="space-y-2">
-              <div className="flex justify-between">
-                <span>Total Amount:</span>
-                <span className="font-medium">
-                  {formatCurrency(billing.totalAmount)}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span>Discount:</span>
-                <span className="font-medium text-red-600">
-                  -{formatCurrency(billing.discountAmount)}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span>Total Paid:</span>
-                <span className="font-medium text-green-600">
-                  {formatCurrency(totalPayments)}
-                </span>
-              </div>
-              <div className="flex justify-between border-t pt-2 mt-2">
-                <span>Remaining Balance:</span>
-                <span
-                  className={`font-medium ${
-                    billing.remainingAmount > 0
-                      ? 'text-red-600'
-                      : 'text-green-600'
-                  }`}
-                >
-                  {formatCurrency(billing.remainingAmount)}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-gray-50 p-4 rounded-md">
-            <h3 className="text-lg font-medium mb-2">Payment Status</h3>
-            <div className="flex items-center justify-between mb-4">
-              <span>Current Status:</span>
-              <span
-                className={`px-3 py-1 rounded-full text-sm font-medium ${
-                  meta.paymentStatus === 'paid'
-                    ? 'bg-green-100 text-green-800'
-                    : meta.paymentStatus === 'partial'
-                    ? 'bg-yellow-100 text-yellow-800'
-                    : 'bg-red-100 text-red-800'
-                }`}
-              >
-                {meta.paymentStatus.toUpperCase()}
-              </span>
-            </div>
-            <div className="mt-2">
+      <FormSection
+        title="Billing Information"
+        bgColor="bg-primary-700 text-white"
+      >
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 gap-4">
+            <div className="max-w-xs">
               <label className="block text-sm font-medium text-gray-700">
-                Remaining Payment
+                Remaining Balance
               </label>
               <input
                 type="number"
@@ -736,151 +722,195 @@ const EditPatientTest = () => {
               </p>
             </div>
 
-            {billing.remainingAmount > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {billing.remainingAmount > 0 && (
+                <div className="mt-4">
+                  <label
+                    htmlFor="additionalPayment"
+                    className="block text-sm font-medium text-gray-700"
+                  >
+                    Additional Payment
+                  </label>
+                  <div className="mt-1 flex rounded-md shadow-sm">
+                    <input
+                      type="number"
+                      id="additionalPayment"
+                      name="additionalPayment"
+                      value={additionalPayment}
+                      onChange={(e) => {
+                        const v = Math.max(0, Number(e.target.value));
+                        setAdditionalPayment(v);
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          if (
+                            additionalPayment > 0 &&
+                            additionalPayment <= billing.remainingAmount
+                          ) {
+                            applyAdditionalPayment();
+                          }
+                        }
+                      }}
+                      min="0"
+                      max={billing.remainingAmount}
+                      className="flex-1 min-w-0 block w-full px-3 py-2 rounded-none rounded-l-md border border-gray-300 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                      placeholder="Enter amount"
+                    />
+
+                    <Button
+                      type="button"
+                      variant="primary"
+                      onClick={applyAdditionalPayment}
+                      disabled={
+                        additionalPayment <= 0 ||
+                        additionalPayment > billing.remainingAmount
+                      }
+                      className="rounded-l-none"
+                    >
+                      Apply
+                    </Button>
+                  </div>
+                </div>
+              )}
               <div className="mt-4">
                 <label
-                  htmlFor="additionalPayment"
+                  htmlFor="additionalDiscount"
                   className="block text-sm font-medium text-gray-700"
                 >
-                  Additional Payment
+                  Additional Discount
                 </label>
+
                 <div className="mt-1 flex rounded-md shadow-sm">
                   <input
                     type="number"
-                    id="additionalPayment"
-                    name="additionalPayment"
-                    value={additionalPayment}
+                    id="additionalDiscount"
+                    name="additionalDiscount"
+                    value={additionalDiscount}
                     onChange={(e) => {
                       const v = Math.max(0, Number(e.target.value));
-                      setAdditionalPayment(v);
+                      setAdditionalDiscount(v);
                     }}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') {
-                        e.preventDefault(); // don’t submit the form
+                        e.preventDefault();
                         if (
-                          additionalPayment > 0 &&
-                          additionalPayment <= billing.remainingAmount
+                          additionalDiscount > 0 &&
+                          additionalDiscount <= discountCapacity
                         ) {
-                          applyAdditionalPayment(); // run your Apply logic
+                          applyAdditionalDiscount();
                         }
                       }
                     }}
                     min="0"
-                    max={billing.remainingAmount}
+                    max={discountCapacity}
                     className="flex-1 min-w-0 block w-full px-3 py-2 rounded-none rounded-l-md border border-gray-300 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-                    placeholder="Enter amount"
+                    placeholder="Enter discount"
                   />
 
                   <Button
                     type="button"
                     variant="primary"
-                    onClick={applyAdditionalPayment}
+                    onClick={applyAdditionalDiscount}
                     disabled={
-                      additionalPayment <= 0 ||
-                      additionalPayment > billing.remainingAmount
+                      additionalDiscount <= 0 ||
+                      additionalDiscount > discountCapacity
                     }
                     className="rounded-l-none"
                   >
                     Apply
                   </Button>
                 </div>
-                <p className="mt-1 text-sm text-gray-500">
-                  Maximum: Rs. {Number(billing.remainingAmount || 0).toFixed(2)}
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {paymentHistory.length > 0 && (
-          <div className="mt-6">
-            <h3 className="text-lg font-medium mb-2">Payment History</h3>
-            <div className="bg-gray-50 p-4 rounded-md">
-              <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 rounded-md">
-                <table className="min-w-full divide-y divide-gray-300">
-                  <thead className="bg-gray-100">
-                    <tr>
-                      <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                        Date
-                      </th>
-                      <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                        Description
-                      </th>
-                      <th className="px-3 py-3.5 text-right text-sm font-semibold text-gray-900">
-                        Amount
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200 bg-white">
-                    {paymentHistory.map((payment, index) => (
-                      <tr key={index}>
-                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                          {new Date(payment.date).toLocaleDateString()}
-                        </td>
-                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                          {payment.description}
-                        </td>
-                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500 text-right">
-                          <span className="text-green-600 font-medium">
-                            +{formatCurrency(payment.amount)}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-
-                    <tr className="bg-gray-50 font-medium">
-                      <td
-                        colSpan="2"
-                        className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 text-right"
-                      >
-                        Discount:
-                      </td>
-                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 text-right">
-                        {' '}
-                        {formatCurrency(billing.discountAmount)}
-                      </td>
-                    </tr>
-                    <tr className="bg-gray-50 font-medium">
-                      <td
-                        colSpan="2"
-                        className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 text-right"
-                      >
-                        Total Amount:
-                      </td>
-                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 text-right">
-                        {' '}
-                        {formatCurrency(amountAfterDiscount)}
-                      </td>
-                    </tr>
-                    <tr className="bg-gray-50 font-medium">
-                      <td
-                        colSpan="2"
-                        className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 text-right"
-                      >
-                        Total Payments:
-                      </td>
-                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 text-right">
-                        {formatCurrency(totalPayments)}
-                      </td>
-                    </tr>
-
-                    <tr className="bg-gray-50 font-medium">
-                      <td
-                        colSpan="2"
-                        className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 text-right"
-                      >
-                        Remaining Payments:
-                      </td>
-                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 text-right">
-                        {formatCurrency(billing.remainingAmount)}
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
               </div>
             </div>
           </div>
-        )}
+
+          {paymentHistory.length > 0 && (
+            <div className="mt-6">
+              <h3 className="text-lg font-medium mb-2">Payment History</h3>
+              <div className="bg-gray-50 p-4 rounded-md">
+                <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 rounded-md">
+                  <table className="min-w-full divide-y divide-gray-300">
+                    <thead className="bg-gray-100">
+                      <tr>
+                        <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
+                          Date
+                        </th>
+                        <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
+                          Description
+                        </th>
+                        <th className="px-3 py-3.5 text-right text-sm font-semibold text-gray-900">
+                          Amount
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200 bg-white">
+                      {paymentHistory.map((payment, index) => (
+                        <tr key={index}>
+                          <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                            {new Date(payment.date).toLocaleDateString()}
+                          </td>
+                          <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                            {payment.description}
+                          </td>
+                          <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500 text-right">
+                            <span className="text-green-600 font-medium">
+                              +{formatCurrency(payment.amount)}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                      <tr className="bg-gray-50 font-medium">
+                        <td
+                          colSpan="2"
+                          className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 text-right"
+                        >
+                          Discount:
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 text-right">
+                          {formatCurrency(billing.discountAmount)}
+                        </td>
+                      </tr>
+                      <tr className="bg-gray-50 font-medium">
+                        <td
+                          colSpan="2"
+                          className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 text-right"
+                        >
+                          Total Amount:
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 text-right">
+                          {formatCurrency(billing.totalAmount)}
+                        </td>
+                      </tr>
+                      <tr className="bg-gray-50 font-medium">
+                        <td
+                          colSpan="2"
+                          className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 text-right"
+                        >
+                          Total Payments:
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 text-right">
+                          {formatCurrency(totalPayments)}
+                        </td>
+                      </tr>
+                      <tr className="bg-gray-50 font-medium">
+                        <td
+                          colSpan="2"
+                          className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 text-right"
+                        >
+                          Remaining Payments:
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 text-right">
+                          {formatCurrency(billing.remainingAmount)}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
       </FormSection>
 
       <ButtonGroup className="justify-end">

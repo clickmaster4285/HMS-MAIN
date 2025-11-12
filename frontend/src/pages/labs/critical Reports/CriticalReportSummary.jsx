@@ -25,7 +25,6 @@ const CriticalSummary = () => {
   const { date } = useParams();
   const dispatch = useDispatch();
 
-
   // ---- selector (resilient to slight slice naming differences) ----
   const summaryState = useSelector((s) => {
     const node =
@@ -114,14 +113,14 @@ const CriticalSummary = () => {
       doctorSignature: r.doctorSignature ?? '',
       tests: Array.isArray(r.tests)
         ? r.tests.map((t) => ({
-          testName:
-            t.testName ??
-            t.name ??
-            t.test?.name ??
-            t.testDetails?.name ??
-            '-',
-          criticalValue: t.criticalValue ?? t.value ?? t.result ?? '-',
-        }))
+            testName:
+              t.testName ??
+              t.name ??
+              t.test?.name ??
+              t.testDetails?.name ??
+              '-',
+            criticalValue: t.criticalValue ?? t.value ?? t.result ?? '-',
+          }))
         : [],
     }));
 
@@ -184,7 +183,7 @@ const CriticalSummary = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-8">
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-full mx-auto">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
           <div>
             <h1 className="text-3xl font-bold text-gray-800">
@@ -199,13 +198,13 @@ const CriticalSummary = () => {
           <div className="flex items-center gap-3">
             <div className="bg-white px-4 py-2 rounded-lg shadow-sm border border-gray-200">
               <span className="font-medium text-gray-700">Total Records: </span>
-              <span className="font-bold text-indigo-600">
+              <span className="font-bold text-primary-600">
                 {sortedRows.length /* or summary?.count ?? sortedRows.length */}
               </span>
             </div>
             <button
               onClick={handlePrint}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg shadow-sm transition-colors"
+              className="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg shadow-sm transition-colors"
             >
               Print Summary
             </button>
@@ -295,7 +294,7 @@ const CriticalSummary = () => {
                           </div>
                         </td>
                         <td className="px-6 py-4">
-                          <span className="bg-indigo-100 text-indigo-800 text-xs px-2 py-1 rounded-full">
+                          <span className="bg-primary-100 text-primary-800 text-xs px-2 py-1 rounded-full">
                             {Array.isArray(row.tests) ? row.tests.length : 0}{' '}
                             {Array.isArray(row.tests) && row.tests.length !== 1
                               ? 'tests'
@@ -304,7 +303,7 @@ const CriticalSummary = () => {
                         </td>
                         <td className="px-6 py-4">
                           <button
-                            className="p-1 text-indigo-600 hover:text-indigo-800"
+                            className="p-1 text-primary-600 hover:text-primary-800"
                             onClick={() => toggleRow(row._id)}
                           >
                             {expandedRow === row._id ? (
@@ -352,7 +351,7 @@ const CriticalSummary = () => {
                                 </h3>
                                 <div className="space-y-2 text-sm">
                                   {Array.isArray(row.tests) &&
-                                    row.tests.length ? (
+                                  row.tests.length ? (
                                     row.tests.map((t, i) => (
                                       <div
                                         key={i}

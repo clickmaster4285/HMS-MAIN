@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { toast } from 'react-toastify';
 import Select from 'react-select';
+import { debounce } from 'lodash';
 
 const TestInformationForm = ({
   testList,
@@ -13,6 +14,7 @@ const TestInformationForm = ({
   totalAmount,
   totalDiscount,
   totalPaid,
+  totalFinalAmount,
   overallRemaining,
   applyOverallDiscount,
   applyOverallPaid,
@@ -20,358 +22,339 @@ const TestInformationForm = ({
   paidBoxValue,
   discountBoxValue,
 }) => {
-  // integers only
-  const asInt = (v, max = 9_999_999) => {
-    const s = String(v ?? '').trim();
-    if (s === '') return 0;
-    const n = Number.parseInt(s.replace(/[^\d-]/g, ''), 10);
-    if (!Number.isFinite(n)) return 0;
-    return Math.min(Math.max(n, 0), max);
-  };
-  const fmtInt = (v) => {
-    const n = Number.isFinite(v) ? v : asInt(v);
-    return Number.isFinite(n) ? n.toLocaleString() : '—';
+  const [paidBox, setPaidBox] = useState('');
+  const [discountBox, setDiscountBox] = useState('');
+
+  // Convert input to non-negative number
+  const toNumber = (v) => {
+    const n = parseFloat(v);
+    return Number.isNaN(n) ? 0 : Math.max(0, n);
   };
 
-  // normalize testList
-  const list = Array.isArray(testList) ? testList : [];
-  const isLoadingTests = testList === undefined;
-  const noTestsAvailable = Array.isArray(testList) && testList.length === 0;
+  // Format number for display
+  const formatCurrency = (v) => (Number.isFinite(v) ? v.toLocaleString() : '—');
 
-  // overall boxes (local state mirrors parent and commits on blur/Enter)
-  const [paidBox, setPaidBox] = React.useState('');
-  const [discountBox, setDiscountBox] = React.useState('');
+  // Debounced updates for discount and paid
+  const debouncedApplyDiscount = useCallback(
+    debounce((value) => applyOverallDiscount?.(value), 500),
+    [applyOverallDiscount]
+  );
 
-  React.useEffect(() => {
+  const debouncedApplyPaid = useCallback(
+    debounce((value) => applyOverallPaid?.(value), 500),
+    [applyOverallPaid]
+  );
+
+  // Sync input fields with parent values
+  useEffect(() => {
     if (paidBoxValue !== undefined && paidBoxValue !== null) {
-      setPaidBox(String(paidBoxValue));
+      setPaidBox(String(toNumber(paidBoxValue)));
     }
   }, [paidBoxValue]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (discountBoxValue !== undefined && discountBoxValue !== null) {
-      setDiscountBox(String(discountBoxValue));
+      setDiscountBox(String(toNumber(discountBoxValue)));
     }
   }, [discountBoxValue]);
 
-  const handleAddTestWithValidation = (tId) => {
+  // Handle total discount input
+  const handleDiscountChange = (value) => {
+    const numericValue = toNumber(value);
+    setDiscountBox(value);
+
+    if (numericValue >= totalAmount) {
+      // Allow full amount
+      setDiscountBox(String(totalAmount)); // Cap at totalAmount
+      debouncedApplyDiscount(totalAmount);
+      return;
+    }
+
+    debouncedApplyDiscount(numericValue);
+  };
+
+  // Handle total paid input
+  const handlePaidChange = (value) => {
+    const numericValue = toNumber(value);
+    setPaidBox(value);
+
+    if (numericValue >= totalFinalAmount) {
+      // Allow full amount
+      setPaidBox(String(totalFinalAmount)); // Cap at totalFinalAmount
+      debouncedApplyPaid(totalFinalAmount);
+      return;
+    }
+
+    debouncedApplyPaid(numericValue);
+  };
+
+  // Validate and add test
+  const handleAddTest = () => {
+    if (!selectedTestId) {
+      toast.error('Please select a test');
+      return;
+    }
+
+    if (testRows.some((row) => row.testId === selectedTestId)) {
+      toast.error('This test is already added');
+      return;
+    }
+
     try {
-      const id = tId ?? selectedTestId;
-      if (!id) return toast.error('Please select a test to add');
-
-      const selected = list.find((t) => t?._id === id);
-      if (!selected) return toast.error('Selected test not found');
-
-      const exists = testRows.some((row) => row.testId === id);
-      if (exists) return toast.warning('This test is already added');
-
-      handleTestAdd(id);
+      handleTestAdd(selectedTestId);
       setSelectedTestId('');
-    } catch (err) {
-      console.error(err);
-      toast.error('Failed to add test. Please try again.');
+      toast.success('Test added');
+    } catch (error) {
+      toast.error('Failed to add test');
     }
   };
 
-  const handleRowChangeWithValidation = (i, field, value) => {
+  // Handle row-level changes
+  const handleRowChange = (index, field, value) => {
     try {
-      const numeric = ['amount', 'discount', 'paid'];
-      if (numeric.includes(field)) {
-        let v = asInt(value);
-        const row = testRows[i] ?? {};
-        const currAmount = asInt(row.amount ?? 0);
-        const currDiscount = asInt(row.discount ?? 0);
+      const row = testRows[index];
+      const numericValue = ['amount', 'discount', 'paid'].includes(field)
+        ? toNumber(value)
+        : value;
 
-        const nextAmount = field === 'amount' ? v : currAmount;
-        const nextDiscount = field === 'discount' ? v : currDiscount;
-
-        if (field === 'discount' && v > nextAmount) v = nextAmount;
-
-        const nextFinal = Math.max(0, nextAmount - nextDiscount);
-        if (field === 'paid' && v > nextFinal) v = nextFinal;
-
-        handleTestRowChange(i, field, v);
+      if (field === 'discount' && numericValue >= toNumber(row.amount)) {
+        handleTestRowChange(index, 'discount', toNumber(row.amount)); // Cap at amount
         return;
       }
 
-      if (['sampleDate', 'reportDate'].includes(field)) {
-        const todayStart = new Date();
-        todayStart.setHours(0, 0, 0, 0);
-        if (value && new Date(value) < todayStart) {
-          toast.warning('Date cannot be in the past');
+      if (field === 'paid') {
+        const finalAmount = toNumber(row.amount) - toNumber(row.discount);
+        if (numericValue >= finalAmount) {
+          handleTestRowChange(index, 'paid', finalAmount); // Cap at final amount
           return;
         }
       }
 
-      handleTestRowChange(i, field, value);
-    } catch (err) {
-      console.error(err);
-      toast.error('Failed to update test. Please try again.');
+      handleTestRowChange(index, field, numericValue);
+    } catch (error) {
+      toast.error('Failed to update test');
     }
   };
 
-  const handleRemoveRowWithConfirmation = (i) => {
-    try {
-      if (window.confirm('Are you sure you want to remove this test?')) {
-        handleRemoveRow(i);
-        toast.success('Test removed successfully');
-      }
-    } catch (err) {
-      console.error(err);
-      toast.error('Failed to remove test. Please try again.');
-    }
-  };
-
-  const rowFinal = (row) => {
-    const amt = asInt(row?.amount ?? 0);
-    const dis = Math.min(asInt(row?.discount ?? 0), amt);
-    return Math.max(0, amt - dis);
-  };
-  const rowRemaining = (row) => {
-    const fin = rowFinal(row);
-    const paid = Math.min(asInt(row?.paid ?? 0), fin);
-    return Math.max(0, fin - paid);
-  };
-
-  const options = list
-    .filter((t) => !testRows.some((r) => r.testId === t._id))
-    .map((t) => ({
-      value: t._id,
-      label: `${t.testName || 'Unnamed Test'} - Rs ${fmtInt(t.testPrice || 0)}`,
+  // Prepare test options for dropdown
+  const options = (Array.isArray(testList) ? testList : [])
+    .filter((test) => !testRows.some((row) => row.testId === test._id))
+    .map((test) => ({
+      value: test._id,
+      label: `${test.testName || 'Unnamed'} - Rs ${formatCurrency(
+        toNumber(test.testPrice)
+      )}`,
     }));
 
   return (
     <div className="space-y-4">
-      <div className="flex gap-4 mb-4">
+      {/* Test Selection */}
+      <div className="flex gap-4 items-center">
         <Select
-          className="w-full"
-          styles={{ container: (base) => ({ ...base, width: '100%' }) }}
+          className="flex-1"
           value={options.find((o) => o.value === selectedTestId) || null}
           onChange={(option) => {
-            if (option) {
-              setSelectedTestId(option.value);
-              handleAddTestWithValidation(option.value); // auto-add
+            const value = option?.value || '';
+            setSelectedTestId(value);
+            if (value) {
+              // Call the add logic immediately
+              if (testRows.some((row) => row.testId === value)) {
+                toast.error('This test is already added');
+                return;
+              }
+              try {
+                handleTestAdd(value);
+                setSelectedTestId('');
+                toast.success('Test added');
+              } catch (error) {
+                toast.error('Failed to add test');
+              }
             }
           }}
           options={options}
-          isLoading={isLoadingTests}
-          placeholder={
-            isLoadingTests
-              ? 'Loading tests...'
-              : noTestsAvailable
-              ? 'Not available. First create the test.'
-              : 'Search or select a test...'
-          }
-          isDisabled={isLoadingTests || noTestsAvailable}
+          placeholder="Select a test..."
+          isDisabled={!options.length}
         />
-
-        <button
-          type="button"
-          className={`px-4 py-2 text-white rounded ${
-            !selectedTestId || isLoadingTests
-              ? 'bg-gray-400 cursor-not-allowed'
-              : 'bg-primary-700 hover:bg-primary-800'
-          }`}
-          onClick={() => handleAddTestWithValidation()}
-          disabled={!selectedTestId || isLoadingTests}
-        >
-          {isLoadingTests ? 'Loading...' : 'Add'}
-        </button>
       </div>
 
-      {testRows.length > 0 ? (
-        <div className="w-full">
-          <div className="overflow-x-auto min-w-full">
+      {/* Test Table */}
+      {testRows.length > 0 && (
+        <>
+          <div className="overflow-x-auto border border-gray-300 shadow-sm rounded-lg">
             <table className="min-w-full text-sm">
-              <thead className="bg-gray-200">
+              <thead className="bg-gray-100">
                 <tr>
-                  {['#','Test','Sample Date','Report Date','Amount','Discount','Final','Paid','Remaining','Action'].map((h) => (
-                    <th key={h} className="px-3 py-2 text-left">{h}</th>
+                  {[
+                    '#',
+                    'Test',
+                    'Amount',
+                    'Discount',
+                    'Final',
+                    'Paid',
+                    'Remaining',
+                    'Action',
+                  ].map((header) => (
+                    <th
+                      key={header}
+                      className="px-4 py-2 text-left font-semibold"
+                    >
+                      {header}
+                    </th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {testRows.map((r, i) => (
-                  <tr key={i} className="hover:bg-gray-50">
-                    <td className="border px-3 py-2 w-10">{r.quantity}</td>
+                {testRows.map((row, index) => {
+                  const amount = toNumber(row.amount);
+                  const discount = toNumber(row.discount);
+                  const paid = toNumber(row.paid);
+                  const final = amount - discount;
+                  const remaining = Math.max(0, final - paid);
 
-                    <td className="border px-3 py-2 min-w-[150px]">{r.testName}</td>
-
-                    <td className="border px-3 py-2 min-w-[120px]">
-                      <input
-                        type="date"
-                        value={r.sampleDate}
-                        onChange={(e) => handleRowChangeWithValidation(i, 'sampleDate', e.target.value)}
-                        className="border p-1 rounded w-full"
-                        min={new Date().toISOString().split('T')[0]}
-                      />
-                    </td>
-
-                    <td className="border px-3 py-2 min-w-[120px]">
-                      <input
-                        type="date"
-                        value={r.reportDate}
-                        onChange={(e) => handleRowChangeWithValidation(i, 'reportDate', e.target.value)}
-                        className="border p-1 rounded w-full"
-                        min={r.sampleDate || new Date().toISOString().split('T')[0]}
-                      />
-                    </td>
-
-                    {/* Amount (int) */}
-                    <td className="border px-3 py-2 min-w-[100px]">
-                      <input
-                        type="number"
-                        min="0"
-                        step="1"
-                        value={r.amount}
-                        onChange={(e) => handleRowChangeWithValidation(i, 'amount', e.target.value)}
-                        onBlur={(e) => handleRowChangeWithValidation(i, 'amount', asInt(e.currentTarget.value))}
-                        inputMode="numeric"
-                        onWheel={(e) => e.currentTarget.blur()}
-                        className="border p-1 rounded w-full"
-                      />
-                    </td>
-
-                    {/* Discount (int) */}
-                    <td className="border px-3 py-2 min-w-[100px]">
-                      <input
-                        type="number"
-                        min="0"
-                        step="1"
-                        value={r.discount}
-                        onChange={(e) => handleRowChangeWithValidation(i, 'discount', e.target.value)}
-                        onBlur={(e) => handleRowChangeWithValidation(i, 'discount', asInt(e.currentTarget.value))}
-                        inputMode="numeric"
-                        onWheel={(e) => e.currentTarget.blur()}
-                        className="border p-1 rounded w-full"
-                      />
-                    </td>
-
-                    {/* Final (derived) */}
-                    <td className="border px-3 py-2 min-w-[80px] font-medium">
-                      {fmtInt(rowFinal(r))}
-                    </td>
-
-                    {/* Paid (int) */}
-                    <td className="border px-3 py-2 min-w-[100px]">
-                      <input
-                        type="number"
-                        min="0"
-                        step="1"
-                        value={r.paid}
-                        onChange={(e) => handleRowChangeWithValidation(i, 'paid', e.target.value)}
-                        onBlur={(e) => handleRowChangeWithValidation(i, 'paid', asInt(e.currentTarget.value))}
-                        inputMode="numeric"
-                        onWheel={(e) => e.currentTarget.blur()}
-                        className="border p-1 rounded w-full"
-                      />
-                    </td>
-
-                    {/* Remaining (derived) */}
-                    <td className="border px-3 py-2 min-w-[100px] font-medium">
-                      {fmtInt(rowRemaining(r))}
-                    </td>
-
-                    <td className="border px-3 py-2 min-w-[80px]">
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveRowWithConfirmation(i)}
-                        className="text-red-600 hover:text-red-800 font-medium"
-                        aria-label="Remove test"
-                      >
-                        Remove
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                  return (
+                    <tr key={index} className="border-t hover:bg-gray-50">
+                      <td className="px-4 py-2">{index + 1}</td>
+                      <td className="px-4 py-2">{row.testName}</td>
+                      <td className="px-4 py-2">
+                        <input
+                          type="number"
+                          min="0"
+                          value={amount}
+                          onChange={(e) =>
+                            handleRowChange(index, 'amount', e.target.value)
+                          }
+                          className="w-full px-2 py-1 border border-gray-300 shadow-sm  rounded"
+                        />
+                      </td>
+                      <td className="px-4 py-2">
+                        <input
+                          type="number"
+                          min="0"
+                          value={discount}
+                          onChange={(e) =>
+                            handleRowChange(index, 'discount', e.target.value)
+                          }
+                          className="w-full px-2 py-1 border border-gray-300 shadow-sm  rounded"
+                        />
+                      </td>
+                      <td className="px-4 py-2 text-green-700">
+                        {formatCurrency(final)}
+                      </td>
+                      <td className="px-4 py-2">
+                        <input
+                          type="number"
+                          min="0"
+                          value={paid}
+                          onChange={(e) =>
+                            handleRowChange(index, 'paid', e.target.value)
+                          }
+                          className="w-full px-2 py-1 border rounded border-gray-300 shadow-sm"
+                          disabled={mode === 'edit' && paid > 0}
+                        />
+                      </td>
+                      <td className="px-4 py-2">
+                        <span
+                          className={
+                            remaining > 0 ? 'text-red-600' : 'text-green-600'
+                          }
+                        >
+                          {formatCurrency(remaining)}
+                        </span>
+                      </td>
+                      <td className="px-4 py-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (window.confirm('Remove this test?')) {
+                              handleRemoveRow(index);
+                              toast.success('Test removed');
+                            }
+                          }}
+                          className="text-red-600 hover:text-red-800"
+                        >
+                          Remove
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
 
-          {/* Summary */}
-          <div className="mt-4 bg-gray-100 p-3 rounded">
-            <div className="grid grid-cols-4 gap-4">
-              <div className="col-span-2">
-                <span className="font-medium">Total Tests:</span> {testRows.length}
+          {/* Financial Summary */}
+          <div className="bg-gray-50 p-4 rounded-lg border border-gray-300 shadow-sm">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <h3 className="font-semibold text-lg">Financial Summary</h3>
+                <div className="flex justify-between">
+                  <span>Total Tests:</span>
+                  <span>{testRows.length}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Total Amount:</span>
+                  <span>Rs. {formatCurrency(totalAmount)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Total Final Amount:</span>
+                  <span className="text-green-700">
+                    Rs. {formatCurrency(totalFinalAmount)}
+                  </span>
+                </div>
               </div>
-
-              <div>
-                <span className="font-medium">Total Amount:</span> Rs. {fmtInt(totalAmount)}
-              </div>
-
-              {/* TOTAL DISCOUNT (commit on blur/Enter) */}
-              <div className="col-span-2 flex items-center gap-2">
-                <label className="font-medium whitespace-nowrap">Total Discount:</label>
-                <input
-                  type="number"
-                  min="0"
-                  step="1"
-                  className="border p-1 rounded w-32"
-                  value={discountBox}
-                  onChange={(e) => {
-                    // local only while typing
-                    setDiscountBox(e.currentTarget.value);
-                  }}
-                  onBlur={(e) => {
-                    const v = asInt(e.currentTarget.value);
-                    setDiscountBox(String(v));
-                    applyOverallDiscount?.(v); // commit
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      const v = asInt(e.currentTarget.value);
-                      setDiscountBox(String(v));
-                      applyOverallDiscount?.(v);
-                      e.currentTarget.blur();
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <label>Total Discount:</label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      min="0"
+                      value={discountBox}
+                      onChange={(e) => handleDiscountChange(e.target.value)}
+                      onBlur={(e) => handleDiscountChange(e.target.value)}
+                      className="w-24 px-2 py-1 border border-gray-300 shadow-sm rounded text-right"
+                    />
+                    <span>Rs.</span>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <label>Total Paid:</label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      min="0"
+                      value={paidBox}
+                      onChange={(e) => handlePaidChange(e.target.value)}
+                      onBlur={(e) => handlePaidChange(e.target.value)}
+                      className="w-24 px-2 py-1 border border-gray-300 shadow-sm rounded text-right"
+                      disabled={mode === 'edit'}
+                    />
+                    <span>Rs.</span>
+                  </div>
+                </div>
+                <div className="flex justify-between border-t pt-2">
+                  <span>Remaining Balance:</span>
+                  <span
+                    className={
+                      overallRemaining > 0 ? 'text-red-600' : 'text-green-600'
                     }
-                  }}
-                  inputMode="numeric"
-                  onWheel={(e) => e.currentTarget.blur()}
-                />
-              </div>
-
-              {/* TOTAL PAID (commit on blur/Enter) */}
-              <div className="col-span-2 flex items-center gap-2">
-                <label className="font-medium whitespace-nowrap">Total Paid:</label>
-                <input
-                  type="number"
-                  min="0"
-                  step="1"
-                  className="border p-1 rounded w-32"
-                  value={paidBox}
-                  onChange={(e) => {
-                    // local only while typing
-                    setPaidBox(e.currentTarget.value);
-                  }}
-                  onBlur={(e) => {
-                    const v = asInt(e.currentTarget.value);
-                    setPaidBox(String(v));
-                    applyOverallPaid?.(v); // commit
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      const v = asInt(e.currentTarget.value);
-                      setPaidBox(String(v));
-                      applyOverallPaid?.(v);
-                      e.currentTarget.blur();
-                    }
-                  }}
-                  inputMode="numeric"
-                  onWheel={(e) => e.currentTarget.blur()}
-                  disabled={mode === 'edit'}
-                />
-              </div>
-
-              <div>
-                <span className="font-medium">Remaining:</span> Rs. {fmtInt(overallRemaining)}
+                  >
+                    Rs. {formatCurrency(overallRemaining)}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      ) : (
-        <div className="text-center py-8 bg-gray-50 rounded-lg">
+        </>
+      )}
+
+      {/* Empty State */}
+      {testRows.length === 0 && (
+        <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed">
           <p className="text-gray-500">No tests added yet</p>
-          <p className="text-sm text-gray-400 mt-1">Select tests from the dropdown above</p>
+          <p className="text-sm text-gray-400 mt-1">
+            Select a test above to get started
+          </p>
         </div>
       )}
     </div>

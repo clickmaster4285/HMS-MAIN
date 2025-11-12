@@ -13,10 +13,16 @@ import {
 import PatientInfoForm from './PatientIno';
 import TestInformationForm from './TestInfo';
 import { toast } from 'react-toastify';
+import { useNavigate } from 'react-router-dom';
 
 const AddlabPatient = () => {
   const dispatch = useDispatch();
-  const { patient: patientAll, loading, error } = useSelector((state) => state.patientTest);
+  const navigate = useNavigate();
+  const {
+    patient: patientAll,
+    loading,
+    error,
+  } = useSelector((state) => state.patientTest);
   const testList = useSelector((state) => state.patientTest.tests);
 
   const [isPrinting, setIsPrinting] = useState(false);
@@ -44,14 +50,21 @@ const AddlabPatient = () => {
   const [formKey, setFormKey] = useState(0);
   const formRef = useRef(null);
 
-  // ---------- integer helper (rupees only) ----------
-  const asInt = (v, max = 9_999_999) => {
-    const s = String(v ?? '').trim();
-    if (s === '') return 0;
-    const n = Number.parseInt(s.replace(/[^\d-]/g, ''), 10);
-    if (!Number.isFinite(n)) return 0;
-    return Math.min(Math.max(n, 0), max);
+  // ===== helpers: integers only + normalization =====
+  const toInt = (v) => {
+    const n = parseInt(v, 10);
+    return Number.isNaN(n) ? 0 : Math.max(0, n);
   };
+
+  const normalizeRows = (rows) =>
+    rows.map((r) => {
+      const amount = toInt(r.amount);
+      const discount = Math.min(toInt(r.discount), amount);
+      const finalAmount = amount - discount;
+      const paid = Math.min(toInt(r.paid), finalAmount);
+      const remaining = Math.max(0, finalAmount - paid);
+      return { ...r, amount, discount, finalAmount, paid, remaining };
+    });
 
   useEffect(() => {
     dispatch(fetchAllTests());
@@ -65,16 +78,15 @@ const AddlabPatient = () => {
     } else if (patient.ContactNo === defaultContactNumber) {
       setPatient((prev) => ({ ...prev, ContactNo: '' }));
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [useDefaultContact, defaultContactNumber]);
 
   const calculateAge = (birthDate) => {
     if (!birthDate) return '';
     const today = new Date();
-    const dob = new Date(birthDate);
-    let years = today.getFullYear() - dob.getFullYear();
-    let months = today.getMonth() - dob.getMonth();
-    let days = today.getDate() - dob.getDate();
+    const d = new Date(birthDate);
+    let years = today.getFullYear() - d.getFullYear();
+    let months = today.getMonth() - d.getMonth();
+    let days = today.getDate() - d.getDate();
 
     if (days < 0) {
       months--;
@@ -97,7 +109,8 @@ const AddlabPatient = () => {
     if (
       (name === 'CNIC' && value.length > 13) ||
       (name === 'ContactNo' && value.length > 15)
-    ) return;
+    )
+      return;
     setPatient({ ...patient, [name]: value });
   };
 
@@ -123,7 +136,6 @@ const AddlabPatient = () => {
         MRNo: patientData.mrno || '',
         CNIC: patientData.cnic || '',
         Name: patientData.name || '',
-        patient_Guardian: patientData.patient_Guardian || '',
         ContactNo: patientData.contactNo || '',
         Gender: patientData.gender || '',
         Age: patientData.age || calculateAge(patientData.DateOfBirth) || '',
@@ -143,55 +155,36 @@ const AddlabPatient = () => {
     if (!selected) return;
 
     const today = new Date().toISOString().split('T')[0];
-    const amountInt = asInt(selected.testPrice);
+    const priceInt = toInt(selected.testPrice);
 
-    setTestRows((prev) => [
-      ...prev,
-      {
-        testId: selected._id,
-        testName: selected.testName,
-        testCode: selected.testCode,
-        quantity: prev.length + 1,
-        sampleDate: today,
-        reportDate: today,
-        amount: amountInt,          // int
-        discount: 0,                // int
-        finalAmount: amountInt,     // int
-        paid: 0,                    // int
-        notes: '',
-      },
-    ]);
+    setTestRows((prev) =>
+      normalizeRows([
+        ...prev,
+        {
+          testId: selected._id,
+          testName: selected.testName,
+          testCode: selected.testCode,
+          quantity: prev.length + 1,
+          sampleDate: today,
+          reportDate: today,
+          amount: priceInt,
+          discount: 0,
+          finalAmount: priceInt,
+          paid: 0,
+          remaining: priceInt,
+          notes: '',
+        },
+      ])
+    );
     setSelectedTestId('');
   };
 
   const handleTestRowChange = (i, field, value) => {
     const rows = [...testRows];
-
-    if (['amount', 'discount', 'paid'].includes(field)) {
-      let v = asInt(value);
-      const amount0 = asInt(rows[i].amount);
-      const discount0 = asInt(rows[i].discount);
-
-      const nextAmount = field === 'amount' ? v : amount0;
-      const nextDiscount = field === 'discount' ? v : discount0;
-
-      // discount ≤ amount
-      if (field === 'discount' && v > nextAmount) v = nextAmount;
-
-      // write the changed field
-      rows[i][field] = v;
-
-      // recompute final = amount - discount (int)
-      const finalAmount = Math.max(0, nextAmount - nextDiscount);
-      rows[i].finalAmount = finalAmount;
-
-      // clamp paid ≤ final
-      rows[i].paid = Math.min(asInt(rows[i].paid), finalAmount);
-    } else {
-      rows[i][field] = value;
-    }
-
-    setTestRows(rows);
+    rows[i][field] = ['amount', 'discount', 'paid'].includes(field)
+      ? toInt(value)
+      : value;
+    setTestRows(normalizeRows(rows));
   };
 
   const handleRemoveRow = (i) => {
@@ -200,76 +193,143 @@ const AddlabPatient = () => {
       ...row,
       quantity: idx + 1,
     }));
-    setTestRows(reNumbered);
+    setTestRows(normalizeRows(reNumbered));
   };
 
   // totals (integers)
-  const totalAmount = testRows.reduce((sum, r) => sum + asInt(r.amount), 0);
-  const totalDiscount = testRows.reduce((sum, r) => sum + asInt(r.discount), 0);
-  const totalFinalAmount = testRows.reduce(
-    (sum, r) => sum + Math.max(0, asInt(r.amount) - asInt(r.discount)), 0
+  const totalAmount = testRows.reduce((sum, r) => sum + toInt(r.amount), 0);
+  const totalDiscount = testRows.reduce(
+    (sum, r) => sum + Math.min(toInt(r.discount), toInt(r.amount)),
+    0
   );
-  const totalPaid = testRows.reduce((sum, r) => sum + asInt(r.paid), 0);
+  const totalFinalAmount = totalAmount - totalDiscount;
+  const totalPaid = testRows.reduce((sum, r) => sum + toInt(r.paid), 0);
   const overallRemaining = Math.max(0, totalFinalAmount - totalPaid);
 
-  const showPopupBlockerWarning = () => {
-    const existing = document.querySelector('.popup-blocker-warning');
-    if (existing) return;
-    const warning = document.createElement('div');
-    warning.className = 'popup-blocker-warning';
-    warning.style = `
-      position: fixed; top: 20px; right: 20px; padding: 15px;
-      background: #ffeb3b; border: 1px solid #ffc107; border-radius: 4px; z-index: 9999;
-    `;
-    warning.innerHTML = `
-      <p>Popup blocked! Please allow popups for this site.</p>
-      <button onclick="this.parentNode.remove()">Dismiss</button>
-    `;
-    document.body.appendChild(warning);
-  };
-
-  const handlePrint = (dataForPrint) => {
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) {
-      showPopupBlockerWarning();
-      setPrintData(dataForPrint);
+  const applyOverallDiscount = (overallDiscount) => {
+    const discount = toInt(overallDiscount);
+    if (discount > totalAmount) {
+      toast.error('Total discount cannot exceed total amount');
       return;
     }
 
-    const printContent = ReactDOMServer.renderToStaticMarkup(
-      <PrintA4 formData={dataForPrint} />
+    const rows = [...testRows];
+
+    if (discount === totalAmount) {
+      const updatedRows = rows.map((row) => ({
+        ...row,
+        discount: toInt(row.amount),
+      }));
+      setTestRows(normalizeRows(updatedRows));
+      return;
+    }
+
+    // Proportional distribution
+    const updatedRows = rows.map((row) => {
+      const amount = toInt(row.amount);
+      if (amount === 0) return { ...row, discount: 0 };
+      const exact = discount * (amount / totalAmount);
+      const floored = Math.floor(exact);
+      return { ...row, discount: floored };
+    });
+
+    let applied = updatedRows.reduce((s, r) => s + r.discount, 0);
+    let remainder = discount - applied;
+
+    // Sort indices by amount descending
+    const sortedIndices = [...rows.keys()].sort(
+      (a, b) => toInt(rows[b].amount) - toInt(rows[a].amount)
     );
 
-    printWindow.document.open();
-    printWindow.document.write(`
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>Print Patient Test</title>
-          <link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu&display=swap" rel="stylesheet">
-          <style>
-            body { font-family: Arial, sans-serif; padding: 10mm; color: #333; font-size: 14px; }
-            .header { display: flex; align-items: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 10px; }
-            .logo { height: 60px; margin-right: 20px; }
-          </style>
-        </head>
-        <body>${printContent}</body>
-        <script>
-          setTimeout(() => {
-            window.print();
-            window.onafterprint = function() { window.close(); };
-          }, 500);
-        </script>
-      </html>
-    `);
-    printWindow.document.close();
+    for (let i of sortedIndices) {
+      const amount = toInt(rows[i].amount);
+      while (remainder > 0 && updatedRows[i].discount < amount) {
+        updatedRows[i].discount += 1;
+        remainder -= 1;
+      }
+      if (remainder === 0) break;
+    }
+
+    setTestRows(normalizeRows(updatedRows));
   };
 
-  const submitForm = async (shouldPrint) => {
-    if (!testRows.length) {
-      alert('Please add at least one test');
+  const applyOverallPaid = (overallPaid) => {
+    const paid = toInt(overallPaid);
+    if (paid > totalFinalAmount) {
+      toast.error('Total paid cannot exceed total final amount');
       return;
     }
+
+    const rows = [...testRows];
+
+    if (paid === totalFinalAmount) {
+      const updatedRows = rows.map((row) => {
+        const final = toInt(row.amount) - toInt(row.discount);
+        return { ...row, paid: final };
+      });
+      setTestRows(normalizeRows(updatedRows));
+      return;
+    }
+
+    // Proportional distribution
+    const updatedRows = rows.map((row) => {
+      const finalAmt = toInt(row.amount) - toInt(row.discount);
+      if (finalAmt === 0) return { ...row, paid: 0 };
+      const exact = paid * (finalAmt / totalFinalAmount);
+      const floored = Math.floor(exact);
+      return { ...row, paid: floored };
+    });
+
+    let applied = updatedRows.reduce((s, r) => s + r.paid, 0);
+    let remainder = paid - applied;
+
+    // Sort indices by finalAmount descending
+    const sortedIndices = [...rows.keys()].sort(
+      (a, b) =>
+        toInt(rows[b].amount) -
+        toInt(rows[b].discount) -
+        (toInt(rows[a].amount) - toInt(rows[a].discount))
+    );
+
+    for (let i of sortedIndices) {
+      const finalAmt = toInt(rows[i].amount) - toInt(rows[i].discount);
+      while (remainder > 0 && updatedRows[i].paid < finalAmt) {
+        updatedRows[i].paid += 1;
+        remainder -= 1;
+      }
+      if (remainder === 0) break;
+    }
+
+    setTestRows(normalizeRows(updatedRows));
+  };
+
+  const handlePrint = (data) => {
+    const htmlContent = ReactDOMServer.renderToString(
+      <PrintA4 formData={data} />
+    );
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
+    printWindow.print();
+  };
+
+  const submitForm = async (shouldPrint = false) => {
+    if (testRows.length === 0) {
+      toast.error('Please add at least one test');
+      return;
+    }
+
+    if (!patient.Name?.trim()) {
+      toast.error('Patient name is required');
+      return;
+    }
+
+    const normalizedRows = normalizeRows(testRows);
+    const totalAmountInt = normalizedRows.reduce((s, r) => s + r.amount, 0);
+    const totalDiscountInt = normalizedRows.reduce((s, r) => s + r.discount, 0);
+    const totalFinalInt = totalAmountInt - totalDiscountInt;
+    const totalPaidInt = normalizedRows.reduce((s, r) => s + r.paid, 0);
+    const remainingInt = Math.max(0, totalFinalInt - totalPaidInt);
 
     const payload = {
       patient_MRNo: patient.MRNo,
@@ -281,27 +341,20 @@ const AddlabPatient = () => {
       patient_Age: patient.Age,
       referredBy: patient.ReferredBy,
       isExternalPatient: mode === 'new',
-      selectedTests: testRows.map((row) => {
-        const amount = asInt(row.amount);
-        const discount = Math.min(asInt(row.discount), amount);
-        const finalAmount = Math.max(0, amount - discount);
-        const paid = Math.min(asInt(row.paid), finalAmount);
-        const remaining = Math.max(0, finalAmount - paid);
-        return {
-          test: row.testId,
-          testPrice: amount,
-          discountAmount: discount,
-          advanceAmount: paid,
-          remainingAmount: remaining,
-          sampleDate: row.sampleDate,
-          reportDate: row.reportDate,
-          notes: row.notes || '',
-        };
-      }),
-      totalAmount,
-      advanceAmount: totalPaid,
-      remainingAmount: overallRemaining,
-      totalPaid: totalPaid,
+      selectedTests: normalizedRows.map((row) => ({
+        test: row.testId,
+        testPrice: row.amount,
+        discountAmount: row.discount,
+        advanceAmount: row.paid,
+        remainingAmount: row.remaining,
+        sampleDate: row.sampleDate,
+        reportDate: row.reportDate,
+        notes: row.notes || '',
+      })),
+      totalAmount: totalAmountInt,
+      advanceAmount: totalPaidInt,
+      remainingAmount: remainingInt,
+      totalPaid: totalPaidInt,
       performedBy: '',
     };
 
@@ -323,16 +376,16 @@ const AddlabPatient = () => {
             Gender: patient.Gender,
             Age: patient.Age,
             ReferredBy: patient.ReferredBy,
-            Guardian: patient.patient_Guardian,
+            Guardian: patient.Guardian,
           },
-          tests: testRows,
-          totalAmount,
-          totalDiscount,
-          totalFinalAmount,
-          totalPaid,
-          remaining: overallRemaining,
-          sampleDate: testRows[0]?.sampleDate,
-          reportDate: testRows[0]?.reportDate,
+          tests: normalizedRows,
+          totalAmount: totalAmountInt,
+          totalDiscount: totalDiscountInt,
+          totalFinalAmount: totalFinalInt,
+          totalPaid: totalPaidInt,
+          remaining: remainingInt,
+          sampleDate: normalizedRows[0]?.sampleDate,
+          reportDate: normalizedRows[0]?.reportDate,
           referredBy: patient.ReferredBy,
         };
         handlePrint(dataForPrint);
@@ -366,6 +419,7 @@ const AddlabPatient = () => {
   const handleSubmitOnly = async (e) => {
     e.preventDefault();
     await submitForm(false);
+    navigate('/lab/all-patients');
   };
 
   const handleSubmitAndPrint = async (e) => {
@@ -393,92 +447,6 @@ const AddlabPatient = () => {
     }
   };
 
-  // ---------------- Overall appliers (INTEGER ONLY, commit on blur/Enter in child) ----------------
-
-  // Proportional discount with largest remainders; clears all when D=0
-  const applyOverallDiscount = (requestedDiscount) => {
-    const rows = [...testRows];
-    if (rows.length === 0) return;
-
-    const amounts = rows.map((r) => asInt(r.amount));
-    const total = amounts.reduce((s, n) => s + n, 0);
-    let D = Math.min(asInt(requestedDiscount), total);
-
-    // If overall discount is 0, CLEAR all row discounts
-    if (total === 0 || D === 0) {
-      const cleared = rows.map((r, i) => {
-        const amount = amounts[i];
-        const discount = 0;
-        const final = Math.max(0, amount - discount);
-        const paid = Math.min(asInt(r.paid), final);
-        return { ...r, amount, discount, finalAmount: final, paid };
-      });
-      setTestRows(cleared);
-      return;
-    }
-
-    const targets = amounts.map((a) => (a * D) / total);
-    const floors = targets.map((t) => Math.floor(t));
-    let assigned = floors.reduce((s, n) => s + n, 0);
-    let leftover = D - assigned;
-
-    const remainders = targets.map((t, i) => ({
-      i,
-      rem: t - floors[i],
-      cap: amounts[i] - floors[i],
-    }));
-
-    remainders
-      .sort((a, b) => b.rem - a.rem || a.i - b.i)
-      .forEach(({ i, cap }) => {
-        if (leftover <= 0) return;
-        if (cap <= 0) return;
-        floors[i] += 1;
-        leftover -= 1;
-      });
-
-    for (let i = 0; i < floors.length && leftover > 0; i++) {
-      const room = amounts[i] - floors[i];
-      if (room > 0) {
-        const give = Math.min(room, leftover);
-        floors[i] += give;
-        leftover -= give;
-      }
-    }
-
-    const out = rows.map((r, i) => {
-      const amount = amounts[i];
-      const discount = Math.min(amount, floors[i]);
-      const final = Math.max(0, amount - discount);
-      const paid = Math.min(asInt(r.paid), final);
-      return { ...r, amount, discount, finalAmount: final, paid };
-    });
-
-    setTestRows(out);
-  };
-
-  // Overall paid: allocate first→last, integers only
-  const applyOverallPaid = (overallPaidRaw) => {
-    let remaining = asInt(overallPaidRaw);
-    setTestRows((prev) => {
-      const rows = prev.map((r) => {
-        const amount = asInt(r.amount);
-        const discount = Math.min(asInt(r.discount), amount);
-        const finalAmount = Math.max(0, amount - discount);
-        return { ...r, amount, discount, finalAmount, paid: 0 };
-      });
-
-      const next = rows.map((r) => {
-        if (remaining <= 0 || r.finalAmount === 0) return r;
-        const payNow = Math.min(r.finalAmount, remaining);
-        remaining -= payNow;
-        return { ...r, paid: payNow };
-      });
-
-      return next;
-    });
-  };
-
   return (
     <form
       onSubmit={handleSubmitOnly}
@@ -490,7 +458,10 @@ const AddlabPatient = () => {
         <h1 className="ml-4">Add Patient New Test</h1>
       </div>
 
-      <FormSection title="Patient Information" bgColor="bg-primary-700 text-white">
+      <FormSection
+        title="Patient Information"
+        bgColor="bg-primary-700 text-white"
+      >
         <PatientInfoForm
           key={`pinfo-${formKey}`}
           mode={mode}
@@ -530,7 +501,9 @@ const AddlabPatient = () => {
       </FormSection>
 
       <ButtonGroup className="justify-end">
-        <Button type="reset" variant="secondary">Cancel</Button>
+        <Button type="reset" variant="secondary">
+          Cancel
+        </Button>
         <Button type="submit" variant="primary" disabled={isPrinting}>
           {isPrinting ? 'Submitting...' : 'Submit'}
         </Button>

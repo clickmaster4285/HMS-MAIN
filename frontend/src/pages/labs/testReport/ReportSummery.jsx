@@ -170,7 +170,7 @@ const ReportSummary = () => {
   };
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-8">
-      <div className="max-w-7xl mx-auto">
+      <div className=" mx-auto">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
           <div>
             <h1 className="text-3xl font-bold text-gray-800">
@@ -181,15 +181,10 @@ const ReportSummary = () => {
               {endDate && ` - ${formatDateOnly(endDate)}`}
             </p>
           </div>
-          <div className="bg-white px-4 py-2 rounded-lg shadow-sm border border-gray-200">
-            <span className="font-medium text-gray-700">Total Reports: </span>
-            <span className="font-bold text-indigo-600">
-              {summaryByDate?.length || 0}
-            </span>
-          </div>
+         
           <button
             onClick={handlePrint}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg shadow-sm transition-colors flex items-center gap-2"
+            className="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg shadow-sm transition-colors flex items-center gap-2"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -296,7 +291,7 @@ const ReportSummary = () => {
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-1">
-                          <span className="bg-indigo-100 text-indigo-800 text-xs px-2 py-1 rounded-full">
+                          <span className="bg-primary-100 text-primary-800 text-xs px-2 py-1 rounded-full">
                             {report.selectedTests.length} test
                             {report.selectedTests.length !== 1 ? 's' : ''}
                           </span>
@@ -333,7 +328,7 @@ const ReportSummary = () => {
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
                           <button
-                            className="p-1 text-indigo-600 hover:text-indigo-800 transition-colors"
+                            className="p-1 text-primary-600 hover:text-primary-800 transition-colors"
                             onClick={() => toggleRow(report._id)}
                           >
                             {expandedRow === report._id ? (
