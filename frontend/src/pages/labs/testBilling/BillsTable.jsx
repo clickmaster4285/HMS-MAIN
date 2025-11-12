@@ -125,13 +125,12 @@ const BillsTable = ({
 
   // Helper function to get patient contact info
   const getPatientContact = (bill) => {
+     
     if (!bill) return 'N/A';
     const type = getBillType(bill);
     return type === 'Radiology'
-      ? 'N/A'
-      : bill.patientDetails?.patient_ContactNo ||
-          bill.patientId?.contactNo ||
-          'N/A';
+      ? bill.patient_ContactNo || bill.patientId?.contactNo || 'N/A'
+      : 'N/A';
   };
 
   // Helper function to get patient gender
@@ -548,14 +547,9 @@ const BillsTable = ({
                           Rs. {getTotalAmount(bill).toLocaleString()}
                         </p>
                         <div className="text-xs text-gray-500 space-y-1">
-                          <div className="flex justify-between">
-                          
-                          </div>
-                          <div className="flex justify-between">
-                          
-                          </div>
+                          <div className="flex justify-between"></div>
+                          <div className="flex justify-between"></div>
                           {/* Refund line (after Remaining) */}
-                         
                         </div>
                       </div>
                     </td>

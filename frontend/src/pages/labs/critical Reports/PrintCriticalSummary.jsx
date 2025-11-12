@@ -60,16 +60,6 @@ const PrintCriticalSummary = ({ rows = [], dateRange = {} }) => {
         {/* KPIs */}
         <div className="grid grid-cols-3 gap-3 mb-5">
           <div className="border rounded p-3">
-            <div className="text-xs text-gray-500">Total Records</div>
-            <div className="text-lg font-semibold">{rows.length}</div>
-          </div>
-          <div className="border rounded p-3">
-            <div className="text-xs text-gray-500">Patients</div>
-            <div className="text-lg font-semibold">
-              {new Set(rows.map((r) => r.patientName || r.mrNo)).size}
-            </div>
-          </div>
-          <div className="border rounded p-3">
             <div className="text-xs text-gray-500">Total Critical Tests</div>
             <div className="text-lg font-semibold">
               {rows.reduce(

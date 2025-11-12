@@ -60,13 +60,20 @@ const unitsList = [
   'mg/dL',
   'g/dL',
   'mmol/L',
+  'mIU/L',
   'IU/L',
+  'IU/mL',
   'U/L',
+  'u/mL',
+  '%',
+  'x10^2/ul',
   'pg/mL',
+  'Pg',
   'ng/mL',
   'mEq/L',
   'cells/mcL',
   'mL/min',
+  'mg/L',
   'mm/hr',
   'g/L',
   'µIU/mL',
@@ -75,11 +82,17 @@ const unitsList = [
   'mU/L',
   'fL',
   'pH',
+  'min sec',
+  'sec',
+  'ml',
   'other',
 ];
 
 const reportTimeOptions = [
-  { label: 'Hours', options: ['24 hours', '48 hours', '72 hours'] },
+  {
+    label: 'Hours',
+    options: ['45 minutes', '1 hour', '24 hours', '48 hours', '72 hours'],
+  },
   { label: 'Days', options: ['1 day', '2 days', '3 days', '5 days', '7 days'] },
   { label: '', options: ['Other'] },
 ];
@@ -197,7 +210,7 @@ const LabTestForm = ({ mode = 'create' }) => {
 
     testFields.forEach((f, i) => {
       if (!f.name) errs[`field-name-${i}`] = 'Field name required';
-      // if (!f.unit) errs[`field-unit-${i}`] = 'Unit is required';
+      if (!f.unit) errs[`field-unit-${i}`] = 'Unit is required';
 
       // Object.entries(f.ranges).forEach(([type, range]) => {
       //   if (range.min && isNaN(range.min))
@@ -549,7 +562,7 @@ const LabTestForm = ({ mode = 'create' }) => {
                         }
                         options={unitsList}
                         error={errors[`field-unit-${fieldIdx}`]}
-                        // required
+                        required
                       />
                     </div>
 
@@ -603,8 +616,7 @@ const LabTestForm = ({ mode = 'create' }) => {
                               <div className="space-y-3">
                                 <InputField
                                   label="Min Value"
-                                  type="number"
-                                  min="0"
+                                  type="text"
                                   value={range.min}
                                   onChange={(e) =>
                                     handleFieldChange(

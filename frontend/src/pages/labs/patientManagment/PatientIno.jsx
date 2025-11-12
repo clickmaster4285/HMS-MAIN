@@ -174,7 +174,7 @@ const PatientInfoForm = ({
           name="Gender"
           value={patient.Gender || ''}
           onChange={handlePatientChange}
-          className="border h-[42px] p-2 rounded w-full"
+          className="border h-[42px] p-2 rounded w-full border-gray-300 shadow-sm"
         >
           <option value="">Select Gender</option>
           <option value="Male">Male</option>
@@ -182,6 +182,15 @@ const PatientInfoForm = ({
           <option value="Other">Other</option>
         </select>
       </div>
+      <InputField
+        name="ContactNo"
+        label="Contact No"
+        placeholder="Enter Contact No"
+        icon="phone"
+        value={patient.ContactNo}
+        onChange={handlePatientChange}
+        required
+      />
 
       <div className="flex items-center ">
         <div className="flex items-center mt-2">
@@ -198,16 +207,6 @@ const PatientInfoForm = ({
         </div>
       </div>
 
-      <InputField
-        name="ContactNo"
-        label="Contact No"
-        placeholder="Enter Contact No"
-        icon="phone"
-        value={patient.ContactNo}
-        onChange={handlePatientChange}
-        required
-      />
-
       <div>
         <label
           htmlFor="ReferredBy"
@@ -220,7 +219,7 @@ const PatientInfoForm = ({
           name="ReferredBy"
           value={patient.ReferredBy || ''}
           onChange={handlePatientChange}
-          className="border h-[42px] p-2 rounded w-full"
+          className="border  h-[42px] p-2 rounded w-full  border-gray-300 shadow-smborder-gray-300 shadow-sm"
         >
           <option value="">Select Doctor</option>
           {doctorList.map((doctor, index) => (
@@ -261,23 +260,6 @@ const PatientInfoForm = ({
       <div className="grid grid-cols-2 gap-4 col-span-2">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Date of Birth <span className="text-red-500">*</span>
-          </label>
-          <DatePicker
-            selected={dob}
-            onChange={handleDobChange}
-            dateFormat="yyyy-MM-dd"
-            showMonthDropdown
-            maxDate={new Date()}
-            showYearDropdown
-            dropdownMode="select"
-            placeholderText="Select DOB"
-            className="border rounded px-3 py-2 h-[42px] w-full"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
             Age (auto-calculates DOB)<span className="text-red-500"> *</span>
           </label>
           <input
@@ -285,23 +267,32 @@ const PatientInfoForm = ({
             placeholder="e.g., 20, 0.2, 2 months, 1.5"
             value={ageInput}
             onChange={handleAgeChange}
-            className="border rounded px-3 py-2 h-[42px] w-full"
+            className="border rounded px-3 py-2 h-[42px] w-full border-gray-300 shadow-sm"
           />{' '}
-          <p className="text-xs text-gray-500 mt-1">
-            Enter numbers: 20 (years), 0.2 (2 months), 1.5 (1 year 6 months)
-          </p>
+        
+        </div>
+
+        <div>
+          <div>
+            <label className="block mb-1 font-medium text-gray-700">
+              Date of Birth <span className="text-red-500">*</span>
+            </label>
+            <div className="border rounded border-gray-300 shadow-sm focus-within:ring-2 focus-within:ring-primary-500 focus-within:border-primary-500 h-[42px]">
+              <DatePicker
+                selected={dob}
+                onChange={handleDobChange}
+                dateFormat="yyyy-MM-dd"
+                showMonthDropdown
+                maxDate={new Date()}
+                showYearDropdown
+                dropdownMode="select"
+                placeholderText="Select DOB"
+                className="w-full h-full px-3 py-2 focus:outline-none"
+              />
+            </div>
+          </div>
         </div>
       </div>
-
-      <InputField
-        name="Age"
-        label="Age (Display Only)"
-        icon="calendar"
-        placeholder="Age display"
-        value={patient.Age}
-        onChange={handlePatientChange}
-        readOnly
-      />
     </>
   );
 
