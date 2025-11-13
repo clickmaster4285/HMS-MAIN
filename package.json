@@ -3,7 +3,7 @@
    "name": "realestate-monorepo",
    "private": true,
    "workspaces": [
-      "backend",
+      "backend",ssssss
       "frontend"
    ],
    "scripts": {
