@@ -122,14 +122,14 @@ const IpdForm = ({ mode = "create" }) => {
         )}
 
         {formMode === "edit" && formData.mrNumber && (
-          <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+          <div className="mb-6 p-4 bg-primary-50 rounded-lg border border-primary-200">
             <div className="flex items-center">
-              <div className="h-8 w-1 bg-blue-600 mr-3 rounded-full"></div>
+              <div className="h-8 w-1 bg-primary-600 mr-3 rounded-full"></div>
               <div>
-                <h3 className="text-lg font-semibold text-blue-800">
+                <h3 className="text-lg font-semibold text-primary-800">
                   Editing Admission for MR: {formData.mrNumber}
                 </h3>
-                <p className="text-blue-600 text-sm">
+                <p className="text-primary-600 text-sm">
                   Patient: {formData.patientName} | Current Status: {currentAdmission?.status || 'Admitted'}
                 </p>
               </div>

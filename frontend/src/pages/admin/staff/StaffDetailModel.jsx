@@ -23,7 +23,7 @@
 //         <div className="border-t p-4 flex justify-end">
 //           <button
 //             onClick={onClose}
-//             className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+//             className="px-4 py-2 bg-primary-600 text-white rounded hover:bg-primary-700"
 //           >
 //             Close
 //           </button>

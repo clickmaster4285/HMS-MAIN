@@ -162,9 +162,9 @@ const DoctorFinancialSummary = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-50">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-indigo-50">
         <div className="text-center">
-          <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+          <div className="w-16 h-16 border-4 border-primary-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
           <p className="mt-4 text-gray-600 font-medium">Loading financial data...</p>
         </div>
       </div>
@@ -173,14 +173,14 @@ const DoctorFinancialSummary = () => {
   
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-50">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-indigo-50">
         <div className="bg-white p-6 rounded-xl shadow-lg text-center max-w-md border border-gray-100">
           <div className="text-red-500 text-5xl mb-4">⚠️</div>
           <h2 className="text-xl font-bold text-gray-800 mb-2">Error Loading Data</h2>
           <p className="text-gray-600 mb-4">{error}</p>
           <button 
             onClick={fetchSummary}
-            className="bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-lg transition duration-200 shadow-md hover:shadow-lg"
+            className="bg-primary-500 hover:bg-primary-600 text-white font-medium py-2 px-4 rounded-lg transition duration-200 shadow-md hover:shadow-lg"
           >
             Try Again
           </button>
@@ -190,7 +190,7 @@ const DoctorFinancialSummary = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 p-4 md:p-6">
+    <div className="min-h-screen bg-gradient-to-br from-primary-50 to-indigo-50 p-4 md:p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between">
@@ -211,7 +211,7 @@ const DoctorFinancialSummary = () => {
         
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
-          <div className="bg-white rounded-xl shadow p-5 border-l-4 border-blue-500 hover:shadow-md transition-shadow">
+          <div className="bg-white rounded-xl shadow p-5 border-l-4 border-primary-500 hover:shadow-md transition-shadow">
             <h3 className="text-gray-500 text-sm font-medium mb-1">Total Revenue</h3>
             <p className="text-2xl font-bold text-gray-800">{stats.totalRevenue.toFixed(2)} PKR</p>
           </div>
@@ -235,7 +235,7 @@ const DoctorFinancialSummary = () => {
             <h2 className="text-lg font-semibold text-gray-800">Filters</h2>
             <button
               onClick={resetFilters}
-              className="text-sm text-blue-500 hover:text-blue-700 flex items-center mt-2 md:mt-0 transition-colors"
+              className="text-sm text-primary-500 hover:text-primary-700 flex items-center mt-2 md:mt-0 transition-colors"
             >
               <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -251,7 +251,7 @@ const DoctorFinancialSummary = () => {
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 shadow-sm"
               />
             </div>
             <div>
@@ -260,7 +260,7 @@ const DoctorFinancialSummary = () => {
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 shadow-sm"
               />
             </div>
             <div>
@@ -268,7 +268,7 @@ const DoctorFinancialSummary = () => {
               <select
                 value={selectedDoctor}
                 onChange={(e) => setSelectedDoctor(e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 shadow-sm"
               >
                 <option value="">All Doctors</option>
                 {summaryData.totalDoctors.map(doctor => (
@@ -319,7 +319,7 @@ const DoctorFinancialSummary = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap font-semibold text-gray-800">{item["Total Amount (PKR)"]} PKR</td>
                       <td className="px-6 py-4 whitespace-nowrap font-medium text-red-600">{item["Refunds (PKR)"]} PKR</td>
-                      <td className="px-6 py-4 whitespace-nowrap font-bold text-blue-800">{item["Net Amount (PKR)"]} PKR</td>
+                      <td className="px-6 py-4 whitespace-nowrap font-bold text-primary-800">{item["Net Amount (PKR)"]} PKR</td>
                       <td className="px-6 py-4 whitespace-nowrap text-green-600 font-medium">{item["Hospital Share (PKR)"]} PKR</td>
                       <td className="px-6 py-4 whitespace-nowrap text-purple-600 font-medium">{item["Doctor Share (PKR)"]} PKR</td>
                     </tr>

@@ -22,7 +22,7 @@ const statusColors = {
   completed: 'bg-green-100 text-green-800',
   pending: 'bg-gray-100 text-gray-800',
   processing: 'bg-yellow-100 text-yellow-800',
-  registered: 'bg-blue-100 text-blue-800',
+  registered: 'bg-primary-100 text-primary-800',
   not_started: 'bg-gray-200 text-gray-800',
 };
 
@@ -559,13 +559,13 @@ const TestReport = () => {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search tests..."
-              className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm transition-colors"
+              className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm transition-colors"
             />
           </div>
           <div className="flex flex-wrap gap-2 mb-4">
             <button
               onClick={handleCompletedAll}
-              className="px-3 py-1.5 bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 text-sm font-medium transition-colors"
+              className="px-3 py-1.5 bg-primary-100 text-primary-700 rounded-md hover:bg-primary-200 text-sm font-medium transition-colors"
             >
               Completed
             </button>
@@ -597,7 +597,7 @@ const TestReport = () => {
                     id={`test-${test.testId}`}
                     checked={selectedTestIds.includes(test.testId)}
                     onChange={() => handleTestSelection(test.testId)}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded cursor-pointer"
+                    className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded cursor-pointer"
                   />
                   <label
                     htmlFor={`test-${test.testId}`}
@@ -625,7 +625,7 @@ const TestReport = () => {
             </button>
             <button
               onClick={onPrint}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-medium transition-colors disabled:bg-blue-300 disabled:cursor-not-allowed"
+              className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 text-sm font-medium transition-colors disabled:bg-primary-300 disabled:cursor-not-allowed"
               disabled={selectedTestIds.length === 0}
             >
               Print Selected Tests
@@ -671,13 +671,13 @@ const TestReport = () => {
               value={filters.search}
               onChange={handleFilterChange}
               placeholder="Search patients, MRNo..."
-              className="pl-10 w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="pl-10 w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
             />
           </div>
           <div className="relative" ref={filterRef}>
             <button
               onClick={() => setShowFilterPopup(!showFilterPopup)}
-              className="flex items-center px-4 py-2 bg-blue-50 text-blue-700 rounded-lg text-sm font-medium hover:bg-blue-100 transition-colors"
+              className="flex items-center px-4 py-2 bg-primary-50 text-primary-700 rounded-lg text-sm font-medium hover:bg-primary-100 transition-colors"
             >
               <FiFilter className="mr-2" />
               More Filters
@@ -713,7 +713,7 @@ const TestReport = () => {
                         onChange={handleDateChange}
                         isClearable
                         placeholderText="Select date range"
-                        className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                       />
                       <FiCalendar className="absolute right-3 top-3 text-gray-400" />
                     </div>
@@ -727,7 +727,7 @@ const TestReport = () => {
                         name="paymentStatus"
                         value={filters.paymentStatus}
                         onChange={handleFilterChange}
-                        className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                       >
                         <option value="all">All Payment Status</option>
                         <option value="paid">Paid</option>
@@ -743,7 +743,7 @@ const TestReport = () => {
                         name="testStatus"
                         value={filters.testStatus}
                         onChange={handleFilterChange}
-                        className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                       >
                         <option value="all">All Test Status</option>
                         <option value="completed">Completed</option>
@@ -763,7 +763,7 @@ const TestReport = () => {
                   </button>
                   <button
                     onClick={applyFilters}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-medium transition-colors"
+                    className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 text-sm font-medium transition-colors"
                   >
                     Apply Filters
                   </button>
@@ -831,9 +831,9 @@ const TestReport = () => {
         </div>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
-          <p className="text-sm text-blue-600 font-medium">Total Patients</p>
-          <p className="text-2xl font-bold text-blue-800">{reports.length}</p>
+        <div className="bg-primary-50 p-4 rounded-lg border border-primary-100">
+          <p className="text-sm text-primary-600 font-medium">Total Patients</p>
+          <p className="text-2xl font-bold text-primary-800">{reports.length}</p>
         </div>
         <div className="bg-green-50 p-4 rounded-lg border border-green-100">
           <p className="text-sm text-green-600 font-medium">Completed</p>
@@ -1002,7 +1002,7 @@ const TestReport = () => {
                       <div>
                         <button
                           type="button"
-                          className="inline-flex items-center justify-center rounded-full w-8 h-8 bg-gray-100 text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                          className="inline-flex items-center justify-center rounded-full w-8 h-8 bg-gray-100 text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
                           id={`options-menu-${report.id}`}
                           aria-expanded="false"
                           aria-haspopup="true"

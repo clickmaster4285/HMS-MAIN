@@ -11,7 +11,8 @@ const app = express();
 app.use(
   cors({
     // origin: [ 'https://hms.clickmasters.pk' ], // or '*' temporarily
-    origin: [process.env.Frontend_URL || 'http://localhost:5173'],
+    // origin: [process.env.Frontend_URL || 'http://localhost:5173'],
+    origin: [process.env.Frontend_URL || 'http://192.168.10.253:5173'],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     credentials: true
   })

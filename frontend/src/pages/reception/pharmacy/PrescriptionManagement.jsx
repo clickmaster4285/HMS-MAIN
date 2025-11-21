@@ -116,7 +116,7 @@ const PrescriptionManagement = () => {
         case 'pending':
           return 'bg-yellow-100 text-yellow-800';
         case 'active':
-          return 'bg-blue-100 text-blue-800';
+          return 'bg-primary-100 text-primary-800';
         case 'discharged':
           return 'bg-gray-100 text-gray-800';
         case 'sent':
@@ -360,7 +360,7 @@ const PrescriptionManagement = () => {
                     <button className="text-primary-600 hover:text-primary-900 mr-4">
                       <FaEye className="inline mr-1" /> View
                     </button>
-                    <button className="text-blue-600 hover:text-blue-900 mr-4">
+                    <button className="text-primary-600 hover:text-primary-900 mr-4">
                       <FaEdit className="inline mr-1" /> Edit
                     </button>
                     <button className="text-purple-600 hover:text-purple-900 mr-4">

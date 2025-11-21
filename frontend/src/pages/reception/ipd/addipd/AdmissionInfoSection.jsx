@@ -200,7 +200,7 @@ const AdmissionInfoSection = ({ formData, handleChange, mode = "create" }) => {
                 name="dischargePatient"
                 checked={formData.dischargePatient || false}
                 onChange={handleChange}
-                className="h-5 w-5 text-blue-600 rounded focus:ring-blue-500"
+                className="h-5 w-5 text-primary-600 rounded focus:ring-primary-500"
               />
               <label htmlFor="dischargePatient" className="text-lg font-semibold text-yellow-800">
                 Discharge Patient

@@ -464,7 +464,7 @@ console.log({doctors})
                       <div className="flex gap-2">
                         <button
                           onClick={() => handleEdit(summary.expenses[0])}
-                          className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
+                          className="px-3 py-1 bg-primary-500 text-white rounded hover:bg-primary-600"
                         >
                           Edit
                         </button>
@@ -484,9 +484,9 @@ console.log({doctors})
                     </div>
 
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                      <div className="bg-blue-50 p-3 rounded">
-                        <p className="text-blue-600 font-medium">Doctor Welfare</p>
-                        <p className="text-xl font-bold text-blue-800">
+                      <div className="bg-primary-50 p-3 rounded">
+                        <p className="text-primary-600 font-medium">Doctor Welfare</p>
+                        <p className="text-xl font-bold text-primary-800">
                           PKR {summary.welfare.toFixed(2)}
                         </p>
                       </div>
@@ -525,10 +525,10 @@ console.log({doctors})
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
                       <div className="bg-white p-4 rounded-lg shadow">
-                        <p className="text-blue-600 font-medium">
+                        <p className="text-primary-600 font-medium">
                           Total Doctor Welfare
                         </p>
-                        <p className="text-2xl font-bold text-blue-800">
+                        <p className="text-2xl font-bold text-primary-800">
                           PKR{" "}
                           {Object.values(getDoctorSummary())
                             .reduce((sum, doc) => sum + doc.welfare, 0)

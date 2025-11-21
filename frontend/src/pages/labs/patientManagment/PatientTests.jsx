@@ -404,7 +404,7 @@ const PatientTestsTable = () => {
   if (status.fetchAll === 'loading') {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500" />
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-500" />
       </div>
     );
   }
@@ -439,7 +439,7 @@ const PatientTestsTable = () => {
               <input
                 type="text"
                 placeholder="Search by MR No, Name, Token # or Contact No"
-                className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -469,7 +469,7 @@ const PatientTestsTable = () => {
                     name="status"
                     value={filters.status}
                     onChange={handleFilterChange}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
                   >
                     <option value="">All Statuses</option>
                     <option value="pending">Pending</option>
@@ -487,7 +487,7 @@ const PatientTestsTable = () => {
                     name="gender"
                     value={filters.gender}
                     onChange={handleFilterChange}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
                   >
                     <option value="">All Genders</option>
                     <option value="Male">Male</option>
@@ -504,7 +504,7 @@ const PatientTestsTable = () => {
                     name="dateRange"
                     value={filters.dateRange}
                     onChange={handleFilterChange}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
                   >
                     <option value="">All Dates</option>
                     <option value="today">Today</option>
@@ -524,7 +524,7 @@ const PatientTestsTable = () => {
                     value={filters.contact}
                     onChange={handleFilterChange}
                     placeholder="e.g. 0300-1234567"
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
                   />
                 </div>
 
@@ -598,7 +598,7 @@ const PatientTestsTable = () => {
                         {t.selectedTests.length > 2 && (
                           <button
                             onClick={() => openModal(t)}
-                            className="text-blue-500 hover:underline text-sm mt-1"
+                            className="text-primary-500 hover:underline text-sm mt-1"
                           >
                             See More
                           </button>
@@ -642,7 +642,7 @@ const PatientTestsTable = () => {
                               : t.paymentStatus === 'pending'
                               ? 'bg-yellow-100 text-yellow-800'
                               : t.paymentStatus === 'partial'
-                              ? 'bg-blue-100 text-blue-800'
+                              ? 'bg-primary-100 text-primary-800'
                               : 'bg-red-100 text-red-800'
                           }`}
                         >
@@ -661,7 +661,7 @@ const PatientTestsTable = () => {
                           </button>
                           <button
                             onClick={() => handleEdit(test._id)}
-                            className="text-blue-600 hover:text-blue-800"
+                            className="text-primary-600 hover:text-primary-800"
                             title="Edit"
                           >
                             <FiEdit className="h-4 w-4" />
@@ -715,7 +715,7 @@ const PatientTestsTable = () => {
               </div>
               <button
                 onClick={closeModal}
-                className="mt-4 bg-blue-100 text-blue-900 px-4 py-2 rounded-md hover:bg-blue-200"
+                className="mt-4 bg-primary-100 text-primary-900 px-4 py-2 rounded-md hover:bg-primary-200"
               >
                 Close
               </button>

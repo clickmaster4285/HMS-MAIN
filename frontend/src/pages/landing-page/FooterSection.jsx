@@ -8,7 +8,7 @@ const Footer = () => {
 
   const socialLinks = [
     { icon: Twitter, href: "#", color: "hover:text-sky-400", bgColor: "hover:bg-sky-400/10" },
-    { icon: Facebook, href: "#", color: "hover:text-blue-600", bgColor: "hover:bg-blue-600/10" },
+    { icon: Facebook, href: "#", color: "hover:text-primary-600", bgColor: "hover:bg-primary-600/10" },
     { icon: Instagram, href: "#", color: "hover:text-purple-500", bgColor: "hover:bg-purple-500/10" },
     { icon: Link, href: "#", color: "hover:text-gray-400", bgColor: "hover:bg-white/10" }
   ];
@@ -19,7 +19,7 @@ const Footer = () => {
       {/* Animated background elements */}
       <div className="absolute inset-0">
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary-500/10 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute bottom-0 right-1/4 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
+        <div className="absolute bottom-0 right-1/4 w-80 h-80 bg-primary-500/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
         <div className="absolute top-1/2 left-0 w-64 h-64 bg-sky-500/10 rounded-full blur-2xl animate-pulse delay-500"></div>
       </div>
 

@@ -24,10 +24,10 @@ const FilterDropdown = ({ view, setView }) => {
       <button
         onClick={() => setOpen(!open)}
         className={`flex items-center gap-2 px-4 py-2 border rounded-lg bg-white shadow-sm hover:bg-gray-50 transition-all duration-200 ${
-          open ? 'border-blue-500 ring-2 ring-blue-100' : 'border-gray-300'
+          open ? 'border-primary-500 ring-2 ring-primary-100' : 'border-gray-300'
         }`}
       >
-        <Filter size={18} className={`transition-colors ${open ? 'text-blue-600' : 'text-gray-600'}`} />
+        <Filter size={18} className={`transition-colors ${open ? 'text-primary-600' : 'text-gray-600'}`} />
         <span className="text-sm font-medium text-gray-700">
           {options.find((opt) => opt.value === view)?.label || 'Filter'}
         </span>
@@ -42,8 +42,8 @@ const FilterDropdown = ({ view, setView }) => {
                 setView(option.value);
                 setOpen(false);
               }}
-              className={`px-5 py-3 cursor-pointer transition-all duration-150 rounded-md mx-2 mt-2 hover:bg-blue-50 hover:text-blue-700 ${
-                view === option.value ? 'bg-blue-100 text-blue-800 font-semibold' : 'text-gray-700'
+              className={`px-5 py-3 cursor-pointer transition-all duration-150 rounded-md mx-2 mt-2 hover:bg-primary-50 hover:text-primary-700 ${
+                view === option.value ? 'bg-primary-100 text-primary-800 font-semibold' : 'text-gray-700'
               }`}
             >
               {option.label}

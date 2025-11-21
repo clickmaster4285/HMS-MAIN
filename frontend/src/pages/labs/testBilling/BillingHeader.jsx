@@ -6,7 +6,7 @@ const BillingHeader = ({ title, showBack = false }) => {
     <div className="flex items-center justify-between mb-4">
       <h1 className="text-2xl font-bold">
         {showBack && (
-          <Link to="/bills" className="mr-2 text-blue-600 hover:text-blue-800">
+          <Link to="/bills" className="mr-2 text-primary-600 hover:text-primary-800">
             &larr;
           </Link>
         )}

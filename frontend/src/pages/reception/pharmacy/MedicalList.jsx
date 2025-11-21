@@ -414,8 +414,8 @@ const MedicineList = () => {
             </div>
 
             <div className="mt-5 grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="bg-blue-50 p-4 rounded-md">
-                <h3 className="text-xl font-medium text-blue-700">Storage Instructions</h3>
+              <div className="bg-primary-50 p-4 rounded-md">
+                <h3 className="text-xl font-medium text-primary-700">Storage Instructions</h3>
                 <p className="text-lg text-gray-600 mt-1">Store in a cool, dry place away from direct sunlight.</p>
               </div>
               <div className="bg-amber-50 p-4 rounded-md">

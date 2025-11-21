@@ -78,7 +78,7 @@ const BedDetails = () => {
             <h2 className="text-xl font-semibold">Current Status</h2>
             <button
               onClick={toggleHistory}
-              className="bg-blue-600 hover:bg-blue-700 text-white py-1 px-4 rounded-md text-sm"
+              className="bg-primary-600 hover:bg-primary-700 text-white py-1 px-4 rounded-md text-sm"
             >
               {showHistory ? 'Hide History' : 'View History'}
             </button>
@@ -194,7 +194,7 @@ const BedDetails = () => {
         <div className="p-6 bg-gray-50 flex justify-between">
           <button
             onClick={toggleHistory}
-            className="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md"
+            className="bg-primary-600 hover:bg-primary-700 text-white py-2 px-4 rounded-md"
           >
             {showHistory ? 'Hide History' : 'View Full History'}
           </button>

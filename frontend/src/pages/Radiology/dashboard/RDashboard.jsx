@@ -43,7 +43,7 @@ const RDashboard = () => {
 
   const StatCard = ({ icon: Icon, title, value, subtitle, trend, color = 'blue' }) => {
     const colorClasses = {
-      blue: 'bg-blue-50 border-blue-200 text-blue-600',
+      blue: 'bg-primary-50 border-primary-200 text-primary-600',
       green: 'bg-green-50 border-green-200 text-green-600',
       yellow: 'bg-yellow-50 border-yellow-200 text-yellow-600',
       red: 'bg-red-50 border-red-200 text-red-600'
@@ -85,13 +85,13 @@ const RDashboard = () => {
               <select 
                 value={selectedPeriod}
                 onChange={(e) => setSelectedPeriod(e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               >
                 <option value="today">Today</option>
                 <option value="week">This Week</option>
                 <option value="month">This Month</option>
               </select>
-              <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center">
+              <button className="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors flex items-center">
                 <Download className="h-4 w-4 mr-2" />
                 Export
               </button>
@@ -203,7 +203,7 @@ const RDashboard = () => {
             </ResponsiveContainer>
             <div className="flex justify-center space-x-6 mt-4">
               <div className="flex items-center">
-                <div className="w-3 h-3 bg-blue-500 rounded-full mr-2"></div>
+                <div className="w-3 h-3 bg-primary-500 rounded-full mr-2"></div>
                 <span className="text-sm text-gray-600">Scans</span>
               </div>
               <div className="flex items-center">
@@ -221,7 +221,7 @@ const RDashboard = () => {
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-semibold text-gray-900">Urgent Cases</h2>
-              <button className="text-blue-600 hover:text-blue-700 flex items-center text-sm">
+              <button className="text-primary-600 hover:text-primary-700 flex items-center text-sm">
                 <Search className="h-4 w-4 mr-1" />
                 View All
               </button>
@@ -245,7 +245,7 @@ const RDashboard = () => {
                     {case_.status === 'reviewed' ? (
                       <CheckCircle className="h-5 w-5 text-green-500" />
                     ) : case_.status === 'reporting' ? (
-                      <Activity className="h-5 w-5 text-blue-500" />
+                      <Activity className="h-5 w-5 text-primary-500" />
                     ) : (
                       <Clock className="h-5 w-5 text-yellow-500" />
                     )}

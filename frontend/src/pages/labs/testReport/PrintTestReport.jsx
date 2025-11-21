@@ -68,95 +68,78 @@ const PrintTestReport = ({ patientTest, testDefinitions }) => {
 
   return (
     <div style={styles.container}>
-      <table style={styles.patientInfoTable}>
-        <tbody>
-          <tr>
-            <td style={styles.labelCell}>Lab #</td>
-            <td style={styles.valueCell}>
-              {safeData(patientData.patient_MRNo)}
-            </td>
-            <td style={styles.labelCell}>Date</td>
-            <td style={styles.valueCell}>
-              {formatDate(patientTest.createdAt)}
-            </td>
-          </tr>
-          <tr>
-            <td style={styles.labelCell}>Patient Name</td>
-            <td style={styles.valueCell}>
-              {safeData(patientData.patient_Name)}
-            </td>
-            <td style={styles.labelCell}>Referred By</td>
-            <td style={styles.valueCell}>
-              {safeData(patientTest.patient_Detail.referredBy)}
-            </td>
-          </tr>
-          <tr>
-            <td style={styles.labelCell}>Gender</td>
-            <td style={styles.valueCell}>
-              {safeData(patientData.patient_Gender)}
-            </td>
-            <td style={styles.labelCell}>Patient Age</td>
-            <td style={styles.valueCell}>
-              {formatAge(patientData.patient_Age)}
-            </td>
-          </tr>
-          <tr>
-            <td style={styles.labelCell}>Contact #</td>
-            <td style={styles.valueCell}>
-              {safeData(patientData.patient_ContactNo)}
-            </td>
-            <td style={styles.labelCell}></td>
-            <td style={styles.valueCell}></td>
-          </tr>
-        </tbody>
-      </table>
+      {/* Letterhead space - completely empty */}
+      <div style={styles.letterheadSpace}></div>
+      
+      {/* Content area - all your content goes here */}
+      <div style={styles.contentArea}>
+        <div style={styles.legalNotice}>Not valid for court</div>
+        <table style={styles.patientInfoTable}>
+          <tbody>
+            <tr>
+              <td style={styles.labelCell}>Lab #</td>
+              <td style={styles.valueCell}>{safeData(patientData.patient_MRNo)}</td>
+              <td style={styles.labelCell}>Date</td>
+              <td style={styles.valueCell}>{formatDate(patientTest.createdAt)}</td>
+            </tr>
+            <tr>
+              <td style={styles.labelCell}>Patient Name</td>
+              <td style={styles.valueCell}>{safeData(patientData.patient_Name)}</td>
+              <td style={styles.labelCell}>Referred By</td>
+              <td style={styles.valueCell}>{safeData(patientTest.patient_Detail.referredBy)}</td>
+            </tr>
+            <tr>
+              <td style={styles.labelCell}>Gender</td>
+              <td style={styles.valueCell}>{safeData(patientData.patient_Gender)}</td>
+              <td style={styles.labelCell}>Patient Age</td>
+              <td style={styles.valueCell}>{formatAge(patientData.patient_Age)}</td>
+            </tr>
+            <tr>
+              <td style={styles.labelCell}>Contact #</td>
+              <td style={styles.valueCell}>{safeData(patientData.patient_ContactNo)}</td>
+              <td style={styles.labelCell}></td>
+              <td style={styles.valueCell}></td>
+            </tr>
+          </tbody>
+        </table>
 
-      <div style={styles.divider}></div>
-
-      {testDefinitions.map((testDef, index) => (
-        <div style={styles.testSection} key={index}>
-          <div style={styles.testTitle}>{testDef.testName}</div>
-          <table style={styles.testTable}>
-            <thead>
-              <tr>
-                <th style={styles.tableHeader}>Test Name</th>
-                <th style={styles.tableHeader}>Result</th>
-                <th style={styles.tableHeader}>Unit</th>
-                <th style={styles.tableHeader}>Reference Range</th>
-              </tr>
-            </thead>
-            <tbody>
-              {testDef.fields.map((field, idx) => (
-                <tr key={idx}>
-                  <td style={styles.tableCell}>
-                    {field.fieldName || field.name}
-                  </td>
-                  <td
-                    style={
-                      isAbnormal(field, field.value, patientData)
-                        ? { ...styles.tableCell, ...styles.abnormal }
-                        : styles.tableCell
-                    }
-                  >
-                    {field.value || '/-'}
-                  </td>
-                  <td style={styles.tableCell}>{safeData(field.unit, '')}</td>
-                  <td style={styles.tableCell}>
-                    {getFormattedRange(field, patientData)}
-                  </td>
+        {testDefinitions.map((testDef, index) => (
+          <div style={styles.testSection} key={index}>
+            <div style={styles.testTitle}>{testDef.testName}</div>
+            <table style={styles.testTable}>
+              <thead>
+                <tr>
+                  <th style={{...styles.tableHeader, ...styles.testNameHeader}}>Test Name</th>
+                  <th style={{...styles.tableHeader, ...styles.resultHeader}}>Result</th>
+                  <th style={{...styles.tableHeader, ...styles.unitHeader}}>Unit</th>
+                  <th style={{...styles.tableHeader, ...styles.rangeHeader}}>Reference Range</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      ))}
-
-      <div style={styles.divider}></div>
-
-      <div style={styles.footerNote}>
-        Laboratory results are intended for clinical guidance only and must be
-        interpreted in conjunction with the patient's clinical history and
-        physician's evaluation.
+              </thead>
+              <tbody>
+                {testDef.fields.map((field, idx) => (
+                  <tr key={idx}>
+                    <td style={{...styles.tableCell, ...styles.testNameCell}}>
+                      {field.fieldName || field.name}
+                    </td>
+                    <td
+                      style={
+                        isAbnormal(field, field.value, patientData)
+                          ? {...styles.tableCell, ...styles.resultCell, ...styles.abnormal}
+                          : {...styles.tableCell, ...styles.resultCell}
+                      }
+                    >
+                      {field.value || '/-'}
+                    </td>
+                    <td style={{...styles.tableCell, ...styles.unitCell}}>{safeData(field.unit, '')}</td>
+                    <td style={{...styles.tableCell, ...styles.rangeCell}}>
+                      {getFormattedRange(field, patientData)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -166,18 +149,40 @@ const PrintTestReport = ({ patientTest, testDefinitions }) => {
 const styles = {
   container: {
     width: '210mm',
-    minHeight: '297mm',
+    height: '297mm', // Fixed A4 height
     margin: '0 auto',
-    marginTop: '25%',
-    padding: '1mm',
+    padding: '0',
     boxSizing: 'border-box',
     backgroundColor: '#fff',
     color: '#333',
     fontFamily: '"Arial", sans-serif',
-    fontSize: '12pt',
-    lineHeight: '1.4',
+    fontSize: '12pt', // Reduced from 11pt
+    lineHeight: '1.1', // Reduced line height
     position: 'relative',
+    overflow: 'hidden', // Prevent overflow to second page
+    pageBreakInside: 'avoid',
+    pageBreakAfter: 'avoid',
   },
+
+  letterheadSpace: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: '74mm', // 25% of 297mm ≈ 74mm for letterhead
+    backgroundColor: 'transparent',
+    // This area will be empty for physical letterhead
+  },
+
+  contentArea: {
+    position: 'absolute',
+    top: '74mm', // Start after letterhead space
+    left: '1mm',
+    right: '1mm',
+    bottom: '1mm',
+    overflow: 'hidden',
+  },
+
   printButton: {
     position: 'fixed',
     top: '10mm',
@@ -191,89 +196,123 @@ const styles = {
     zIndex: 1000,
     display: 'block',
   },
+
   header: {
     textAlign: 'center',
-    marginBottom: '10px',
+    marginBottom: '8px', // Reduced
     borderBottom: '2px solid #2b6cb0',
-    paddingBottom: '10px',
+    paddingBottom: '8px', // Reduced
   },
-  hospitalName: {
-    fontSize: '24pt',
-    fontWeight: 'bold',
-    color: '#2b6cb0',
-    marginBottom: '5px',
-    textTransform: 'uppercase',
-  },
-  hospitalSubtitle: {
-    fontSize: '14pt',
-    color: '#555',
-    marginBottom: '5px',
-  },
+
   patientInfoTable: {
     width: '100%',
     borderCollapse: 'collapse',
-    margin: '15px 0',
+    margin: '8px 0', // Reduced from 15px
+    fontSize: '9pt', // Smaller font for table
   },
+
   labelCell: {
     fontWeight: 'bold',
     width: '15%',
-    padding: '5px',
+    padding: '3px', // Reduced from 5px
     border: '1px solid #ddd',
     backgroundColor: '#f5f5f5',
+    fontSize: '9pt', // Consistent font size
   },
+
   valueCell: {
-    padding: '5px',
+    padding: '3px', // Reduced from 5px
     border: '1px solid #ddd',
     width: '35%',
+    fontSize: '9pt', // Consistent font size
   },
-  divider: {
-    borderTop: '1px dashed #000',
-    margin: '10px 0',
-  },
+
   testSection: {
-    marginBottom: '20px',
+    marginBottom: '12px', // Reduced from 20px
     pageBreakInside: 'avoid',
   },
+
   testTitle: {
     fontWeight: 'bold',
-    fontSize: '16pt',
-    marginBottom: '5px',
+    fontSize: '12pt', // Reduced from 16pt
+    marginBottom: '3px', // Reduced from 5px
     color: '#2b6cb0',
+    padding: '2px 0',
   },
+
   testTable: {
     width: '100%',
     borderCollapse: 'collapse',
-    marginBottom: '10px',
+    marginBottom: '8px', // Reduced from 10px
+    tableLayout: 'fixed',
+    fontSize: '9pt', // Smaller font for test table
   },
+
   tableHeader: {
     backgroundColor: '#f0f0f0',
     border: '1px solid #ddd',
-    padding: '5px',
+    padding: '3px', // Reduced from 5px
     textAlign: 'left',
     fontWeight: 'bold',
-    fontSize: '11pt',
+    fontSize: '9pt', // Reduced from 11pt
   },
+
   tableCell: {
     border: '1px solid #ddd',
-    padding: '5px',
-    fontSize: '11pt',
+    padding: '3px', // Reduced from 5px
+    fontSize: '9pt', // Reduced from 11pt
+    verticalAlign: 'top',
+    lineHeight: '1.1',
   },
+
+  // Fixed width columns
+  testNameHeader: {
+    width: '35%',
+  },
+
+  resultHeader: {
+    width: '20%',
+  },
+
+  unitHeader: {
+    width: '15%',
+  },
+
+  rangeHeader: {
+    width: '30%',
+  },
+
+  // Cell styles with word wrapping
+  testNameCell: {
+    width: '35%',
+    wordWrap: 'break-word',
+  },
+
+  resultCell: {
+    width: '20%',
+    wordWrap: 'break-word',
+  },
+
+  unitCell: {
+    width: '15%',
+    wordWrap: 'break-word',
+  },
+
+  rangeCell: {
+    width: '30%',
+    wordWrap: 'break-word',
+    whiteSpace: 'normal',
+  },
+
   abnormal: {
     color: 'red',
     fontWeight: 'bold',
   },
-  footerNote: {
-    position: 'fixed',
-    bottom: '80px',
-    left: 0,
-    width: '100%',
-    textAlign: 'center',
-    fontSize: '11px',
-    padding: '6px 10px',
-    borderTop: '1px solid #ccc',
-    fontStyle: 'italic',
-    background: '#f9f9f9',
-  },
+  legalNotice: {
+    display: "flex",
+    justifyContent: "flex-end",
+    textAlign: "right",
+  }
 };
 
 export default PrintTestReport;

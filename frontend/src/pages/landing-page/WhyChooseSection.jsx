@@ -76,8 +76,8 @@ const CombinedFeaturesSection = () => {
       icon: <Stethoscope size={24} />,
       title: "Comprehensive OPD Management",
       description: "Simplify patient onboarding and maintain complete digital health records for every visit.",
-      color: "bg-blue-50 text-blue-600",
-      hoverColor: "hover:bg-blue-50/50"
+      color: "bg-primary-50 text-primary-600",
+      hoverColor: "hover:bg-primary-50/50"
     },
     {
       icon: <Bed size={24} />,

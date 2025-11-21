@@ -69,19 +69,19 @@ const Report = () => {
       <div className="flex border-b border-gray-200 mb-6">
         <button
           onClick={() => setActiveTab('monthly')}
-          className={`py-2 px-4 font-medium ${activeTab === 'monthly' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500'}`}
+          className={`py-2 px-4 font-medium ${activeTab === 'monthly' ? 'text-primary-600 border-b-2 border-primary-600' : 'text-gray-500'}`}
         >
           Monthly Statistics
         </button>
         <button
           onClick={() => setActiveTab('category')}
-          className={`py-2 px-4 font-medium ${activeTab === 'category' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500'}`}
+          className={`py-2 px-4 font-medium ${activeTab === 'category' ? 'text-primary-600 border-b-2 border-primary-600' : 'text-gray-500'}`}
         >
           By Category
         </button>
         <button
           onClick={() => setActiveTab('recent')}
-          className={`py-2 px-4 font-medium ${activeTab === 'recent' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500'}`}
+          className={`py-2 px-4 font-medium ${activeTab === 'recent' ? 'text-primary-600 border-b-2 border-primary-600' : 'text-gray-500'}`}
         >
           Recent Activity
         </button>

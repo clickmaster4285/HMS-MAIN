@@ -38,7 +38,7 @@ const ContactSection = () => {
       <div className="absolute inset-0">
         <div className="absolute top-20 left-20 w-72 h-72 bg-sky-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse"></div>
         <div className="absolute top-40 right-20 w-96 h-96 bg-primary-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse delay-1000"></div>
-        <div className="absolute -bottom-20 left-40 w-80 h-80 bg-blue-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse delay-500"></div>
+        <div className="absolute -bottom-20 left-40 w-80 h-80 bg-primary-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse delay-500"></div>
       </div>
 
       {/* Grid pattern overlay */}
@@ -97,13 +97,13 @@ const ContactSection = () => {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-4 p-4 rounded-2xl bg-gradient-to-r from-blue-600/20 to-transparent hover:from-blue-600/30 transition-all duration-300 group/item cursor-pointer">
-                    <div className="bg-gradient-to-r from-blue-500 to-cyan-500 p-3 rounded-xl group-hover/item:scale-110 transition-transform">
+                  <div className="flex items-center gap-4 p-4 rounded-2xl bg-gradient-to-r from-primary-600/20 to-transparent hover:from-primary-600/30 transition-all duration-300 group/item cursor-pointer">
+                    <div className="bg-gradient-to-r from-primary-500 to-cyan-500 p-3 rounded-xl group-hover/item:scale-110 transition-transform">
                       <Phone className="w-5 h-5 text-white" />
                     </div>
                     <div>
                       <h3 className="font-semibold text-white">Call Us</h3>
-                      <p className="text-blue-300">+X (XXX) XXX-XXXX</p>
+                      <p className="text-primary-300">+X (XXX) XXX-XXXX</p>
                     </div>
                   </div>
 
@@ -124,7 +124,7 @@ const ContactSection = () => {
                   <div className="flex gap-3">
                     {[
                       { icon: Twitter, color: 'from-cyan-400 to-cyan-600', hoverColor: 'hover:from-cyan-300 hover:to-cyan-500' },
-                      { icon: Facebook, color: 'from-blue-600 to-blue-800', hoverColor: 'hover:from-blue-500 hover:to-blue-700' },
+                      { icon: Facebook, color: 'from-primary-600 to-primary-800', hoverColor: 'hover:from-primary-500 hover:to-primary-700' },
                       { icon: Instagram, color: 'from-purple-500 via-pink-600 via-red-600 via-orange-600 to-yellow-600', hoverColor: 'hover:from-pink-400 hover:to-sky-500' }
                     ].map((social, index) => (
                       <button

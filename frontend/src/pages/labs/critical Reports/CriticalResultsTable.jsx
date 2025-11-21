@@ -193,7 +193,7 @@ const CriticalResultsTable = ({
                     </button>
                     <button
                       onClick={() => onEdit(result)}
-                      className="text-blue-600 hover:text-blue-900 mr-3"
+                      className="text-primary-600 hover:text-primary-900 mr-3"
                     >
                       Edit
                     </button>

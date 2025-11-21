@@ -99,7 +99,7 @@ const ReportSummary = () => {
       case 'pending':
         return 'bg-amber-100 text-amber-800';
       case 'registered':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-primary-100 text-primary-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }

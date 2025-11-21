@@ -873,7 +873,7 @@ const Inventory = () => {
                         {item.wards || '-'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${item.category === 'Medical Equipment' ? 'bg-blue-100 text-blue-800' :
+                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${item.category === 'Medical Equipment' ? 'bg-primary-100 text-primary-800' :
                           item.category === 'Furniture' ? 'bg-green-100 text-green-800' :
                             item.category === 'Surgical Instrument' ? 'bg-purple-100 text-purple-800' :
                               'bg-yellow-100 text-yellow-800'
@@ -902,7 +902,7 @@ const Inventory = () => {
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <button
                           onClick={() => handleEdit(item)}
-                          className="text-blue-600 hover:text-blue-900 mr-4"
+                          className="text-primary-600 hover:text-primary-900 mr-4"
                         >
                           Edit
                         </button>
