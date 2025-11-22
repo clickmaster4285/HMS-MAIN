@@ -22,6 +22,7 @@ const TestInformationForm = ({
 }) => {
   const [paidBox, setPaidBox] = useState('');
   const [discountBox, setDiscountBox] = useState('');
+  const [showSelectedPreview, setShowSelectedPreview] = useState(false);
 
   // Use custom hook for test selection logic
   const {
@@ -38,7 +39,10 @@ const TestInformationForm = ({
     handleAddSelectedTests,
     handleAddSingleTest,
     handleKeyDown,
+    getSelectedTestDetails,
   } = useTestSelection(testList, testRows, handleTestAdd);
+
+  const selectedTestDetails = getSelectedTestDetails();
 
   // Convert input to non-negative number
   const toNumber = (v) => {
@@ -128,6 +132,11 @@ const TestInformationForm = ({
     }
   };
 
+  // Remove individual selected test
+  const handleRemoveSelectedTest = (testId) => {
+    handleTestSelection(testId);
+  };
+
   return (
     <div className="space-y-4">
       {/* Test Selection - Optimized Interface */}
@@ -148,12 +157,12 @@ const TestInformationForm = ({
               onKeyDown={handleKeyDown}
               className="w-full px-3 py-2 border border-gray-300 rounded shadow-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
             />
-            
-            {/* Test List Dropdown - Only shows when there are results AND search term exists */}
+
+            {/* Test List Dropdown */}
             {showTestList && searchTerm.trim() && availableTests.length > 0 && (
-              <div 
+              <div
                 ref={testListRef}
-                className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-y-auto"
+                className="absolute z-20 w-full mt-1 bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-y-auto"
                 onKeyDown={handleKeyDown}
               >
                 <div className="p-2 border-b border-gray-200 bg-gray-50">
@@ -172,11 +181,11 @@ const TestInformationForm = ({
                     </span>
                   </label>
                 </div>
-                
+
                 <div className="divide-y divide-gray-100">
                   {availableTests.map((test) => (
-                    <label 
-                      key={test._id} 
+                    <label
+                      key={test._id}
                       className="flex items-center space-x-3 p-3 hover:bg-gray-50 cursor-pointer"
                     >
                       <input
@@ -206,16 +215,112 @@ const TestInformationForm = ({
               </div>
             )}
           </div>
-          
-          <button
-            type="button"
-            onClick={handleAddSelectedTests}
-            disabled={selectedTests.length === 0}
-            className="px-4 py-2 bg-primary-700 text-white rounded h-[42px] hover:bg-primary-800 disabled:bg-gray-400 disabled:cursor-not-allowed"
-          >
-            Add Selected ({selectedTests.length})
-          </button>
+
+          {/* Enhanced Add Selected Button with Preview */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={handleAddSelectedTests}
+              onMouseEnter={() => setShowSelectedPreview(true)}
+              onMouseLeave={() => setShowSelectedPreview(false)}
+              disabled={selectedTests.length === 0}
+              className="px-4 py-2 bg-primary-700 text-white rounded h-[42px] hover:bg-primary-800 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+            >
+              Add Selected ({selectedTests.length})
+            </button>
+
+            {/* Selected Tests Preview */}
+            {showSelectedPreview && selectedTestDetails.length > 0 && (
+              <div className="absolute z-30 top-full left-0 mt-1 w-80 bg-white border border-gray-300 rounded shadow-lg">
+                <div className="p-3 border-b border-gray-200 bg-gray-50">
+                  <h4 className="font-semibold text-gray-900">
+                    Selected Tests ({selectedTestDetails.length})
+                  </h4>
+                </div>
+                <div className="max-h-60 overflow-y-auto">
+                  {selectedTestDetails.map((test, index) => (
+                    <div
+                      key={test.id}
+                      className="flex items-center justify-between p-3 border-b border-gray-100 last:border-b-0 hover:bg-gray-50"
+                    >
+                      <div className="flex-1">
+                        <div className="font-medium text-gray-900 text-sm">
+                          {test.name}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          Code: {test.code} | Rs. {formatCurrency(toNumber(test.price))}
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveSelectedTest(test.id)}
+                        className="ml-2 p-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded"
+                        title="Remove from selection"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <div className="p-3 border-t border-gray-200 bg-gray-50">
+                  <div className="text-xs text-gray-600">
+                    Total: Rs. {formatCurrency(selectedTestDetails.reduce((sum, test) => sum + toNumber(test.price), 0))}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
+
+        {/* Selected Tests Summary (Always visible when there are selections) */}
+        {selectedTestDetails.length > 0 && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="font-semibold text-blue-900 text-sm">
+                Ready to Add ({selectedTestDetails.length} tests)
+              </h4>
+              <div className="text-right">
+                <div className="text-sm font-semibold text-blue-900">
+                  Rs. {formatCurrency(selectedTestDetails.reduce((sum, test) => sum + toNumber(test.price), 0))}
+                </div>
+                <div className="text-xs text-blue-700">
+                  Double Enter to add all
+                </div>
+              </div>
+            </div>
+
+            {/* All tests in column layout */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 max-h-40 overflow-y-auto">
+              {selectedTestDetails.map((test, index) => (
+                <div
+                  key={test.id}
+                  className="flex items-center justify-between p-2 bg-white rounded border border-blue-100 hover:bg-blue-50"
+                >
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium text-gray-900 text-xs truncate">
+                      {test.name}
+                    </div>
+                    <div className="text-xs text-gray-500 truncate">
+                      Code: {test.code} | Rs. {formatCurrency(toNumber(test.price))}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveSelectedTest(test.id)}
+                    className="ml-2 p-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded flex-shrink-0"
+                    title="Remove from selection"
+                  >
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {showTestList && searchTerm.trim() && availableTests.length === 0 && (
           <div className="text-center py-4 text-gray-500">

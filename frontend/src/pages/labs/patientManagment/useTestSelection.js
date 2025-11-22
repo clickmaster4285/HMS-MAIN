@@ -5,7 +5,7 @@ import { debounce } from 'lodash';
 export const useTestSelection = (testList, testRows, handleTestAdd) => {
   const [selectedTests, setSelectedTests] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [showTestList, setShowTestList] = useState(false); // Start with dropdown closed
+  const [showTestList, setShowTestList] = useState(false);
   const [lastEnterTime, setLastEnterTime] = useState(0);
   const searchInputRef = useRef(null);
   const testListRef = useRef(null);
@@ -17,6 +17,19 @@ export const useTestSelection = (testList, testRows, handleTestAdd) => {
       test.testName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       test.testCode?.toLowerCase().includes(searchTerm.toLowerCase())
     );
+
+  // Get selected test details for display
+  const getSelectedTestDetails = useCallback(() => {
+    return selectedTests.map(testId => {
+      const test = testList.find(t => t._id === testId);
+      return test ? {
+        id: test._id,
+        name: test.testName || 'Unnamed Test',
+        code: test.testCode,
+        price: test.testPrice
+      } : null;
+    }).filter(Boolean);
+  }, [selectedTests, testList]);
 
   // Handle test selection with auto-clear and refocus
   const handleTestSelection = useCallback((testId) => {
@@ -92,10 +105,9 @@ export const useTestSelection = (testList, testRows, handleTestAdd) => {
 
     try {
       handleTestAdd(testId);
-      setSearchTerm(''); // Clear search term after adding
+      setSearchTerm('');
       setShowTestList(false);
       
-      // Focus back to search input
       setTimeout(() => {
         searchInputRef.current?.focus();
       }, 100);
@@ -112,20 +124,17 @@ export const useTestSelection = (testList, testRows, handleTestAdd) => {
       const currentTime = new Date().getTime();
       const timeDiff = currentTime - lastEnterTime;
       
-      // Double Enter detection (within 500ms)
       if (timeDiff < 500 && selectedTests.length > 0) {
         e.preventDefault();
         e.stopPropagation();
         handleAddSelectedTests();
       } else {
-        // Single Enter - just update the time
         setLastEnterTime(currentTime);
       }
     } else if (e.key === 'Escape') {
       setShowTestList(false);
       searchInputRef.current?.focus();
     } else if (e.key === ' ' && e.target === searchInputRef.current) {
-      // Prevent space from adding a space in search input when dropdown is open
       if (showTestList) {
         e.preventDefault();
       }
@@ -135,7 +144,6 @@ export const useTestSelection = (testList, testRows, handleTestAdd) => {
   // Handle search term change with auto-show list
   const handleSearchChange = useCallback((value) => {
     setSearchTerm(value);
-    // Only show dropdown when there's search text
     if (value.trim()) {
       setShowTestList(true);
     } else {
@@ -184,5 +192,6 @@ export const useTestSelection = (testList, testRows, handleTestAdd) => {
     handleAddSelectedTests,
     handleAddSingleTest,
     handleKeyDown,
+    getSelectedTestDetails,
   };
 };
