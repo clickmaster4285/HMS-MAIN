@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { InputField } from '../../../components/common/FormFields';
-import DatePicker from 'react-datepicker';
-import 'react-datepicker/dist/react-datepicker.css';
 import doctorList from '../../../utils/doctors';
 
 const PatientInfoForm = ({
@@ -97,35 +95,8 @@ const PatientInfoForm = ({
     }, 800); // 800ms delay
   };
 
-  // Update age input when DOB changes externally
-  useEffect(() => {
-    if (dob && mode === 'new' && !isTyping) {
-      // Calculate age from DOB for display
-      const today = new Date();
-      const birthDate = new Date(dob);
+  // REMOVED: The useEffect that was updating age input from DOB
 
-      let years = today.getFullYear() - birthDate.getFullYear();
-      let months = today.getMonth() - birthDate.getMonth();
-      let days = today.getDate() - birthDate.getDate();
-
-      if (days < 0) {
-        months--;
-        days += new Date(today.getFullYear(), today.getMonth(), 0).getDate();
-      }
-      if (months < 0) {
-        years--;
-        months += 12;
-      }
-
-      let ageString = '';
-      if (years > 0) ageString += `${years} year${years !== 1 ? 's' : ''} `;
-      if (months > 0) ageString += `${months} month${months !== 1 ? 's' : ''} `;
-      if (days > 0 && years === 0)
-        ageString += `${days} day${days !== 1 ? 's' : ''}`;
-
-      setAgeInput(ageString.trim());
-    }
-  }, [dob, mode, isTyping]);
   // 1) Put this helper near the top of the file (inside or above the component)
   const RequiredLabel = ({ children, required }) => (
     <label className="block mb-1 font-medium text-gray-700">
@@ -277,19 +248,12 @@ const PatientInfoForm = ({
             <label className="block mb-1 font-medium text-gray-700">
               Date of Birth <span className="text-red-500">*</span>
             </label>
-            <div className="border rounded border-gray-300 shadow-sm focus-within:ring-2 focus-within:ring-primary-500 focus-within:border-primary-500 h-[42px]">
-              <DatePicker
-                selected={dob}
-                onChange={handleDobChange}
-                dateFormat="yyyy-MM-dd"
-                showMonthDropdown
-                maxDate={new Date()}
-                showYearDropdown
-                dropdownMode="select"
-                placeholderText="Select DOB"
-                className="w-full h-full px-3 py-2 focus:outline-none"
-              />
-            </div>
+            <input
+              type="date"
+              value={dob ? dob.toISOString().split('T')[0] : ''}
+              onChange={(e) => handleDobChange(e.target.value ? new Date(e.target.value) : null)}
+              className="border rounded px-3 py-2 h-[42px] w-full border-gray-300 shadow-sm"
+            />
           </div>
         </div>
       </div>

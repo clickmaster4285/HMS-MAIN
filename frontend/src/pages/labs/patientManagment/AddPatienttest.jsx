@@ -431,9 +431,23 @@ const AddlabPatient = () => {
   const handleKeyDown = (e) => {
     const form = formRef.current;
     if (!form) return;
+
+    // Skip if the target is inside a react-select component
+    if (e.target.closest('.react-select__control') ||
+      e.target.closest('.react-select__menu') ||
+      e.target.closest('.react-select__input')) {
+      return;
+    }
+
     const inputs = Array.from(
       form.querySelectorAll('input, select, textarea')
-    ).filter((el) => el.type !== 'hidden' && !el.disabled);
+    ).filter((el) =>
+      el.type !== 'hidden' &&
+      !el.disabled &&
+      !el.closest('.react-select__control') &&
+      !el.closest('.react-select__menu')
+    );
+
     const index = inputs.indexOf(e.target);
     if (index === -1) return;
 
