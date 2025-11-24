@@ -29,8 +29,8 @@ const BillingStats = ({ patients }) => {
         title="Total Patients"
         value={totalPatients}
         icon={<FaUserInjured />}
-        bgColor="bg-blue-100"
-        textColor="text-blue-800"
+        bgColor="bg-primary-100"
+        textColor="text-primary-800"
       />
       <BillingStatsCard
         title="Total Doctor Fee"

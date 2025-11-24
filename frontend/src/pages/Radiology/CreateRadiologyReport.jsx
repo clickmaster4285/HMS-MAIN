@@ -270,7 +270,7 @@ const CreateRadiologyReport = () => {
           <button
             type="submit"
             disabled={loading}
-            className="flex-1 bg-blue-600 text-white py-2 rounded hover:bg-blue-700 disabled:bg-blue-400"
+            className="flex-1 bg-primary-600 text-white py-2 rounded hover:bg-primary-700 disabled:bg-primary-400"
           >
             {loading ? (
               <span className="flex items-center justify-center">
@@ -357,7 +357,7 @@ const CreateRadiologyReport = () => {
                 </div>
 
                 <details className="mt-3 group">
-                  <summary className="flex items-center cursor-pointer text-blue-600 hover:text-blue-800">
+                  <summary className="flex items-center cursor-pointer text-primary-600 hover:text-primary-800">
                     <span>View Report</span>
                     <svg
                       className="ml-1 w-4 h-4 group-open:rotate-180 transition-transform"
@@ -383,7 +383,7 @@ const CreateRadiologyReport = () => {
                 <div className="mt-3 flex justify-end space-x-2">
                   <button
                     onClick={() => handleEdit(report)}
-                    className="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
+                    className="px-3 py-1 text-sm bg-primary-100 text-primary-700 rounded hover:bg-primary-200"
                   >
                     Edit
                   </button>

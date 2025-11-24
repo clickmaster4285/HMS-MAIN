@@ -19,6 +19,16 @@ const createTest = async (req, res) => {
     const processedFields = fields.map(field => {
       const updatedField = { ...field };
 
+      // Set default inputType if not provided
+      if (!updatedField.inputType) {
+        updatedField.inputType = 'text';
+      }
+
+      // If inputType is dropdown but no options provided, set empty array
+      if (updatedField.inputType === 'dropdown' && !updatedField.options) {
+        updatedField.options = [];
+      }
+
       // Convert normalRange object to Map if needed
       if (field.normalRange && !(field.normalRange instanceof Map)) {
         updatedField.normalRange = new Map(Object.entries(field.normalRange));
@@ -56,14 +66,12 @@ const createTest = async (req, res) => {
       fields: processedFields,
       isDeleted: false
     });
-    console.log("the new test is ", newTest)
 
     await newTest.save();
 
-
     res.status(201).json({
       message: "Test created successfully",
-      test: newTest.toObject({ flattenMaps: false }) // Preserve Map structure
+      test: newTest.toObject({ flattenMaps: false })
     });
 
   } catch (err) {
@@ -84,7 +92,7 @@ const getTests = async (req, res) => {
     if (tests.length === 0) {
       return res.status(200).json({ message: 'No active tests found' });
     }
-// console.log("Fetched tests:", tests, "tests found");
+
     // Convert Maps to objects for frontend
     const testsWithPlainRanges = tests.map(test => {
       const testObj = test.toObject({ flattenMaps: false });
@@ -153,7 +161,6 @@ const updateTest = async (req, res) => {
       reportDeliveryTime,
       fields,
     } = req.body;
-    // console.log("the updated data is ", req.body)
 
     const test = await hospitalModel.TestManagment.findById(id);
     if (!test) {
@@ -170,16 +177,46 @@ const updateTest = async (req, res) => {
     test.reportDeliveryTime = reportDeliveryTime ?? test.reportDeliveryTime;
 
     if (fields && Array.isArray(fields)) {
-      test.fields = fields;
+      // Process fields for dropdown options
+      const processedFields = fields.map(field => {
+        const updatedField = { ...field };
+        
+        // Set default inputType if not provided
+        if (!updatedField.inputType) {
+          updatedField.inputType = 'text';
+        }
+
+        // If inputType is dropdown but no options provided, set empty array
+        if (updatedField.inputType === 'dropdown' && !updatedField.options) {
+          updatedField.options = [];
+        }
+
+        return updatedField;
+      });
+      
+      test.fields = processedFields;
     }
 
     await test.save();
-    res.status(200).json({ message: "Test updated successfully", test });
+    
+    // Convert for response
+    const testObj = test.toObject({ flattenMaps: false });
+    if (testObj.fields) {
+      testObj.fields = testObj.fields.map(field => {
+        if (field.normalRange instanceof Map) {
+          field.normalRange = Object.fromEntries(field.normalRange);
+        }
+        return field;
+      });
+    }
+    
+    res.status(200).json({ message: "Test updated successfully", test: testObj });
   } catch (err) {
     res.status(500).json({ message: "Failed to update test", error: err.message });
   }
 };
 
+// Other functions remain the same (deleteTest, recoverTest, getCommonOptions)
 const deleteTest = async (req, res) => {
   try {
     const test = await hospitalModel.TestManagment.findOneAndUpdate(
@@ -241,7 +278,7 @@ const recoverTest = async (req, res) => {
   }
 };
 
-// Get common options across all tests
+// Get common options across all tests (updated to include inputType and options)
 const getCommonOptions = async (req, res) => {
   try {
     const result = await hospitalModel.TestManagment.aggregate([
@@ -252,7 +289,9 @@ const getCommonOptions = async (req, res) => {
           _id: null,
           allUnits: { $addToSet: "$fields.unit" },
           allCommonUnits: { $addToSet: "$fields.commonUnits" },
-          allLabels: { $addToSet: "$fields.commonLabels" }
+          allLabels: { $addToSet: "$fields.commonLabels" },
+          allInputTypes: { $addToSet: "$fields.inputType" },
+          allOptions: { $addToSet: "$fields.options" }
         }
       },
       {
@@ -269,12 +308,20 @@ const getCommonOptions = async (req, res) => {
               initialValue: [],
               in: { $setUnion: ["$$value", "$$this"] }
             }
+          },
+          inputTypes: "$allInputTypes",
+          options: {
+            $reduce: {
+              input: "$allOptions",
+              initialValue: [],
+              in: { $setUnion: ["$$value", "$$this"] }
+            }
           }
         }
       }
     ]);
 
-    const options = result[0] || { units: [], labels: [] };
+    const options = result[0] || { units: [], labels: [], inputTypes: [], options: [] };
     res.status(200).json(options);
   } catch (err) {
     res.status(500).json({
@@ -291,5 +338,5 @@ module.exports = {
   updateTest,
   deleteTest,
   recoverTest,
-   getCommonOptions
-};  
+  getCommonOptions
+};

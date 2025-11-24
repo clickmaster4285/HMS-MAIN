@@ -198,9 +198,15 @@ const createPatientTest = async (req, res) => {
     const remainingAmount = Math.max(0, computedFinal - totalPaid);
 
     // --- Payment status ---
-    let paymentStatus = "pending";
-    if (remainingAmount === 0 && totalPaid > 0) paymentStatus = "paid";
-    else if (totalPaid > 0) paymentStatus = "partial";
+   let paymentStatus;
+if (remainingAmount === 0) {
+  // If remaining amount is 0 (either paid in full OR full discount), mark as paid
+  paymentStatus = "paid";
+} else if (totalPaid > 0) {
+  paymentStatus = "partial";
+} else {
+  paymentStatus = "pending";
+}
 
     // --- Create document ---
     const doc = {
@@ -282,7 +288,7 @@ const createPatientTest = async (req, res) => {
 
 const getAllPatientTests = async (req, res) => {
   try {
-    const { page = 1, limit = 10, search } = req.query;
+    const { page = 1, limit = 100000, search } = req.query;
     const skip = (page - 1) * limit;
 
     let query = { isDeleted: false };
@@ -1102,11 +1108,11 @@ const updatePatientTest = async (req, res) => {
     $set.remainingAmount = remainingAmount;
 
     $set.paymentStatus =
-      remainingAmount === 0 && totalPaid > 0
-        ? 'paid'
-        : totalPaid > 0
-          ? 'partial'
-          : 'pending';
+  remainingAmount === 0
+    ? "paid"  // Changed from conditional to always "paid"
+    : totalPaid > 0
+      ? "partial"
+      : "pending";
 
     // (optional) mirror to financialSummary if your UI reads it
     $set['financialSummary.totalAmount'] = finalTotal;

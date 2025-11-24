@@ -336,8 +336,8 @@ const BloodTypeBadge = ({ bloodType }) => {
     const colorMap = {
         'A+': 'bg-red-100 text-red-800',
         'A-': 'bg-red-50 text-red-700',
-        'B+': 'bg-blue-100 text-blue-800',
-        'B-': 'bg-blue-50 text-blue-700',
+        'B+': 'bg-primary-100 text-primary-800',
+        'B-': 'bg-primary-50 text-primary-700',
         'AB+': 'bg-purple-100 text-purple-800',
         'AB-': 'bg-purple-50 text-purple-700',
         'O+': 'bg-green-100 text-green-800',

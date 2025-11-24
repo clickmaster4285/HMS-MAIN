@@ -257,51 +257,55 @@ const DynamicSidebar = ({ userRole, isOpen, toggleSidebar }) => {
       },
     ],
     lab: [
-          {
-            name: 'Dashboards',
-            icon: <DashboardIcon className="text-lg" />,
-            links: [{ href: 'dashboard', label: 'Lab Dashboard' }],
-          },
-          {
-            name: 'Test Managment',
-            icon: <TestIcon className="text-lg" />,
-            links: [
-              { href: 'add-test', label: 'Add Test' },
-              { href: 'all-tests', label: 'All Test' },
-            ],
-          },
-          {
-            name: 'Patient Managment',
-            icon: <PatientTestIcon className="text-lg" />,
-            links: [
-              { href: 'patient-test', label: 'Patients Test' },
-              { href: 'all-patients', label: 'All patients' },
-            ],
-          },
-          {
-            name: 'Report Managment',
-            icon: <TestReportIcon className="text-lg" />,
-            links: [
-              { href: 'test-report', label: 'Patients Reports' },
-              { href: 'critical-reports', label: 'Critical Reports' },
-              // { href: "all-reports", label: "All reports" },
-            ],
-          },
-    
-          {
-            name: 'Billing Managment',
-            icon: <BillingIcon className="text-lg" />,
-            links: [{ href: 'test-billing', label: 'Patients Bills' }],
-          },
-          {
-            name: 'Ultrasound ',
-            icon: <TestReportIcon className="text-lg" />,
-            links: [
-              { href: 'RadiologyForm', label: 'Ultrasound Test' },
-              { href: 'RadiologyPennal', label: 'Ultrasound Report' },
-            ],
-          },
+      {
+        name: 'Dashboards',
+        icon: <DashboardIcon className="text-lg" />,
+        links: [{ href: 'dashboard', label: 'Lab Dashboard' }],
+      },
+      {
+        name: 'Test Managment',
+        icon: <TestIcon className="text-lg" />,
+        links: [
+          { href: 'add-test', label: 'Add Test' },
+          { href: 'all-tests', label: 'All Test' },
         ],
+      },
+      {
+        name: 'Patient Managment',
+        icon: <PatientTestIcon className="text-lg" />,
+        links: [
+          { href: 'patient-test', label: 'Patients Test' },
+          { href: 'all-patients', label: 'All patients' },
+        ],
+      },
+      {
+        name: 'Report Managment',
+        icon: <TestReportIcon className="text-lg" />,
+        links: [
+          { href: 'test-report', label: 'Patients Reports' },
+          { href: 'critical-reports', label: 'Critical Reports' },
+          // { href: "all-reports", label: "All reports" },
+        ],
+      },
+      {
+        name: 'Billing Managment',
+        icon: <BillingIcon className="text-lg" />,
+        links: [{ href: 'test-billing', label: 'Patients Bills' }],
+      },
+      {
+        name: "Expenses",
+        icon: <CalendarIcon className="text-lg" />,
+        links: [{ href: "expenses", label: "Expenses" }],
+      },
+      {
+        name: 'Ultrasound ',
+        icon: <TestReportIcon className="text-lg" />,
+        links: [
+          { href: 'RadiologyForm', label: 'Ultrasound Test' },
+          { href: 'RadiologyPennal', label: 'Ultrasound Report' },
+        ],
+      },
+    ],
     radiology: [
       {
         name: "Ultrasound ",
@@ -360,8 +364,8 @@ const DynamicSidebar = ({ userRole, isOpen, toggleSidebar }) => {
                 to={menu.links[0].href}
                 onClick={() => handleSubMenuClick(menu.links[0].label)}
                 className={`flex items-center px-4 py-3 transition-colors ${activeSubMenu === menu.links[0].label
-                    ? "bg-primary-700"
-                    : "hover:bg-primary-700"
+                  ? "bg-primary-700"
+                  : "hover:bg-primary-700"
                   }`}
               >
                 <span className="mr-3">{menu.icon}</span>
@@ -370,8 +374,8 @@ const DynamicSidebar = ({ userRole, isOpen, toggleSidebar }) => {
             ) : (
               <div
                 className={`flex items-center justify-between px-4 py-3 cursor-pointer transition-colors ${activeMenu === menu.name
-                    ? "bg-primary-700"
-                    : "hover:bg-primary-700"
+                  ? "bg-primary-700"
+                  : "hover:bg-primary-700"
                   }`}
                 onClick={() => toggleMenu(menu.name)}
               >
@@ -395,8 +399,8 @@ const DynamicSidebar = ({ userRole, isOpen, toggleSidebar }) => {
                     to={link.href}
                     onClick={() => handleSubMenuClick(link.label)}
                     className={`block px-3 py-2 text-sm transition-colors rounded ${activeSubMenu === link.label
-                        ? "bg-primary-600 text-white"
-                        : "hover:bg-primary-600 text-white"
+                      ? "bg-primary-600 text-white"
+                      : "hover:bg-primary-600 text-white"
                       }`}
                   >
                     {link.label}

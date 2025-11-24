@@ -114,14 +114,14 @@ const AdminDashboard = () => {
                 <h2 className="font-bold">Patient Overview</h2>
                 <p className="text-xs text-gray-500">by Age Stages</p>
               </div>
-              <div className="bg-blue-900 text-white text-xs px-3 py-1 rounded-md flex items-center">
+              <div className="bg-primary-900 text-white text-xs px-3 py-1 rounded-md flex items-center">
                 Last 8 Days <ChevronLeft className="h-3 w-3 ml-1" />
               </div>
             </div>
 
             <div className="flex space-x-4 mb-4">
               <div className="flex items-center">
-                <div className="h-3 w-3 bg-blue-900 rounded-full mr-2"></div>
+                <div className="h-3 w-3 bg-primary-900 rounded-full mr-2"></div>
                 <span className="text-sm">Child</span>
               </div>
               <div className="flex items-center">
@@ -154,7 +154,7 @@ const AdminDashboard = () => {
                 <div key={i} className="flex flex-col items-center flex-1">
                   <div className="flex flex-col space-y-1 w-full items-center">
                     <div className="h-13 w-2 bg-teal-400 rounded-full"></div>
-                    <div className="h-18 w-2 bg-blue-900 rounded-full"></div>
+                    <div className="h-18 w-2 bg-primary-900 rounded-full"></div>
                   </div>
                   <div className="text-xs mt-2">{day} Jul</div>
                 </div>
@@ -167,7 +167,7 @@ const AdminDashboard = () => {
             <div className="flex justify-between items-center mb-4">
               <h2 className="font-bold">Revenue</h2>
               <div className="flex space-x-2">
-                <button className="bg-blue-900 text-white text-xs px-3 py-1 rounded-md">Week</button>
+                <button className="bg-primary-900 text-white text-xs px-3 py-1 rounded-md">Week</button>
                 <button className="text-gray-500 text-xs px-3 py-1 rounded-md">Month</button>
                 <button className="text-gray-500 text-xs px-3 py-1 rounded-md">Year</button>
               </div>
@@ -175,7 +175,7 @@ const AdminDashboard = () => {
 
             <div className="flex space-x-4 mb-4">
               <div className="flex items-center">
-                <div className="h-3 w-3 bg-blue-900 rounded-full mr-2"></div>
+                <div className="h-3 w-3 bg-primary-900 rounded-full mr-2"></div>
                 <span className="text-sm">Income</span>
               </div>
               <div className="flex items-center">
@@ -196,7 +196,7 @@ const AdminDashboard = () => {
                     <div key={i} className="flex flex-col items-center flex-1">
                       <div className="relative w-full">
                         {/* Income line (blue) */}
-                        <div className={`absolute bottom-0 left-0 right-0 h-[${30 + Math.sin(i) * 20}px] border-b-2 border-blue-600`}></div>
+                        <div className={`absolute bottom-0 left-0 right-0 h-[${30 + Math.sin(i) * 20}px] border-b-2 border-primary-600`}></div>
                         {/* Expense line (teal) */}
                         <div className={`absolute bottom-0 left-0 right-0 h-[${20 + Math.cos(i) * 15}px] border-b-2 border-teal-400`}></div>
                       </div>
@@ -251,7 +251,7 @@ const AdminDashboard = () => {
               {departments.map((dept, index) => (
                 <div key={index} className="flex items-center">
                   <div className={`h-3 w-3 rounded-full mr-2 ${
-                    index === 0 ? 'bg-blue-900' : 
+                    index === 0 ? 'bg-primary-900' : 
                     index === 1 ? 'bg-teal-400' : 
                     index === 2 ? 'bg-cyan-200' : 'bg-gray-300'
                   }`}></div>

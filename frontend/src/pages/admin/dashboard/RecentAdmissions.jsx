@@ -83,7 +83,7 @@ export const RecentAdmissions = ({ patients = [] }) => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     {patient.status === 'Admitted' ? (
-                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-primary-100 text-primary-800">
                         <Clock className="w-3 h-3 mr-1" />
                         Admitted
                       </span>

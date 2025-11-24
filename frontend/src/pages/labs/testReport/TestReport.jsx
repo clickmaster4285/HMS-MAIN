@@ -22,7 +22,7 @@ const statusColors = {
   completed: 'bg-green-100 text-green-800',
   pending: 'bg-gray-100 text-gray-800',
   processing: 'bg-yellow-100 text-yellow-800',
-  registered: 'bg-blue-100 text-blue-800',
+  registered: 'bg-primary-100 text-primary-800',
   not_started: 'bg-gray-200 text-gray-800',
 };
 
@@ -231,41 +231,43 @@ const TestReport = () => {
     setShowFilterPopup(false);
   };
 
-  const preparePrintData = (report, testIds) => {
-    if (!report || !report.fullData) return null;
+const preparePrintData = (report, testIds) => {
+  if (!report || !report.fullData) return null;
 
-    const patientTest = report.fullData;
-    const testDefinitions = report.fullData.testDefinitions;
+  const patientTest = report.fullData;
+  const testDefinitions = report.fullData.testDefinitions;
 
-    const selectedTests =
-      testIds.length > 0
-        ? patientTest.selectedTests.filter((test) =>
-            testIds.includes(test.test)
-          )
-        : patientTest.selectedTests;
+  const selectedTests =
+    testIds.length > 0
+      ? patientTest.selectedTests.filter((test) =>
+          testIds.includes(test.test)
+        )
+      : patientTest.selectedTests;
 
-    const testResults = selectedTests.map((test) => {
-      const definition = testDefinitions.find(
-        (def) => def.testCode === test.testDetails?.testCode
-      );
+  const testResults = selectedTests.map((test) => {
+    const definition = testDefinitions.find(
+      (def) => def.testCode === test.testDetails?.testCode
+    );
 
-      return {
-        testName: test.testDetails?.testName || 'Unknown Test',
-        fields: (definition?.fields || []).map((field) => ({
-          fieldName: field.name || 'Unknown Field',
-          value: field.value || '',
-          unit: field.unit || '',
-          normalRange: field.normalRange || null,
-          notes: field.notes || '',
-        })),
-        notes: test.notes || '',
-      };
-    });
     return {
-      patientTest,
-      testResults,
+      testName: test.testDetails?.testName || 'Unknown Test',
+      testId: test.test, // ADD THIS - the actual test ID
+      fields: (definition?.fields || []).map((field) => ({
+        fieldName: field.name || 'Unknown Field',
+        value: field.value || '',
+        unit: field.unit || '',
+        normalRange: field.normalRange || null,
+        notes: field.notes || '',
+      })),
+      notes: test.notes || '',
     };
+  });
+  
+  return {
+    patientTest,
+    testResults,
   };
+};
 
   const handlePrint = (report) => {
     setSelectedReport(report);
@@ -318,6 +320,148 @@ const TestReport = () => {
     proceedWithPrint(selectedReport, selectedTestIds);
   };
 
+const enhancedPrintCSS = `
+  <style>
+    @page {
+      size: A4;
+      margin: 0;
+    }
+    
+    body {
+      margin: 0;
+      padding: 0;
+      color: #333;
+      font-family: Arial, sans-serif;
+      font-size: 12pt;
+      line-height: 1.3;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+      background: white;
+    }
+
+    /* Page container for each page */
+    .page-container {
+      width: 210mm;
+      min-height: 297mm;
+      position: relative;
+      page-break-inside: avoid;
+    }
+
+    /* Letterhead space - 25% of page */
+    .letterhead-space {
+      height: 74mm;
+      background-color: transparent;
+    }
+
+    /* Content area - starts after letterhead */
+    .content-area {
+      padding: 0 10mm;
+      min-height: 223mm;
+    }
+
+    /* ENHANCED PAGE BREAK SUPPORT */
+    .separate-page-test {
+      page-break-after: always !important;
+      page-break-before: always !important;
+    }
+
+    .grouped-tests-page {
+      page-break-after: always;
+    }
+
+    .grouped-test {
+      page-break-inside: avoid;
+    }
+
+    /* Visual divider between tests */
+    .test-divider {
+      height: 1mm;
+      margin: 6mm 0;
+      background-color: #e0e0e0;
+      border: none;
+      border-radius: 1mm;
+    }
+
+    /* Ensure tables are visible and properly formatted */
+    table {
+      border-collapse: collapse;
+      width: 100%;
+    }
+
+    th, td {
+      border: 1px solid #ddd;
+      padding: 4px 6px;
+      text-align: left;
+    }
+
+    th {
+      background-color: #f0f0f0;
+      font-weight: bold;
+    }
+
+    /* Patient info styling */
+    .patient-info {
+      margin-bottom: 8mm;
+    }
+
+    .legal-notice {
+      text-align: right;
+      margin-bottom: 4mm;
+      font-size: 10pt;
+      color: #666;
+    }
+
+    /* Test section styling */
+    .test-section {
+      margin-bottom: 4mm;
+    }
+
+    .test-title {
+      font-weight: bold;
+      font-size: 13pt;
+      margin-bottom: 3mm;
+      color: #2b6cb0;
+      border-bottom: 2px solid #2b6cb0;
+      padding-bottom: 2px;
+    }
+
+    @media print {
+      body {
+        margin: 0;
+        padding: 0;
+        width: 210mm;
+      }
+      
+      .separate-page-test {
+        page-break-after: always !important;
+        page-break-before: always !important;
+      }
+      
+      .grouped-tests-page {
+        page-break-after: always;
+      }
+      
+      /* Ensure everything is visible when printing */
+      * {
+        visibility: visible !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+
+      /* Hide letterhead space in print if needed */
+      .letterhead-space {
+        background-color: transparent !important;
+      }
+    }
+
+    /* Abnormal result styling */
+    .abnormal {
+      color: red !important;
+      font-weight: bold !important;
+    }
+  </style>
+`;
+
   const proceedWithPrint = (report, testIds) => {
     const printData = preparePrintData(report, testIds);
     if (!printData) return;
@@ -341,138 +485,7 @@ const TestReport = () => {
       <html>
         <head>
           <title>Print Test Report</title>
-          <style>
-            @page {
-              size: A4;
-              margin: 5mm 10mm;
-            }
-            
-            body {
-              margin: 0;
-              padding: 5mm;
-              color: #333;
-              width: 190mm;
-              height: 277mm;
-              position: relative;
-              font-size: 13px;
-              line-height: 1.3;
-              -webkit-print-color-adjust: exact;
-              print-color-adjust: exact;
-              font-family: Arial, sans-serif;
-            }
-
-            .header {
-              text-align: center;
-              margin-bottom: 10px;
-              border-bottom: 2px solid #000;
-              padding-bottom: 10px;
-            }
-
-            .hospital-name {
-              font-size: 24px;
-              font-weight: bold;
-              color: #000;
-              margin-bottom: 5px;
-              text-transform: uppercase;
-            }
-
-            .patient-info {
-              width: 100%;
-              border-collapse: collapse;
-              margin-bottom: 15px;
-            }
-
-            .patient-info td {
-              padding: 3px 5px;
-              vertical-align: top;
-              border: none;
-            }
-
-            .patient-info .label {
-              font-weight: bold;
-              width: 120px;
-            }
-
-            .divider {
-              border-top: 1px dashed #000;
-              margin: 10px 0;
-            }
-
-            .test-section {
-              margin-bottom: 20px;
-            }
-
-            .test-title {
-              font-weight: bold;
-              font-size: 16px;
-              margin-bottom: 5px;
-              text-transform: uppercase;
-            }
-
-            .test-table {
-              width: 100%;
-              border-collapse: collapse;
-              margin-bottom: 10px;
-            }
-
-            .test-table th {
-              background-color: #f0f0f0;
-              border: 1px solid #ddd;
-              padding: 5px;
-              text-align: left;
-              font-weight: bold;
-              font-size: 12px;
-            }
-
-            .test-table td {
-              border: 1px solid #ddd;
-              padding: 5px;
-              font-size: 12px;
-            }
-
-            .footer {
-              margin-top: 30px;
-              width: 100%;
-            }
-
-            .signature {
-              text-align: center;
-              width: 150px;
-              display: inline-block;
-              margin: 0 10px;
-              font-size: 12px;
-            }
-
-            .signature-line {
-              border-top: 1px solid #000;
-              margin-top: 50px;
-              padding-top: 5px;
-            }
-
-            .abnormal {
-              color: red;
-              font-weight: bold;
-            }
-
-            .print-button {
-              position: fixed;
-              top: 10mm;
-              right: 10mm;
-              padding: 5px 10px;
-              background: #2b6cb0;
-              color: white;
-              border: none;
-              border-radius: 3px;
-              cursor: pointer;
-              z-index: 1000;
-            }
-
-            @media print {
-              .print-button {
-                display: none;
-              }
-            }
-          </style>
+            ${enhancedPrintCSS}
         </head>
         <body>${printContent}</body>
         <script>
@@ -559,13 +572,13 @@ const TestReport = () => {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search tests..."
-              className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm transition-colors"
+              className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm transition-colors"
             />
           </div>
           <div className="flex flex-wrap gap-2 mb-4">
             <button
               onClick={handleCompletedAll}
-              className="px-3 py-1.5 bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 text-sm font-medium transition-colors"
+              className="px-3 py-1.5 bg-primary-100 text-primary-700 rounded-md hover:bg-primary-200 text-sm font-medium transition-colors"
             >
               Completed
             </button>
@@ -597,7 +610,7 @@ const TestReport = () => {
                     id={`test-${test.testId}`}
                     checked={selectedTestIds.includes(test.testId)}
                     onChange={() => handleTestSelection(test.testId)}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded cursor-pointer"
+                    className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded cursor-pointer"
                   />
                   <label
                     htmlFor={`test-${test.testId}`}
@@ -625,7 +638,7 @@ const TestReport = () => {
             </button>
             <button
               onClick={onPrint}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-medium transition-colors disabled:bg-blue-300 disabled:cursor-not-allowed"
+              className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 text-sm font-medium transition-colors disabled:bg-primary-300 disabled:cursor-not-allowed"
               disabled={selectedTestIds.length === 0}
             >
               Print Selected Tests
@@ -671,13 +684,13 @@ const TestReport = () => {
               value={filters.search}
               onChange={handleFilterChange}
               placeholder="Search patients, MRNo..."
-              className="pl-10 w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="pl-10 w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
             />
           </div>
           <div className="relative" ref={filterRef}>
             <button
               onClick={() => setShowFilterPopup(!showFilterPopup)}
-              className="flex items-center px-4 py-2 bg-blue-50 text-blue-700 rounded-lg text-sm font-medium hover:bg-blue-100 transition-colors"
+              className="flex items-center px-4 py-2 bg-primary-50 text-primary-700 rounded-lg text-sm font-medium hover:bg-primary-100 transition-colors"
             >
               <FiFilter className="mr-2" />
               More Filters
@@ -713,7 +726,7 @@ const TestReport = () => {
                         onChange={handleDateChange}
                         isClearable
                         placeholderText="Select date range"
-                        className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                       />
                       <FiCalendar className="absolute right-3 top-3 text-gray-400" />
                     </div>
@@ -727,7 +740,7 @@ const TestReport = () => {
                         name="paymentStatus"
                         value={filters.paymentStatus}
                         onChange={handleFilterChange}
-                        className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                       >
                         <option value="all">All Payment Status</option>
                         <option value="paid">Paid</option>
@@ -743,7 +756,7 @@ const TestReport = () => {
                         name="testStatus"
                         value={filters.testStatus}
                         onChange={handleFilterChange}
-                        className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                       >
                         <option value="all">All Test Status</option>
                         <option value="completed">Completed</option>
@@ -763,7 +776,7 @@ const TestReport = () => {
                   </button>
                   <button
                     onClick={applyFilters}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-medium transition-colors"
+                    className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 text-sm font-medium transition-colors"
                   >
                     Apply Filters
                   </button>
@@ -831,9 +844,9 @@ const TestReport = () => {
         </div>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
-          <p className="text-sm text-blue-600 font-medium">Total Patients</p>
-          <p className="text-2xl font-bold text-blue-800">{reports.length}</p>
+        <div className="bg-primary-50 p-4 rounded-lg border border-primary-100">
+          <p className="text-sm text-primary-600 font-medium">Total Patients</p>
+          <p className="text-2xl font-bold text-primary-800">{reports.length}</p>
         </div>
         <div className="bg-green-50 p-4 rounded-lg border border-green-100">
           <p className="text-sm text-green-600 font-medium">Completed</p>
@@ -1002,7 +1015,7 @@ const TestReport = () => {
                       <div>
                         <button
                           type="button"
-                          className="inline-flex items-center justify-center rounded-full w-8 h-8 bg-gray-100 text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                          className="inline-flex items-center justify-center rounded-full w-8 h-8 bg-gray-100 text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
                           id={`options-menu-${report.id}`}
                           aria-expanded="false"
                           aria-haspopup="true"

@@ -24,7 +24,7 @@ const PrintA4 = ({ formData }) => {
         <style>{`
           body {
             font-family: Arial, sans-serif;
-            font-size: 12px;
+            font-size: 14px;
             color: #000;
             margin: 0;
             padding: 20px;
@@ -307,7 +307,7 @@ const PrintA4 = ({ formData }) => {
                 <strong>Print Time:</strong> {currentTime}
               </p>
               <p>
-                <strong>Referred By:</strong> {safe(formData.referredBy)}
+                <strong>Referred By:</strong> {safe(formData.patient?.ReferredBy)}
               </p>
             </div>
           </div>

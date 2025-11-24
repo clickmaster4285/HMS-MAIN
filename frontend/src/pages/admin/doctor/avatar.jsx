@@ -443,7 +443,7 @@
 //               <img
 //                 src={previewImage || avatarUrl}
 //                 alt={`${formData.doctor_Name || 'Doctor'} Avatar`}
-//                 className="w-full h-full rounded-lg object-cover border-4 border-primary-100 bg-blue-100"
+//                 className="w-full h-full rounded-lg object-cover border-4 border-primary-100 bg-primary-100"
 //                 onError={(e) => {
 //                   e.target.src = `https://api.dicebear.com/6.x/avataaars/svg?seed=${formData.doctor_Name || 'Doctor'}&size=128&backgroundColor=b6e3f4&radius=50`;
 //                 }}

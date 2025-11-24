@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { fetchPatientByMRNo } from '../../../features/patientTest/patientTestSlice';
+import { fetchAllDoctors } from "../../../features/doctor/doctorSlice";
 
 const CriticalFormModal = ({ isOpen, onClose, onSubmit, editingResult }) => {
   const dispatch = useDispatch();
@@ -14,6 +15,9 @@ const CriticalFormModal = ({ isOpen, onClose, onSubmit, editingResult }) => {
     error: patientError,
   } = useSelector((state) => state.patientTest);
 
+  // Get doctors from Redux store
+  const { doctors, loading: doctorsLoading } = useSelector((state) => state.doctor);
+  
   const [form, setForm] = useState({
     date: new Date().toISOString().split('T')[0],
     patientName: '',
@@ -33,6 +37,8 @@ const CriticalFormModal = ({ isOpen, onClose, onSubmit, editingResult }) => {
   const [defaultContactNumber] = useState('051-3311342');
   const [dob, setDob] = useState(null);
   const [ageError, setAgeError] = useState('');
+  const [showCustomDoctor, setShowCustomDoctor] = useState(false);
+  const [customDoctor, setCustomDoctor] = useState('');
 
   const req = (label) => (
     <span className="inline-flex items-center gap-1">
@@ -40,6 +46,96 @@ const CriticalFormModal = ({ isOpen, onClose, onSubmit, editingResult }) => {
       <span className="text-red-600">*</span>
     </span>
   );
+
+  // ---- useEffect hooks -----------------------------------------------------
+
+  // Fetch all doctors when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      dispatch(fetchAllDoctors());
+    }
+  }, [dispatch, isOpen]);
+
+  // Default contact toggle
+  useEffect(() => {
+    if (useDefaultContact) {
+      setForm((prev) => ({ ...prev, contactNo: defaultContactNumber }));
+    } else if (form.contactNo === defaultContactNumber) {
+      setForm((prev) => ({ ...prev, contactNo: '' }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [useDefaultContact, defaultContactNumber]);
+
+  // If you still want to react to store's `patient`, map field names correctly
+  useEffect(() => {
+    if (patient) {
+      const dobField = patient.DateOfBirth || patient.dateOfBirth;
+      const ageStr =
+        patient.age || (dobField ? calculateAge(dobField) : '') || '';
+
+      const calculatedDob = dobField
+        ? new Date(dobField)
+        : calculateDobFromAge(ageStr);
+
+      setForm((prev) => ({
+        ...prev,
+        patientName: patient.name || patient.Name || '',
+        gender: patient.gender || patient.Gender || '',
+        age: ageStr,
+        contactNo: patient.contactNo || patient.ContactNo || '',
+        // keep modal-only fields from prev
+        sampleCollectionTime: prev.sampleCollectionTime,
+        reportDeliveryTime: prev.reportDeliveryTime,
+        informedTo: prev.informedTo,
+      }));
+      setDob(calculatedDob || null);
+
+      const c = patient.contactNo || patient.ContactNo || '';
+      setUseDefaultContact(!c || c.trim() === '');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [patient]);
+
+  // Prefill when editing an existing result
+  useEffect(() => {
+    if (editingResult) {
+      const age = editingResult.age || '';
+      const calculatedDob = editingResult.dob
+        ? new Date(editingResult.dob)
+        : calculateDobFromAge(age);
+
+      // Check if the informedTo value exists in doctors list
+      const informedToValue = editingResult.informedTo || '';
+      const isDoctorInList = doctors.some(doctor =>
+        doctor?.user?.user_Name === informedToValue
+      );
+      // doctor?.doctor_Department === Department
+      setForm({
+        date: editingResult.date || new Date().toISOString().split('T')[0],
+        patientName: editingResult.patientName || '',
+        gender: editingResult.gender || '',
+        age,
+        contactNo: editingResult.contactNo || '',
+        mrNo: editingResult.mrNo || '',
+        sampleCollectionTime: editingResult.sampleCollectionTime || '',
+        reportDeliveryTime: editingResult.reportDeliveryTime || '',
+        informedTo: isDoctorInList ? informedToValue : '',
+      });
+      setTests(editingResult.tests || [{ testName: '', criticalValue: '' }]);
+      setLabTechSignature(editingResult.labTechSignature || '');
+      setDoctorSignature(editingResult.doctorSignature || '');
+      setDob(calculatedDob || null);
+      setUseDefaultContact(editingResult.contactNo === defaultContactNumber);
+      setAgeError('');
+
+      // Show custom doctor input if the doctor is not in the list
+      if (informedToValue && !isDoctorInList) {
+        setShowCustomDoctor(true);
+        setCustomDoctor(informedToValue);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editingResult, defaultContactNumber, doctors]);
 
   // ---- helpers -------------------------------------------------------------
 
@@ -130,78 +226,27 @@ const CriticalFormModal = ({ isOpen, onClose, onSubmit, editingResult }) => {
     setDob(calculatedDob);
   };
 
-  // Default contact toggle
-  useEffect(() => {
-    if (useDefaultContact) {
-      setForm((prev) => ({ ...prev, contactNo: defaultContactNumber }));
-    } else if (form.contactNo === defaultContactNumber) {
-      setForm((prev) => ({ ...prev, contactNo: '' }));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [useDefaultContact, defaultContactNumber]);
-
-  // If you still want to react to store's `patient`, map field names correctly
-  useEffect(() => {
-    if (patient) {
-      const dobField = patient.DateOfBirth || patient.dateOfBirth;
-      const ageStr =
-        patient.age || (dobField ? calculateAge(dobField) : '') || '';
-
-      const calculatedDob = dobField
-        ? new Date(dobField)
-        : calculateDobFromAge(ageStr);
-
-      setForm((prev) => ({
-        ...prev,
-        patientName: patient.name || patient.Name || '',
-        gender: patient.gender || patient.Gender || '',
-        age: ageStr,
-        contactNo: patient.contactNo || patient.ContactNo || '',
-        // keep modal-only fields from prev
-        sampleCollectionTime: prev.sampleCollectionTime,
-        reportDeliveryTime: prev.reportDeliveryTime,
-        informedTo: prev.informedTo,
-      }));
-      setDob(calculatedDob || null);
-
-      const c = patient.contactNo || patient.ContactNo || '';
-      setUseDefaultContact(!c || c.trim() === '');
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [patient]);
-
-  // Prefill when editing an existing result
-  useEffect(() => {
-    if (editingResult) {
-      const age = editingResult.age || '';
-      const calculatedDob = editingResult.dob
-        ? new Date(editingResult.dob)
-        : calculateDobFromAge(age);
-
-      setForm({
-        date: editingResult.date || new Date().toISOString().split('T')[0],
-        patientName: editingResult.patientName || '',
-        gender: editingResult.gender || '',
-        age,
-        contactNo: editingResult.contactNo || '',
-        mrNo: editingResult.mrNo || '',
-        sampleCollectionTime: editingResult.sampleCollectionTime || '',
-        reportDeliveryTime: editingResult.reportDeliveryTime || '',
-        informedTo: editingResult.informedTo || '',
-      });
-      setTests(editingResult.tests || [{ testName: '', criticalValue: '' }]);
-      setLabTechSignature(editingResult.labTechSignature || '');
-      setDoctorSignature(editingResult.doctorSignature || '');
-      setDob(calculatedDob || null);
-      setUseDefaultContact(editingResult.contactNo === defaultContactNumber);
-      setAgeError('');
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [editingResult, defaultContactNumber]);
-
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleInformedToChange = (e) => {
+    const value = e.target.value;
+    if (value === 'custom') {
+      setShowCustomDoctor(true);
+      setForm((prev) => ({ ...prev, informedTo: '' }));
+    } else {
+      setShowCustomDoctor(false);
+      setCustomDoctor('');
+      setForm((prev) => ({ ...prev, informedTo: value }));
+    }
+  };
+
+  const handleCustomDoctorChange = (e) => {
+    const value = e.target.value;
+    setCustomDoctor(value);
+    setForm((prev) => ({ ...prev, informedTo: value }));
   };
 
   // IMPORTANT: unwrap the thunk and set local state right away
@@ -285,6 +330,8 @@ const CriticalFormModal = ({ isOpen, onClose, onSubmit, editingResult }) => {
     setDob(null);
     setUseDefaultContact(false);
     setAgeError('');
+    setShowCustomDoctor(false);
+    setCustomDoctor('');
   };
 
   if (!isOpen) return null;
@@ -479,14 +526,49 @@ const CriticalFormModal = ({ isOpen, onClose, onSubmit, editingResult }) => {
                 <label className="block text-sm font-medium text-gray-700">
                   {req('Informed To')}
                 </label>
-                <input
-                  type="text"
-                  name="informedTo"
-                  value={form.informedTo}
-                  onChange={handleChange}
-                  required
-                  className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-cyan-500 focus:ring-cyan-500"
-                />
+                {!showCustomDoctor ? (
+                  <select
+                    name="informedTo"
+                    value={form.informedTo}
+                    onChange={handleInformedToChange}
+                    required
+                    className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-cyan-500 focus:ring-cyan-500"
+                  >
+                    <option value="">Select Doctor</option>
+                    {doctorsLoading ? (
+                      <option value="" disabled>Loading doctors...</option>
+                    ) : (
+                      doctors?.map((doctor) => (
+                        <option key={doctor._id} value={doctor?.user?.user_Name}>
+                          {doctor?.user?.user_Name} - {doctor?.doctor_Department}
+                        </option>
+                      ))
+                    )}
+                    <option value="custom">+ Add Custom Doctor</option>
+                  </select>
+                ) : (
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={customDoctor}
+                      onChange={handleCustomDoctorChange}
+                      placeholder="Enter doctor name"
+                      required
+                      className="flex-1 rounded-lg border border-gray-300 px-3 py-2 focus:border-cyan-500 focus:ring-cyan-500"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowCustomDoctor(false);
+                        setCustomDoctor('');
+                        setForm((prev) => ({ ...prev, informedTo: '' }));
+                      }}
+                      className="rounded-lg border border-gray-300 px-3 py-2 text-sm hover:bg-gray-50"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -584,8 +666,8 @@ const CriticalFormModal = ({ isOpen, onClose, onSubmit, editingResult }) => {
                 {patientLoading
                   ? 'Saving...'
                   : editingResult
-                  ? 'Update'
-                  : 'Save'}
+                    ? 'Update'
+                    : 'Save'}
               </button>
             </div>
           </form>

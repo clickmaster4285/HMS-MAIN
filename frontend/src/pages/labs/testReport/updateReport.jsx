@@ -1,368 +1,301 @@
-import React, { useState, useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+// UpdateReport.js
+import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
 import ReactDOMServer from 'react-dom/server';
-import PrintTestReport from './PrintTestReport';
 import {
   FiChevronLeft,
   FiSave,
   FiPrinter,
-  FiAlertCircle,
-  FiInfo,
   FiX,
   FiSearch,
 } from 'react-icons/fi';
-import { fetchPatientTestById } from '../../../features/patientTest/patientTestSlice';
-import { updatePatientTestResults } from '../../../features/testResult/TestResultSlice';
-import PatientInfoSection from './PatientInfoSection';
+
+import { useReportHook } from '../../../hooks/useReportHook';
 import TestResultsForm from './TestResultsForm';
+import PatientInfoSection from './PatientInfoSection';
+import PrintTestReport from './PrintTestReport';
+import { updatePatientTestResults } from '../../../features/testResult/TestResultSlice';
+import { LoadingState } from '../testManagment/components/LoadingState';
+import { ErrorState } from '../testManagment/components/ErrorState';
 
 const UpdateReport = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const dispatch = useDispatch();
-  const { patientTestById, status, error } = useSelector(
-    (state) => state.patientTest
-  );
-  // console.log('patient test', patientTestById);
 
-  const [initialValues, setInitialValues] = useState({});
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showPrintOptionsModal, setShowPrintOptionsModal] = useState(false);
   const [selectedTestIds, setSelectedTestIds] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [formData, setFormData] = useState({
-    results: {},
-    status: 'completed',
-    notes: '',
-    performedBy: '',
-  });
-  const [activeTestIndex, setActiveTestIndex] = useState(0);
 
-  const [localStatuses, setLocalStatuses] = useState({});
+  const {
+    formData,
+    statusByTest,
+    setStatusByTest,
+    activeTestIndex,
+    setActiveTestIndex,
+    localStatuses,
+    selectedTests,
+    testDefinitions,
+    patientData,
+    patientTestById,
+    status,
+    error,
+    handleFieldChange,
+    handleOptionChange,
+    saveCurrentTest,
+    getCurrentStatus,
+  } = useReportHook();
 
-  const [statusByTest, setStatusByTest] = useState({});
-  // Get all selected tests
-  const selectedTests = patientTestById?.patientTest?.selectedTests || [];
-  // Get all test definitions
-  const testDefinitions = patientTestById?.testDefinitions || [];
-  // seed once tests load
-  useEffect(() => {
-    if (selectedTests.length) {
-      const seed = {};
-      selectedTests.forEach((t) => {
-        // default is "pending" if nothing known
-        const server = getCurrentStatus(t.statusHistory); // may be 'registered'/'processing'/etc
-        seed[t.test] = server || 'pending';
-      });
-      setStatusByTest(seed);
-    }
-  }, [selectedTests]);
-
-  useEffect(() => {
-    dispatch(fetchPatientTestById(id));
-  }, [dispatch, id]);
-
-  useEffect(() => {
-    if (selectedTests.length > 0) {
-      const seed = {};
-      selectedTests.forEach((t) => {
-        seed[t.test] = getCurrentStatus(t.statusHistory);
-      });
-      setStatusByTest(seed);
-    }
-  }, [selectedTests]);
-
-  // Extract patient data
-  const patientData = patientTestById?.patientTest
-    ? {
-        patientName: patientTestById.patientTest.patient_Detail?.patient_Name,
-        gender: patientTestById.patientTest.patient_Detail?.patient_Gender,
-        age: patientTestById.patientTest.patient_Detail?.patient_Age,
-        mrNumber: patientTestById.patientTest.patient_Detail?.patient_MRNo,
-        cnic: patientTestById.patientTest.patient_Detail?.patient_CNIC,
-        contactNo:
-          patientTestById.patientTest.patient_Detail?.patient_ContactNo,
-        testDate: patientTestById.patientTest.createdAt,
-        referredBy: patientTestById.patientTest.patient_Detail?.referredBy,
-        paymentStatus: patientTestById.patientTest.paymentStatus,
-        finalAmount: patientTestById.patientTest.finalAmount,
-        tokenNumber: patientTestById.patientTest.tokenNumber,
-      }
-    : null;
-
-  // Initialize form data with test fields for all tests and pre-populate existing values
-  useEffect(() => {
-    if (selectedTests.length > 0 && testDefinitions.length > 0) {
-      const initialResults = {};
-      const initialVals = {};
-
-      selectedTests.forEach((test) => {
-        const testDefinition = testDefinitions.find(
-          (td) => td._id === test.test
-        );
-        const testFields = testDefinition?.fields || [];
-
-        initialResults[test.test] = testFields.map((field) => ({
-          fieldName: field.name,
-          value: field.value || '',
-          notes: field.note || '',
-          unit: field.unit || '',
-          normalRange: field.normalRange || null,
-          fieldId: field._id,
-        }));
-
-        initialVals[test.test] = testFields.map((field) => ({
-          value: field.value || '',
-          notes: field.note || '',
-        }));
-      });
-
-      setFormData((prev) => ({
-        ...prev,
-        results: initialResults,
-      }));
-
-      setInitialValues(initialVals);
-    }
-  }, [selectedTests, testDefinitions]);
-
-  const getCurrentStatus = (statusHistory) => {
-    if (!statusHistory || statusHistory.length === 0) return 'registered';
-    const sortedHistory = [...statusHistory].sort(
-      (a, b) => new Date(b.changedAt) - new Date(a.changedAt)
-    );
-    return sortedHistory[0].status;
-  };
-
+  // Print-related functions
   const preparePrintData = (testIds) => {
-    if (!patientTestById) return null;
+  if (!patientTestById) return null;
 
-    const patientData = {
-      printData: patientTestById,
+  const patientPrintData = {
+    printData: patientTestById,
+  };
+
+  const testsToPrint = testIds.length > 0
+    ? selectedTests.filter((test) => testIds.includes(test.test))
+    : selectedTests;
+
+  const testResults = testsToPrint.map((test) => {
+    const currentResults = formData.results[test.test] || [];
+    return {
+      testName: test.testDetails.testName,
+      testId: test.test, // ADD THIS - the actual test ID
+      fields: currentResults.map((result) => ({
+        fieldName: result.fieldName,
+        value: result.value,
+        unit: result.unit,
+        normalRange: result.normalRange,
+        notes: result.notes,
+      })),
+      notes: formData.notes,
     };
+  });
 
-    const testsToPrint =
-      testIds.length > 0
-        ? selectedTests.filter((test) => testIds.includes(test.test))
-        : selectedTests;
+  return { patientData: patientPrintData, testResults };
+};
 
-    const testResults = testsToPrint.map((test) => {
-      const testDefinition = testDefinitions.find((td) => td._id === test.test);
-      const currentResults = formData.results[test.test] || [];
-      return {
-        testName: test.testDetails.testName,
-        fields: currentResults.map((result) => ({
-          fieldName: result.fieldName,
-          value: result.value,
-          unit: result.unit,
-          normalRange: result.normalRange,
-          notes: result.notes,
-        })),
-        notes: formData.notes,
-      };
-    });
-
-    return { patientData, testResults };
-  };
-
-  const proceedWithPrint = async (testIds) => {
-    try {
-      for (const tid of testIds) {
-        const def = testDefinitions.find((td) => td._id === tid);
-        if (!def || !Array.isArray(def.fields)) {
-          console.warn('Skipping (no fields):', tid);
-          continue;
-        }
-
-        const rows = formData?.results?.[tid] || [];
-        const updateData = {
-          results: rows
-            .filter((r) => r?.fieldName?.trim()?.length)
-            .map((r) => ({
-              fieldName: r.fieldName,
-              value: r.value,
-              notes: r.notes,
-              testId: tid, // 👈 important
-            })),
-          status: statusByTest[tid] ?? 'pending',
-          notes: formData.notes ?? '',
-        };
-
-        await dispatch(
-          updatePatientTestResults({
-            patientTestId: id,
-            testId: tid,
-            updateData,
-          })
-        ).unwrap();
-      }
-
-      // Prepare and print the report
-      const printData = preparePrintData(testIds);
-      if (!printData) return;
-
-      const printWindow = window.open('', '_blank');
-      if (!printWindow) {
-        alert('Please allow popups for printing');
-        return;
-      }
-
-      const printContent = ReactDOMServer.renderToStaticMarkup(
-        <PrintTestReport
-          patientTest={printData.patientData.printData.patientTest}
-          testDefinitions={printData.testResults}
-        />
-      );
-
-      printWindow.document.open();
-      printWindow.document.write(`
-        <!DOCTYPE html>
-        <html>
-          <head>
-            <title>Print Test Report</title>
-            <style>
-              @page {
-                size: A4;
-                margin: 5mm 10mm;
-              }
-              
-              body {
-                margin: 0;
-                padding: 5mm;
-                color: #333;
-                width: 190mm;
-                height: 277mm;
-                position: relative;
-                font-size: 13px;
-                line-height: 1.3;
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
-                font-family: Arial, sans-serif;
-              }
-
-              .header {
-                text-align: center;
-                margin-bottom: 10px;
-                border-bottom: 2px solid #2b6cb0;
-                padding-bottom: 10px;
-              }
-
-              .hospital-name {
-                font-size: 24px;
-                font-weight: bold;
-                color: #2b6cb0;
-                margin-bottom: 5px;
-              }
-
-              .hospital-subtitle {
-                font-size: 14px;
-                color: #555;
-                margin-bottom: 5px;
-              }
-
-              .patient-info {
-                width: 100%;
-                border-collapse: collapse;
-                margin-bottom: 15px;
-              }
-
-              .patient-info td {
-                padding: 3px 5px;
-                vertical-align: top;
-              }
-
-              .patient-info .label {
-                font-weight: bold;
-                width: 120px;
-              }
-
-              .test-section {
-                margin-bottom: 20px;
-              }
-
-              .test-title {
-                font-weight: bold;
-                font-size: 16px;
-                margin-bottom: 5px;
-                color: #2b6cb0;
-              }
-
-              .test-table {
-                width: 100%;
-                border-collapse: collapse;
-                margin-bottom: 10px;
-              }
-
-              .test-table th {
-                background-color: #f0f0f0;
-                border: 1px solid #ddd;
-                padding: 5px;
-                text-align: left;
-                font-weight: bold;
-              }
-
-              .test-table td {
-                border: 1px solid #ddd;
-                padding: 5px;
-              }
-
-              .footer {
-                position: absolute;
-                bottom: 10mm;
-                width: 100%;
-                display: flex;
-                justify-content: space-between;
-              }
-
-              .signature {
-                text-align: center;
-                width: 150px;
-                border-top: 1px solid #000;
-                padding-top: 5px;
-                margin-top: 30px;
-                font-size: 12px;
-              }
-
-              .normal-range {
-                font-size: 11px;
-                color: #666;
-              }
-
-              .abnormal {
-                color: red;
-                font-weight: bold;
-              }
-
-              @media print {
-                body {
-                  padding: 0;
-                  margin: 0;
-                  width: 210mm;
-                  height: 297mm;
-                }
-              }
-            </style>
-          </head>
-          <body>${printContent}</body>
-          <script>
-            window.onload = function() {
-              setTimeout(() => {
-                window.print();
-                window.close();
-              }, 500);
-            };
-          </script>
-        </html>
-      `);
-      printWindow.document.close();
-    } catch (error) {
-      alert(`Failed to save and print: ${error.message || 'Unknown error'}`);
+const enhancedPrintCSS = `
+  <style>
+    @page {
+      size: A4;
+      margin: 0;
     }
-  };
+    
+    body {
+      margin: 0;
+      padding: 0;
+      color: #333;
+      font-family: Arial, sans-serif;
+      font-size: 12pt;
+      line-height: 1.3;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+      background: white;
+    }
 
+    /* Page container for each page */
+    .page-container {
+      width: 210mm;
+      min-height: 297mm;
+      position: relative;
+      page-break-inside: avoid;
+    }
+
+    /* Letterhead space - 25% of page */
+    .letterhead-space {
+      height: 74mm;
+      background-color: transparent;
+    }
+
+    /* Content area - starts after letterhead */
+    .content-area {
+      padding: 0 10mm;
+      min-height: 223mm;
+    }
+
+    /* ENHANCED PAGE BREAK SUPPORT */
+    .separate-page-test {
+      page-break-after: always !important;
+      page-break-before: always !important;
+    }
+
+    .grouped-tests-page {
+      page-break-after: always;
+    }
+
+    .grouped-test {
+      page-break-inside: avoid;
+    }
+
+    /* Visual divider between tests */
+    .test-divider {
+      height: 1mm;
+      margin: 6mm 0;
+      background-color: #e0e0e0;
+      border: none;
+      border-radius: 1mm;
+    }
+
+    /* Ensure tables are visible and properly formatted */
+    table {
+      border-collapse: collapse;
+      width: 100%;
+    }
+
+    th, td {
+      border: 1px solid #ddd;
+      padding: 4px 6px;
+      text-align: left;
+    }
+
+    th {
+      background-color: #f0f0f0;
+      font-weight: bold;
+    }
+
+    /* Patient info styling */
+    .patient-info {
+      margin-bottom: 8mm;
+    }
+
+    .legal-notice {
+      text-align: right;
+      margin-bottom: 4mm;
+      font-size: 10pt;
+      color: #666;
+    }
+
+    /* Test section styling */
+    .test-section {
+      margin-bottom: 4mm;
+    }
+
+    .test-title {
+      font-weight: bold;
+      font-size: 13pt;
+      margin-bottom: 3mm;
+      color: #2b6cb0;
+      border-bottom: 2px solid #2b6cb0;
+      padding-bottom: 2px;
+    }
+
+    @media print {
+      body {
+        margin: 0;
+        padding: 0;
+        width: 210mm;
+      }
+      
+      .separate-page-test {
+        page-break-after: always !important;
+        page-break-before: always !important;
+      }
+      
+      .grouped-tests-page {
+        page-break-after: always;
+      }
+      
+      /* Ensure everything is visible when printing */
+      * {
+        visibility: visible !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+
+      /* Hide letterhead space in print if needed */
+      .letterhead-space {
+        background-color: transparent !important;
+      }
+    }
+
+    /* Abnormal result styling */
+    .abnormal {
+      color: red !important;
+      font-weight: bold !important;
+    }
+  </style>
+`;
+
+ const proceedWithPrint = async (testIds) => {
+  try {
+    // Save all selected tests before printing
+    for (const tid of testIds) {
+      const def = testDefinitions.find((td) => td._id === tid);
+      if (!def || !Array.isArray(def.fields)) {
+        console.warn('Skipping (no fields):', tid);
+        continue;
+      }
+
+      const rows = formData?.results?.[tid] || [];
+      const updateData = {
+        results: rows
+          .filter((r) => r?.fieldName?.trim()?.length)
+          .map((r) => ({
+            fieldName: r.fieldName,
+            value: r.value,
+            notes: r.notes,
+            testId: tid,
+          })),
+        status: statusByTest[tid] ?? 'pending',
+        notes: formData.notes ?? '',
+      };
+
+      await dispatch(
+        updatePatientTestResults({
+          patientTestId: id,
+          testId: tid,
+          updateData,
+        })
+      ).unwrap();
+    }
+
+    // Prepare and print the report
+    const printData = preparePrintData(testIds);
+    if (!printData) return;
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      alert('Please allow popups for printing');
+      return;
+    }
+
+    const printContent = ReactDOMServer.renderToStaticMarkup(
+      <PrintTestReport
+        patientTest={printData.patientData.printData.patientTest}
+        testDefinitions={printData.testResults}
+      />
+    );
+
+    printWindow.document.open();
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Print Test Report</title>
+            ${enhancedPrintCSS}
+        </head>
+        <body>${printContent}</body>
+        <script>
+          window.onload = function() {
+            setTimeout(() => {
+              window.print();
+              window.close();
+            }, 500);
+          };
+        </script>
+      </html>
+    `);
+    printWindow.document.close();
+  } catch (error) {
+    alert(`Failed to save and print: ${error.message || 'Unknown error'}`);
+  }
+};
   const handlePrint = () => {
-    // Initialize selectedTestIds with all test IDs by default
     setSelectedTestIds(selectedTests.map((test) => test.test));
     setSearchQuery('');
     setShowPrintOptionsModal(true);
@@ -384,13 +317,6 @@ const UpdateReport = () => {
     setSelectedTestIds([]);
   };
 
-  const handleSelectRegistered = () => {
-    const registeredTestIds = selectedTests
-      .filter((test) => getCurrentStatus(test.statusHistory) === 'registered')
-      .map((test) => test.test);
-    setSelectedTestIds(registeredTestIds);
-  };
-
   const handlePrintOption = () => {
     setShowPrintOptionsModal(false);
     if (selectedTestIds.length === 0) {
@@ -404,7 +330,7 @@ const UpdateReport = () => {
     proceedWithPrint(selectedTestIds);
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmitAll = async (e) => {
     e?.preventDefault?.();
 
     const failures = [];
@@ -417,7 +343,6 @@ const UpdateReport = () => {
       }
 
       const rows = formData?.results?.[tid] || [];
-
       const updateData = {
         results: rows
           .filter((r) => r?.fieldName?.trim()?.length)
@@ -425,7 +350,7 @@ const UpdateReport = () => {
             fieldName: r.fieldName,
             value: r.value,
             notes: r.notes,
-            testId: tid, // 👈 important
+            testId: tid,
           })),
         status: statusByTest[tid] ?? 'pending',
         notes: formData.notes ?? '',
@@ -447,15 +372,15 @@ const UpdateReport = () => {
 
     if (failures.length) {
       alert(
-        'Some tests failed:\n' +
-          failures
-            .map((f) => `• ${f.tid}: ${f.msg || 'Unknown error'}`)
-            .join('\n')
+        'Some tests failed to save:\n' +
+        failures
+          .map((f) => `• ${f.tid}: ${f.msg || 'Unknown error'}`)
+          .join('\n')
       );
       return;
     }
 
-    alert('Test results updated successfully!');
+    alert('All test results updated successfully!');
     navigate(-1);
   };
 
@@ -478,8 +403,7 @@ const UpdateReport = () => {
             </button>
           </div>
           <p className="text-sm text-gray-600 mb-6">
-            The payment is pending. Are you sure you want to print before
-            payment?
+            The payment is pending. Are you sure you want to print before payment?
           </p>
           <div className="flex justify-end space-x-3">
             <button
@@ -534,13 +458,13 @@ const UpdateReport = () => {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search tests..."
-              className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm transition-colors"
+              className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm transition-colors"
             />
           </div>
           <div className="flex flex-wrap gap-2 mb-4">
             <button
               onClick={handleSelectAll}
-              className="px-3 py-1.5 bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 text-sm font-medium transition-colors"
+              className="px-3 py-1.5 bg-primary-100 text-primary-700 rounded-md hover:bg-primary-200 text-sm font-medium transition-colors"
             >
               Select All
             </button>
@@ -550,12 +474,6 @@ const UpdateReport = () => {
             >
               Deselect All
             </button>
-            {/* <button
-              onClick={handleSelectRegistered}
-              className="px-3 py-1.5 bg-green-100 text-green-700 rounded-md hover:bg-green-200 text-sm font-medium transition-colors"
-            >
-              Registered Tests
-            </button> */}
           </div>
           <div className="mb-6 max-h-64 overflow-y-auto pr-2">
             {filteredTests.length > 0 ? (
@@ -566,7 +484,7 @@ const UpdateReport = () => {
                     id={`test-${test.test}`}
                     checked={selectedTestIds.includes(test.test)}
                     onChange={() => handleTestSelection(test.test)}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded cursor-pointer"
+                    className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded cursor-pointer"
                   />
                   <label
                     htmlFor={`test-${test.test}`}
@@ -594,7 +512,7 @@ const UpdateReport = () => {
             </button>
             <button
               onClick={onPrint}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-medium transition-colors disabled:bg-blue-300 disabled:cursor-not-allowed"
+              className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 text-sm font-medium transition-colors disabled:bg-primary-300 disabled:cursor-not-allowed"
               disabled={selectedTestIds.length === 0}
             >
               Print Selected Tests
@@ -604,102 +522,27 @@ const UpdateReport = () => {
       </div>
     );
   };
-  // Save ONLY the current test's results
-
-  // put this in UpdateReport.jsx (replace your saveCurrentTest)
-  const saveCurrentTest = async (currentTestId) => {
-    const def = testDefinitions.find((td) => td._id === currentTestId);
-    if (!def || !Array.isArray(def.fields)) {
-      console.warn('Skipping update: no fields for test', currentTestId);
-      return;
-    }
-
-    const rows = formData?.results?.[currentTestId] || [];
-
-    const updateData = {
-      results: rows
-        .filter((r) => r?.fieldName?.trim()?.length)
-        .map((r) => ({
-          fieldName: r.fieldName,
-          value: r.value,
-          notes: r.notes,
-          testId: currentTestId, // 👈 important for backend filtering
-        })),
-      status: statusByTest[currentTestId] ?? 'pending',
-      notes: formData.notes ?? '',
-    };
-
-    await dispatch(
-      updatePatientTestResults({
-        patientTestId: id,
-        testId: currentTestId, // 👈 send a single id
-        updateData,
-      })
-    ).unwrap();
-
-    setLocalStatuses((prev) => ({
-      ...prev,
-      [currentTestId]: updateData.status,
-    }));
-  };
 
   if (status === 'loading') {
-    return (
-      <div className="flex items-center justify-center h-screen bg-gradient-to-br bg-primary-50 bg-primary-100">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600 font-medium">Loading report...</p>
-        </div>
-      </div>
-    );
+    return <LoadingState message="Loading report..." />;
   }
 
-  console.log('formData in updated', formData);
-
   if (error) {
-    return (
-      <div className="flex items-center justify-center h-screen bg-gradient-to-br from-red-50 to-pink-100">
-        <div className="text-center p-8 bg-white rounded-2xl shadow-xl max-w-md">
-          <FiAlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-red-600 mb-2">
-            Error Loading Report
-          </h2>
-          <p className="text-gray-600 mb-6">{error}</p>
-          <button
-            onClick={() => navigate(-1)}
-            className="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all duration-200 transform hover:scale-105"
-          >
-            Go Back
-          </button>
-        </div>
-      </div>
-    );
+    return <ErrorState error={error} onBack={() => navigate(-1)} />;
   }
 
   if (!patientTestById || !patientData) {
     return (
-      <div className="flex items-center justify-center h-screen bg-gradient-to-br bg-primary-50 to-gray-100">
-        <div className="text-center p-8 bg-white rounded-2xl shadow-xl max-w-md">
-          <FiInfo className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">
-            No Report Found
-          </h2>
-          <p className="text-gray-600 mb-6">
-            The requested report could not be loaded.
-          </p>
-          <button
-            onClick={() => navigate(-1)}
-            className="px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-all duration-200 transform hover:scale-105"
-          >
-            Go Back
-          </button>
-        </div>
-      </div>
+      <ErrorState
+        error="No report found"
+        onBack={() => navigate(-1)}
+      />
     );
   }
 
   return (
-    <div className="bg-gradient-to-br bg-primary-50 p-4 md:p-6">
+    <div className="bg-gradient-to-br from-primary-50 to-primary-100 min-h-screen p-4 md:p-6">
+      {/* Modals */}
       <ConfirmModal
         isOpen={showConfirmModal}
         onClose={() => setShowConfirmModal(false)}
@@ -708,115 +551,114 @@ const UpdateReport = () => {
           setShowConfirmModal(false);
         }}
       />
+
       <PrintOptionsModal
         isOpen={showPrintOptionsModal}
         onClose={() => setShowPrintOptionsModal(false)}
         onPrint={handlePrintOption}
       />
-      <div className="mx-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+
+      {/* Header */}
+      <div className="flex items-center justify-between mb-8">
+        <button
+          onClick={() => navigate(-1)}
+          className="flex items-center bg-primary-500 px-4 py-2 text-white rounded-lg transition-all duration-200"
+        >
+          <FiChevronLeft className="mr-2" /> Back to Reports
+        </button>
+
+        <div className="flex items-center space-x-3">
+          <div className="text-right mr-4">
+            <p className="text-sm text-gray-500">Token Number</p>
+            <p className="text-xl font-bold text-primary-600">
+              #{patientData.tokenNumber}
+            </p>
+          </div>
+
           <button
-            onClick={() => navigate(-1)}
-            className="flex items-center px-4 py-2 text-blue-600 hover:text-blue-800 hover:bg-primary-50 rounded-lg transition-all duration-200"
+            onClick={handlePrint}
+            className="flex items-center px-4 py-2 bg-white text-gray-700 rounded-lg hover:bg-gray-50 transition-all duration-200 shadow-md"
           >
-            <FiChevronLeft className="mr-2 w-5 h-5" /> Back to Reports
+            <FiPrinter className="mr-2" /> Save & Print
           </button>
 
-          <div className="flex items-center space-x-3">
-            <div className="text-right mr-4">
-              <p className="text-sm text-gray-500">Token Number</p>
-              <p className="text-xl font-bold text-blue-600">
-                #{patientData.tokenNumber}
-              </p>
-            </div>
-
-            <button
-              className="flex items-center px-4 py-2 bg-white text-gray-700 rounded-lg hover:bg-gray-50 transition-all duration-200 shadow-md"
-              onClick={handlePrint}
-            >
-              <FiPrinter className="mr-2 w-4 h-4" /> Save & Print
-            </button>
-
-            <button
-              onClick={handleSubmit}
-              className="flex items-center px-6 py-2 bg-gradient-to-r bg-primary-600 bg-primary-700 text-white rounded-lg hover:bg-primary-700 hover:bg-primary-800 transition-all duration-200 shadow-md transform hover:scale-105"
-            >
-              <FiSave className="mr-2 w-4 h-4" /> Save Results
-            </button>
-          </div>
+          <button
+            onClick={handleSubmitAll}
+            className="flex items-center px-6 py-2 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-lg hover:from-primary-700 hover:to-primary-800 transition-all duration-200 shadow-md transform hover:scale-105"
+          >
+            <FiSave className="mr-2" /> Save All Results
+          </button>
         </div>
+      </div>
 
-        {/* Main Report Card */}
-        <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
-          {/* Lab Header */}
-          <div className="bg-gradient-to-r bg-primary-600 bg-primary-200 p-8 text-white relative overflow-hidden">
-            <div className="absolute inset-0 bg-black opacity-10"></div>
-            <div className="relative z-10">
-              <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
-                <div>
-                  <h1 className="text-3xl font-bold mb-2">
-                    Al-Shahbaz Modern Diagnostic Center
-                  </h1>
-                  <div className="flex items-center space-x-4">
-                    <span className="px-3 py-1 bg-opacity-20 rounded-full text-sm font-medium">
-                      ISO Certified Laboratory
-                    </span>
-                    <span className="px-3 py-1 bg-opacity-20 rounded-full text-sm font-medium">
-                      Quality Assured
-                    </span>
-                  </div>
-                </div>
-                <div className="mt-4 md:mt-0 text-right">
-                  <div className="bg-opacity-20 rounded-lg p-4">
-                    <p className="text-sm opacity-90">MR Number</p>
-                    <p className="text-xl font-bold">
-                      {patientData.mrNumber || 'N/A'}
-                    </p>
-                  </div>
-                </div>
+      {/* Main Content */}
+      <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+        {/* Lab Header */}
+        <div className="bg-gradient-to-r from-primary-600 to-primary-600 p-8 text-white">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
+            <div>
+              <h1 className="text-3xl font-bold mb-2">
+                Al-Shahbaz Modern Diagnostic Center
+              </h1>
+              <div className="flex items-center space-x-4 text-gray-700">
+                <span className="px-3 py-1 bg-white bg-opacity-20 rounded-full text-sm">
+                  ISO Certified Laboratory
+                </span>
+                <span className="px-3 py-1 bg-white bg-opacity-20 rounded-full text-sm">
+                  Quality Assured
+                </span>
+              </div>
+            </div>
+            <div className="mt-4 md:mt-0 text-gray-700">
+              <div className="bg-white bg-opacity-20 rounded-lg p-4">
+                <p className="text-sm opacity-90">MR Number</p>
+                <p className="text-xl font-bold">
+                  {patientData.mrNumber || 'N/A'}
+                </p>
               </div>
             </div>
           </div>
+        </div>
 
-          {/* Patient Info Section */}
-          <PatientInfoSection
-            patientData={patientData}
+        {/* Patient Info */}
+        <PatientInfoSection
+          patientData={patientData}
+          selectedTests={selectedTests}
+          testDefinitions={testDefinitions}
+          activeTestIndex={activeTestIndex}
+          setActiveTestIndex={setActiveTestIndex}
+          localStatuses={localStatuses}
+          statusByTest={statusByTest}
+          getCurrentStatus={getCurrentStatus}
+        />
+
+        {/* Test Results Form */}
+        {selectedTests.length > 0 && (
+          <TestResultsForm
             selectedTests={selectedTests}
             testDefinitions={testDefinitions}
             activeTestIndex={activeTestIndex}
             setActiveTestIndex={setActiveTestIndex}
-            localStatuses={localStatuses}
+            formData={formData}
+            handleFieldChange={handleFieldChange}
+            handleOptionChange={handleOptionChange}
+            patientData={patientData}
             statusByTest={statusByTest}
+            setStatusByTest={setStatusByTest}
+            saveCurrentTest={saveCurrentTest}
+            getCurrentStatus={getCurrentStatus}
           />
+        )}
+      </div>
 
-          {/* Test Results Form */}
-          {selectedTests.length > 0 && (
-            <TestResultsForm
-              selectedTests={selectedTests}
-              testDefinitions={testDefinitions}
-              activeTestIndex={activeTestIndex}
-              setActiveTestIndex={setActiveTestIndex}
-              formData={formData}
-              setFormData={setFormData}
-              initialValues={initialValues}
-              patientData={patientData}
-              statusByTest={statusByTest}
-              setStatusByTest={setStatusByTest}
-              onSave={async (_form, currentTestId) => {
-                await saveCurrentTest(currentTestId);
-              }}
-            />
-          )}
-        </div>
-        <div className="flex justify-end">
-          <button
-            onClick={handleSubmit}
-            className="flex mt-5 items-center px-6 py-2 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-lg hover:from-primary-700 hover:to-primary-800 transition-all duration-200 shadow-md transform hover:scale-105"
-          >
-            <FiSave className="mr-2 w-4 h-4" /> Save Results
-          </button>
-        </div>
+      {/* Save All Button */}
+      <div className="flex justify-end mt-6">
+        <button
+          onClick={handleSubmitAll}
+          className="flex items-center px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:from-green-700 hover:to-green-800 transition-all duration-200 shadow-md transform hover:scale-105"
+        >
+          <FiSave className="mr-2" /> Save All Results
+        </button>
       </div>
     </div>
   );

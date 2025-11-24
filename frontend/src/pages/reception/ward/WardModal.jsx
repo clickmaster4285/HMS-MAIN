@@ -229,7 +229,7 @@ const WardModal = ({
                                     type="button"
                                     onClick={handleSuggestClick}
                                     disabled={suggestionLoading || isProcessing}
-                                    className="whitespace-nowrap px-3 py-3 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="whitespace-nowrap px-3 py-3 bg-primary-100 text-primary-700 rounded-lg hover:bg-primary-200 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                                     title="Get next available ward number for this department"
                                 >
                                     {suggestionLoading ? '...' : 'Suggest'}
@@ -267,16 +267,16 @@ const WardModal = ({
 
                 {/* Display Ward Preview */}
                 {getDepartmentName() && formData.wardNumber && (
-                    <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                        <h3 className="font-medium text-blue-800 mb-2">Ward Preview</h3>
-                        <p className="text-sm text-blue-700">
+                    <div className="mb-6 p-4 bg-primary-50 border border-primary-200 rounded-lg">
+                        <h3 className="font-medium text-primary-800 mb-2">Ward Preview</h3>
+                        <p className="text-sm text-primary-700">
                             <strong>Ward Identifier:</strong> {getDepartmentName()} Ward {getWardNumberDisplay()}
                         </p>
-                        <p className="text-sm text-blue-700">
+                        <p className="text-sm text-primary-700">
                             <strong>Full Ward Number:</strong> {getDepartmentName().substring(0, 4).toUpperCase()}-{getWardNumberDisplay()}
                         </p>
                         {formData.bedCount && (
-                            <p className="text-sm text-blue-700">
+                            <p className="text-sm text-primary-700">
                                 <strong>Beds:</strong> {formData.bedCount} bed{formData.bedCount !== 1 ? 's' : ''} will be created as{' '}
                                 {Array.from({ length: Math.min(3, formData.bedCount) }, (_, i) =>
                                     `${getDepartmentName().substring(0, 4).toUpperCase()}-${getWardNumberDisplay()}-B${i + 1}`

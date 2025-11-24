@@ -143,7 +143,7 @@ const PatientRecord = () => {
             value={patients?.length || 0}
           />
           <StatCard
-            icon={<FaNotesMedical className="text-blue-500" />}
+            icon={<FaNotesMedical className="text-primary-500" />}
             label="Consultation Fee"
             value={`Rs. ${currentDoctor?.doctor_Fee || 'N/A'}`}
           />

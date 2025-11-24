@@ -10,7 +10,7 @@ const HeroSection = () => {
       {/* Animated background elements */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute -top-1/3 -left-1/4 w-[800px] h-[800px] rounded-full bg-primary-500/5 blur-[100px] animate-[pulse_8s_ease-in-out_infinite]"></div>
-        <div className="absolute -bottom-1/4 -right-1/4 w-[700px] h-[700px] rounded-full bg-blue-500/5 blur-[100px] animate-[pulse_12s_ease-in-out_infinite]"></div>
+        <div className="absolute -bottom-1/4 -right-1/4 w-[700px] h-[700px] rounded-full bg-primary-500/5 blur-[100px] animate-[pulse_12s_ease-in-out_infinite]"></div>
         <div className="absolute top-1/2 left-1/2 w-[600px] h-[600px] rounded-full bg-indigo-500/5 blur-[80px] animate-[pulse_10s_ease-in-out_infinite]"></div>
       </div>
 
@@ -190,11 +190,11 @@ const HeroSection = () => {
                   <div>
                     <div className="flex justify-between text-sm text-gray-600 mb-1.5">
                       <span>Staff Efficiency</span>
-                      <span className="font-medium text-blue-600">87%</span>
+                      <span className="font-medium text-primary-600">87%</span>
                     </div>
                     <div className="w-full bg-gray-100 rounded-full h-2">
                       <div
-                        className="bg-gradient-to-r from-blue-400 to-blue-600 h-2 rounded-full"
+                        className="bg-gradient-to-r from-primary-400 to-primary-600 h-2 rounded-full"
                         style={{ width: "87%" }}
                       ></div>
                     </div>
@@ -255,11 +255,11 @@ const HeroSection = () => {
                 <div className="p-3">
                   <div className="flex items-end justify-between h-16 mb-2">
                     <div className="w-2 h-8 bg-primary-400 rounded-t-sm"></div>
-                    <div className="w-2 h-5 bg-blue-400 rounded-t-sm"></div>
+                    <div className="w-2 h-5 bg-primary-400 rounded-t-sm"></div>
                     <div className="w-2 h-9 bg-primary-500 rounded-t-sm"></div>
-                    <div className="w-2 h-4 bg-blue-300 rounded-t-sm"></div>
+                    <div className="w-2 h-4 bg-primary-300 rounded-t-sm"></div>
                     <div className="w-2 h-7 bg-primary-400 rounded-t-sm"></div>
-                    <div className="w-2 h-6 bg-blue-400 rounded-t-sm"></div>
+                    <div className="w-2 h-6 bg-primary-400 rounded-t-sm"></div>
                     <div className="w-2 h-8 bg-primary-500 rounded-t-sm"></div>
                   </div>
                   <div className="text-xs text-center text-gray-600 font-medium">Weekly Usage</div>

@@ -249,7 +249,7 @@ const DoctorList = () => {
               <tbody className="bg-white divide-y divide-gray-200">
                 {filteredDoctors.length > 0 ? (
                   filteredDoctors.map((doc) => (
-                    <tr key={doc._id} className="hover:bg-primary-50 transition-colors cursor-pointer   {`hover:bg-primary-50 transition-colors cursor-pointer ${viewLoading === doc._id ? 'bg-blue-50' : ''}`}  "
+                    <tr key={doc._id} className="hover:bg-primary-50 transition-colors cursor-pointer   {`hover:bg-primary-50 transition-colors cursor-pointer ${viewLoading === doc._id ? 'bg-primary-50' : ''}`}  "
                       role="button"
                       tabIndex={0}
                       aria-label={`View details of Dr. ${doc.doctor_Name}`}

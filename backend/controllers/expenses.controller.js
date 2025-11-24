@@ -1,36 +1,52 @@
 const Expense = require('../models/expenses.model');
 
-
 exports.createExpense = async (req, res) => {
   try {
-    const { doctor, doctorWelfare, otExpenses, otherExpenses, description } = req.body;
+    const { expenseType, doctor, doctorWelfare, otExpenses, otherExpenses, description, date } = req.body;
 
-    // Validate required fields
-    if (!doctor || doctorWelfare === undefined || otExpenses === undefined || otherExpenses === undefined) {
+    // Validate required fields based on expense type
+    if (!expenseType || !['doctor', 'hospital'].includes(expenseType)) {
       return res.status(400).json({
         success: false,
-        message: 'Doctor, doctor welfare, OT expenses, and other expenses are required fields'
+        message: 'Expense type is required and must be either "doctor" or "hospital"'
       });
     }
 
-    // Parse values to numbers
-    const welfare = parseFloat(doctorWelfare);
-    const ot = parseFloat(otExpenses);
-    const other = parseFloat(otherExpenses);
+    // For doctor expenses, doctor field is required
+    if (expenseType === 'doctor' && !doctor) {
+      return res.status(400).json({
+        success: false,
+        message: 'Doctor name is required for doctor expenses'
+      });
+    }
+
+    // Parse values to numbers with defaults
+    const welfare = parseFloat(doctorWelfare) || 0;
+    const ot = parseFloat(otExpenses) || 0;
+    const other = parseFloat(otherExpenses) || 0;
 
     // Calculate total
     const total = welfare + ot + other;
 
-    // Create new expense with explicit total
-    const expense = new Expense({
-      doctor,
+    // Create new expense
+    const expenseData = {
+      expenseType,
       doctorWelfare: welfare,
       otExpenses: ot,
       otherExpenses: other,
-      total: total, // Explicitly set total
-      description: description || ''
-    });
+      total,
+      description: description || '',
+      date: date || new Date()
+    };
 
+    // Add doctor field only for doctor expenses
+    if (expenseType === 'doctor') {
+      expenseData.doctor = doctor;
+    } else {
+      expenseData.doctor = null; // Ensure doctor is null for hospital expenses
+    }
+
+    const expense = new Expense(expenseData);
     await expense.save();
 
     res.status(201).json({
@@ -46,8 +62,7 @@ exports.createExpense = async (req, res) => {
       error: error.message
     });
   }
-};
-
+}
 // @desc    Get all expenses
 // @route   GET /api/expenses
 // @access  Private

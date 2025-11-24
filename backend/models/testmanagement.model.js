@@ -14,28 +14,32 @@ const testManagementSchema = new mongoose.Schema(
       {
         name: { type: String, required: true },
         unit: { type: String },
+        inputType: { 
+          type: String, 
+          enum: ['text', 'dropdown', 'number'], 
+          default: 'text' 
+        },
+        options: [{ type: String }], // Array of options for dropdown
         normalRange: {
           type: Map,
           of: {
-            min: { type: mongoose.Schema.Types.Mixed }, // Can be String, Number, etc.
-            max: { type: mongoose.Schema.Types.Mixed },  // Can be String, Number, etc.
-            unit: { type: String }, // Optional per-range unit override
-            description: { type: String } // Additional context
+            min: { type: mongoose.Schema.Types.Mixed },
+            max: { type: mongoose.Schema.Types.Mixed },
+            unit: { type: String },
+            description: { type: String }
           }
         },
-        // Store commonly used options directly in the field
         commonUnits: [{ type: String }],
         commonLabels: [{ type: String }]
       }
     ],
-    isDeleted: { type: Boolean },
+    isDeleted: { type: Boolean, default: false },
   },
   { timestamps: true }
 );
 
 // Add indexes for better performance
 testManagementSchema.index({ testCode: 1 });
-// testManagementSchema.index({ "fields.name": 1 });
 
 const TestManagement = mongoose.model("TestManagement", testManagementSchema, "testmanagements");
 

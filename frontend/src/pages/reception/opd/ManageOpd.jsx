@@ -384,7 +384,7 @@ const ManageOpd = () => {
 
                           <button
                             onClick={() => handlePrint(p)}
-                            className="text-blue-600 border border-blue-200 hover:text-blue-900 p-1 rounded-md hover:bg-blue-50"
+                            className="text-primary-600 border border-primary-200 hover:text-primary-900 p-1 rounded-md hover:bg-primary-50"
                             aria-label={`Print ${p.patient_Name}`}
                           >
                             <AiOutlinePrinter className="h-5 w-5" />

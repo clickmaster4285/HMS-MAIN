@@ -83,7 +83,7 @@ const patientdashboard = () => {
                       <td className="px-4 py-3">
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                           patient.status === 'Completed' ? 'bg-green-100 text-green-800' :
-                          patient.status === 'In Treatment' ? 'bg-blue-100 text-blue-800' :
+                          patient.status === 'In Treatment' ? 'bg-primary-100 text-primary-800' :
                           'bg-yellow-100 text-yellow-800'
                         }`}>
                           {patient.status}
@@ -127,7 +127,7 @@ const patientdashboard = () => {
                     <p className="font-medium text-gray-800">{appointment.patient}</p>
                     <p className="text-sm text-gray-500">{appointment.type}</p>
                   </div>
-                  <span className="text-sm font-medium text-blue-600">{appointment.time}</span>
+                  <span className="text-sm font-medium text-primary-600">{appointment.time}</span>
                 </div>
               ))}
             </div>

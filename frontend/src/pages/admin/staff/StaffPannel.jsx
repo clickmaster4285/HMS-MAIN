@@ -133,7 +133,7 @@ const StaffListPage = () => {
             <>
               <button
                 onClick={() => handleEdit(row._id)}
-                className="text-blue-600 hover:text-blue-800"
+                className="text-primary-600 hover:text-primary-800"
                 title="Edit"
               >
                 <FaEdit size={18} />

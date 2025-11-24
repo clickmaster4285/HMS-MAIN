@@ -13,7 +13,7 @@ const PatientInfoSection = ({
   const getStatusColor = (status) => {
     switch ((status || 'pending').toLowerCase()) {
       case 'registered':
-        return 'bg-primary-100 text-blue-800';
+        return 'bg-primary-100 text-primary-800';
       case 'in_progress':
       case 'processing':
         return 'bg-yellow-100 text-yellow-800';
@@ -41,7 +41,7 @@ const PatientInfoSection = ({
   return (
     <div className="p-8 bg-primary-50">
       <div className="flex items-center mb-6">
-        <FiUser className="w-6 h-6 text-blue-600 mr-3" />
+        <FiUser className="w-6 h-6 text-primary-600 mr-3" />
         <h2 className="text-xl font-bold text-gray-800">
           Patient & Test Information
         </h2>
@@ -51,7 +51,7 @@ const PatientInfoSection = ({
         {/* Patient Details Card */}
         <div className="bg-white rounded-xl p-6 shadow-md">
           <h3 className="font-semibold text-gray-800 mb-4 flex items-center">
-            <FiUser className="w-4 h-4 mr-2 text-blue-600" />
+            <FiUser className="w-4 h-4 mr-2 text-primary-600" />
             Patient Details
           </h3>
           <div className="space-y-3">
@@ -104,7 +104,7 @@ const PatientInfoSection = ({
                   onClick={() => setActiveTestIndex(index)}
                   className={`w-full text-left p-3 rounded-lg transition-all duration-200 ${
                     activeTestIndex === index
-                      ? 'bg-blue-100 border border-blue-300'
+                      ? 'bg-primary-100 border border-primary-300'
                       : 'bg-gray-50 hover:bg-gray-100'
                   }`}
                 >

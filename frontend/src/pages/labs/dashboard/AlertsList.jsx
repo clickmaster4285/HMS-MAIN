@@ -72,7 +72,7 @@ const AlertsList = ({ alerts }) => {
       </div>
 
       <div className="mt-4 pt-3 border-t border-gray-100">
-        <button className="w-full flex items-center justify-center gap-2 text-sm text-blue-600 hover:text-blue-800">
+        <button className="w-full flex items-center justify-center gap-2 text-sm text-primary-600 hover:text-primary-800">
           <ChevronRight className="w-4 h-4" />
           <span>View all alerts</span>
         </button>

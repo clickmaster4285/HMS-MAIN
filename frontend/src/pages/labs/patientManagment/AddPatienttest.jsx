@@ -80,6 +80,29 @@ const AddlabPatient = () => {
     }
   }, [useDefaultContact, defaultContactNumber]);
 
+  // Add this function to handle cancel/clear form
+  const handleCancel = () => {
+    setPatient({
+      id: '',
+      MRNo: '',
+      CNIC: '',
+      Name: '',
+      ContactNo: '',
+      Gender: '',
+      Age: '',
+      ReferredBy: '',
+      Guardian: '',
+    });
+    setSelectedTestId('');
+    setTestRows([]);
+    setSubmissionResult(null);
+    setDob(null);
+    setPrintData(null);
+    setUseDefaultContact(false);
+    setMode('existing');
+    setFormKey((prev) => prev + 1); // This will force re-render child components
+  };
+
   const calculateAge = (birthDate) => {
     if (!birthDate) return '';
     const today = new Date();
@@ -392,22 +415,7 @@ const AddlabPatient = () => {
       }
 
       // reset form
-      setPatient({
-        MRNo: '',
-        CNIC: '',
-        Name: '',
-        ContactNo: '',
-        Gender: '',
-        Age: '',
-        ReferredBy: '',
-        Guardian: '',
-      });
-      setTestRows([]);
-      setDob(null);
-      setUseDefaultContact(false);
-      setSelectedTestId('');
-      setPrintData(null);
-      setFormKey((k) => k + 1);
+      handleCancel(); // Use the cancel function to clear everything
     } catch (err) {
       console.error('❌ Submission error:', err);
       toast.error(`Submission failed: ${err.message}`);
@@ -431,9 +439,23 @@ const AddlabPatient = () => {
   const handleKeyDown = (e) => {
     const form = formRef.current;
     if (!form) return;
+
+    // Skip if the target is inside a react-select component
+    if (e.target.closest('.react-select__control') ||
+      e.target.closest('.react-select__menu') ||
+      e.target.closest('.react-select__input')) {
+      return;
+    }
+
     const inputs = Array.from(
       form.querySelectorAll('input, select, textarea')
-    ).filter((el) => el.type !== 'hidden' && !el.disabled);
+    ).filter((el) =>
+      el.type !== 'hidden' &&
+      !el.disabled &&
+      !el.closest('.react-select__control') &&
+      !el.closest('.react-select__menu')
+    );
+
     const index = inputs.indexOf(e.target);
     if (index === -1) return;
 
@@ -501,7 +523,11 @@ const AddlabPatient = () => {
       </FormSection>
 
       <ButtonGroup className="justify-end">
-        <Button type="reset" variant="secondary">
+        <Button 
+          type="button" 
+          variant="secondary" 
+          onClick={handleCancel}
+        >
           Cancel
         </Button>
         <Button type="submit" variant="primary" disabled={isPrinting}>

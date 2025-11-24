@@ -4,7 +4,7 @@ import { Stethoscope, ClipboardList, Bed, Pill, Users, Shield, Calendar, FileSea
 const FeaturesSection = () => {
   const features = [
     {
-      icon: <ClipboardList className="text-blue-600" size={24} />,
+      icon: <ClipboardList className="text-primary-600" size={24} />,
       title: "Electronic Health Records",
       description: "Comprehensive digital patient records accessible across departments with real-time updates and medical history tracking."
     },
@@ -79,9 +79,9 @@ const FeaturesSection = () => {
           {features.map((feature, index) => (
             <div 
               key={index} 
-              className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow hover:border-blue-100 group"
+              className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow hover:border-primary-100 group"
             >
-              <div className="w-14 h-14 rounded-xl bg-blue-50 group-hover:bg-blue-100 flex items-center justify-center mb-4 transition-colors">
+              <div className="w-14 h-14 rounded-xl bg-primary-50 group-hover:bg-primary-100 flex items-center justify-center mb-4 transition-colors">
                 {feature.icon}
               </div>
               <h3 className="font-bold text-xl text-gray-900 mb-3">{feature.title}</h3>

@@ -25,6 +25,27 @@ const normalizeRecord = (rec) => {
   // patient snapshot can be in patient_Detail or a flat patient object
   const patient = rec?.patient_Detail || rec?.patient || {};
 
+// Format age from "20 years 0 months 0 days" to "20/0/0"
+  const formatAge = (ageStr) => {
+    if (!ageStr || typeof ageStr !== 'string') return ageStr;
+    
+    try {
+      // Extract numbers using regex
+      const yearsMatch = ageStr.match(/(\d+)\s*years?/);
+      const monthsMatch = ageStr.match(/(\d+)\s*months?/);
+      const daysMatch = ageStr.match(/(\d+)\s*days?/);
+      
+      const years = yearsMatch ? yearsMatch[1] : '0';
+      const months = monthsMatch ? monthsMatch[1] : '0';
+      const days = daysMatch ? daysMatch[1] : '0';
+      
+      return `${years}/${months}/${days}`;
+    } catch (error) {
+      console.warn('Error parsing age:', ageStr, error);
+      return ageStr; // Return original if parsing fails
+    }
+  };
+
   // Support both old (selectedTests) and new (tests) shapes
   const rawTests =
     Array.isArray(rec?.tests) && rec.tests.length
@@ -130,7 +151,7 @@ const normalizeRecord = (rec) => {
           '',
         Gender:
           patient?.patient_Gender || patient?.Gender || patient?.gender || '',
-        Age: patient?.patient_Age || patient?.Age || patient?.age || '',
+           Age: formatAge(patient?.patient_Age || patient?.Age || patient?.age || ''),
         Guardian:
           patient?.patient_Guardian ||
           patient?.Guardian ||
@@ -404,7 +425,7 @@ const PatientTestsTable = () => {
   if (status.fetchAll === 'loading') {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500" />
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-500" />
       </div>
     );
   }
@@ -422,8 +443,8 @@ const PatientTestsTable = () => {
   }
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
-      <div className="bg-white rounded-lg shadow-md p-6">
+    <div className="bg-gray-50 min-h-screen">
+      <div className="bg-white rounded-lg shadow-md p-4">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
           <h1 className="text-2xl font-bold text-gray-800 mb-4 md:mb-0">
             Patient Test Records
@@ -439,7 +460,7 @@ const PatientTestsTable = () => {
               <input
                 type="text"
                 placeholder="Search by MR No, Name, Token # or Contact No"
-                className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -469,7 +490,7 @@ const PatientTestsTable = () => {
                     name="status"
                     value={filters.status}
                     onChange={handleFilterChange}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
                   >
                     <option value="">All Statuses</option>
                     <option value="pending">Pending</option>
@@ -487,7 +508,7 @@ const PatientTestsTable = () => {
                     name="gender"
                     value={filters.gender}
                     onChange={handleFilterChange}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
                   >
                     <option value="">All Genders</option>
                     <option value="Male">Male</option>
@@ -504,7 +525,7 @@ const PatientTestsTable = () => {
                     name="dateRange"
                     value={filters.dateRange}
                     onChange={handleFilterChange}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
                   >
                     <option value="">All Dates</option>
                     <option value="today">Today</option>
@@ -524,7 +545,7 @@ const PatientTestsTable = () => {
                     value={filters.contact}
                     onChange={handleFilterChange}
                     placeholder="e.g. 0300-1234567"
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
                   />
                 </div>
 
@@ -549,7 +570,7 @@ const PatientTestsTable = () => {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <Th>Token #</Th>
+                <Th>Token</Th>
                 <Th>MR No</Th>
                 <Th>Patient Name</Th>
                 <Th>Gender</Th>
@@ -598,7 +619,7 @@ const PatientTestsTable = () => {
                         {t.selectedTests.length > 2 && (
                           <button
                             onClick={() => openModal(t)}
-                            className="text-blue-500 hover:underline text-sm mt-1"
+                            className="text-primary-500 hover:underline text-sm mt-1"
                           >
                             See More
                           </button>
@@ -642,7 +663,7 @@ const PatientTestsTable = () => {
                               : t.paymentStatus === 'pending'
                               ? 'bg-yellow-100 text-yellow-800'
                               : t.paymentStatus === 'partial'
-                              ? 'bg-blue-100 text-blue-800'
+                              ? 'bg-primary-100 text-primary-800'
                               : 'bg-red-100 text-red-800'
                           }`}
                         >
@@ -661,7 +682,7 @@ const PatientTestsTable = () => {
                           </button>
                           <button
                             onClick={() => handleEdit(test._id)}
-                            className="text-blue-600 hover:text-blue-800"
+                            className="text-primary-600 hover:text-primary-800"
                             title="Edit"
                           >
                             <FiEdit className="h-4 w-4" />
@@ -715,7 +736,7 @@ const PatientTestsTable = () => {
               </div>
               <button
                 onClick={closeModal}
-                className="mt-4 bg-blue-100 text-blue-900 px-4 py-2 rounded-md hover:bg-blue-200"
+                className="mt-4 bg-primary-100 text-primary-900 px-4 py-2 rounded-md hover:bg-primary-200"
               >
                 Close
               </button>

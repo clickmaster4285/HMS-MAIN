@@ -16,7 +16,7 @@ router.post(
 router.get(
   "/get-doctors",
   passportAuth.authenticate("jwt", { session: false }),
-  checkRole(['Doctor', 'Admin', 'Receptionist']),
+  checkRole(['Doctor', 'Admin', 'Receptionist', 'Lab']),
   // doctorOnly,
   controller.doctor.getAllDoctors
 );

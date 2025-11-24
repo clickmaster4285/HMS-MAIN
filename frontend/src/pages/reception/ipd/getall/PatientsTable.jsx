@@ -141,7 +141,7 @@ const PatientsTable = ({ filteredPatients, handleView, handleEditClick, setModal
                       </button>
                       <button
                         onClick={() => handlePrint(patient)}
-                        className="text-blue-600 border border-blue-200 hover:text-blue-900 p-1 rounded-md hover:bg-blue-50"
+                        className="text-primary-600 border border-primary-200 hover:text-primary-900 p-1 rounded-md hover:bg-primary-50"
                         title="Print"
                       >
                         <FiPrinter className="h-4 w-4" />

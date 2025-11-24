@@ -10,9 +10,12 @@ import {
   FiDollarSign,
   FiUser,
   FiHash,
+  FiBarChart2,
 } from 'react-icons/fi';
 import ReactDOMServer from 'react-dom/server';
 import PrintReportSummary from './PrintReportSummary';
+import MiniReportSummary from './MiniReportSummary';
+
 const ReportSummary = () => {
   const { date } = useParams();
   const { summaryByDate } = useSelector((state) => state.testResult);
@@ -99,7 +102,7 @@ const ReportSummary = () => {
       case 'pending':
         return 'bg-amber-100 text-amber-800';
       case 'registered':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-primary-100 text-primary-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
@@ -168,6 +171,49 @@ const ReportSummary = () => {
   `);
     printWindow.document.close();
   };
+
+// New function for quick report
+const handleQuickReport = () => {
+  const printData = preparePrintData(summaryByDate, { startDate, endDate });
+  if (!printData || printData.reports.length === 0) {
+    alert('No data to generate quick report');
+    return;
+  }
+
+  const printWindow = window.open('', '_blank');
+  if (!printWindow) {
+    alert('Please allow popups for printing');
+    return;
+  }
+
+  const printContent = ReactDOMServer.renderToStaticMarkup(
+    <MiniReportSummary
+      reports={printData.reports}
+      dateRange={printData.dateRange}
+    />
+  );
+
+  printWindow.document.open();
+  printWindow.document.write(`
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>Quick_Report_Summary</title>
+      </head>
+      <body>${printContent}</body>
+      <script>
+        window.onload = function() {
+          setTimeout(() => {
+            window.print();
+            window.close();
+          }, 500);
+        };
+      </script>
+    </html>
+  `);
+  printWindow.document.close();
+};
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-8">
       <div className=" mx-auto">
@@ -181,25 +227,36 @@ const ReportSummary = () => {
               {endDate && ` - ${formatDateOnly(endDate)}`}
             </p>
           </div>
-         
-          <button
-            onClick={handlePrint}
-            className="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg shadow-sm transition-colors flex items-center gap-2"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5"
-              viewBox="0 0 20 20"
-              fill="currentColor"
+
+         <div className="flex gap-3">
+            <button
+              onClick={handleQuickReport}
+              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg shadow-sm transition-colors flex items-center gap-2"
             >
-              <path
-                fillRule="evenodd"
-                d="M5 4v3H4a2 2 0 00-2 2v3a2 2 0 002 2h1v2a2 2 0 002 2h6a2 2 0 002-2v-2h1a2 2 0 002-2V9a2 2 0 00-2-2h-1V4a2 2 0 00-2-2H7a2 2 0 00-2 2zm8 0H7v3h6V4zm0 8H7v4h6v-4z"
-                clipRule="evenodd"
-              />
-            </svg>
-            Print Summary
-          </button>
+              <FiBarChart2 className="h-5 w-5" />
+              Quick Report
+            </button>
+            
+            <button
+              onClick={handlePrint}
+              className="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg shadow-sm transition-colors flex items-center gap-2"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M5 4v3H4a2 2 0 00-2 2v3a2 2 0 002 2h1v2a2 2 0 002 2h6a2 2 0 002-2v-2h1a2 2 0 002-2V9a2 2 0 00-2-2h-1V4a2 2 0 00-2-2H7a2 2 0 00-2 2zm8 0H7v3h6V4zm0 8H7v4h6v-4z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              Print Summary
+            </button>
+          </div>
+
         </div>
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
           <div className="overflow-x-auto">

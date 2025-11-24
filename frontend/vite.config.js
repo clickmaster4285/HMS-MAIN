@@ -11,5 +11,8 @@ server: {
   port: 5173,
   allowedHosts: ['hms.clickmasters.pk']
 },
-
+preview: {
+  host: true,
+  port: 5173
+}
 })

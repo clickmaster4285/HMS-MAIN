@@ -76,20 +76,20 @@ const DoctorDashboard = () => {
     switch (status) {
       case 'stable': return 'text-green-600 bg-green-100';
       case 'monitoring': return 'text-yellow-600 bg-yellow-100';
-      case 'improved': return 'text-blue-600 bg-blue-100';
+      case 'improved': return 'text-primary-600 bg-primary-100';
       case 'critical': return 'text-red-600 bg-red-100';
       default: return 'text-gray-600 bg-gray-100';
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-primary-50 to-indigo-100">
       {/* Header */}
       <header className="bg-white/80 backdrop-blur-md border-b border-white/20 shadow-sm sticky top-0 z-5">
         <div className="px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center">
+              <div className="w-10 h-10 bg-gradient-to-r from-primary-600 to-indigo-600 rounded-xl flex items-center justify-center">
                 <Activity className="w-6 h-6 text-white" />
               </div>
               <div>
@@ -130,7 +130,7 @@ const DoctorDashboard = () => {
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {[
-            { title: 'Total Patients', value: '1,847', change: '+12%', icon: Users, color: 'from-blue-500 to-blue-600' },
+            { title: 'Total Patients', value: '1,847', change: '+12%', icon: Users, color: 'from-primary-500 to-primary-600' },
             { title: 'Appointments Today', value: '24', change: '+3', icon: Calendar, color: 'from-green-500 to-green-600' },
             { title: 'Critical Cases', value: '8', change: '-2', icon: AlertCircle, color: 'from-red-500 to-red-600' },
             { title: 'Recovery Rate', value: '94.2%', change: '+1.2%', icon: TrendingUp, color: 'from-purple-500 to-purple-600' }
@@ -141,7 +141,7 @@ const DoctorDashboard = () => {
                   <div className={`w-12 h-12 rounded-xl bg-gradient-to-r ${stat.color} flex items-center justify-center transform group-hover:rotate-6 transition-transform duration-300`}>
                     <stat.icon className="w-6 h-6 text-white" />
                   </div>
-                  <span className={`text-sm font-medium px-2 py-1 rounded-full ${stat.change.startsWith('+') ? 'text-green-600 bg-green-100' : stat.change.startsWith('-') ? 'text-red-600 bg-red-100' : 'text-blue-600 bg-blue-100'}`}>
+                  <span className={`text-sm font-medium px-2 py-1 rounded-full ${stat.change.startsWith('+') ? 'text-green-600 bg-green-100' : stat.change.startsWith('-') ? 'text-red-600 bg-red-100' : 'text-primary-600 bg-primary-100'}`}>
                     {stat.change}
                   </span>
                 </div>
@@ -162,13 +162,13 @@ const DoctorDashboard = () => {
                 <div className="flex space-x-2">
                   <button 
                     onClick={() => setSelectedMetric('patients')}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${selectedMetric === 'patients' ? 'bg-blue-100 text-blue-600' : 'text-gray-600 hover:bg-gray-100'}`}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${selectedMetric === 'patients' ? 'bg-primary-100 text-primary-600' : 'text-gray-600 hover:bg-gray-100'}`}
                   >
                     Patients
                   </button>
                   <button 
                     onClick={() => setSelectedMetric('revenue')}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${selectedMetric === 'revenue' ? 'bg-blue-100 text-blue-600' : 'text-gray-600 hover:bg-gray-100'}`}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${selectedMetric === 'revenue' ? 'bg-primary-100 text-primary-600' : 'text-gray-600 hover:bg-gray-100'}`}
                   >
                     Revenue
                   </button>
@@ -310,7 +310,7 @@ const DoctorDashboard = () => {
                   <div key={patient.id} className="group hover:bg-gray-50 rounded-xl p-4 transition-all duration-200 border border-gray-100">
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full flex items-center justify-center">
+                        <div className="w-10 h-10 bg-gradient-to-r from-primary-500 to-indigo-500 rounded-full flex items-center justify-center">
                           <User className="w-5 h-5 text-white" />
                         </div>
                         <div>
@@ -351,7 +351,7 @@ const DoctorDashboard = () => {
                     <div className="flex-1">
                       <div className="flex items-center justify-between">
                         <h4 className="font-medium text-gray-900">{appointment.patient}</h4>
-                        <span className="text-sm font-medium text-blue-600">{appointment.time}</span>
+                        <span className="text-sm font-medium text-primary-600">{appointment.time}</span>
                       </div>
                       <div className="flex items-center justify-between mt-1">
                         <span className="text-sm text-gray-600">{appointment.type}</span>
