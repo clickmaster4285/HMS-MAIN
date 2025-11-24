@@ -17,6 +17,31 @@ const PatientInfoForm = ({
   const [ageInput, setAgeInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
 
+  // Auto-capitalize function
+  const autoCapitalize = (text) => {
+    return text
+      .toLowerCase()
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  };
+
+  // Handle patient name change with auto-capitalization
+  const handleNameChange = (e) => {
+    const { name, value } = e.target;
+    const capitalizedValue = autoCapitalize(value);
+    
+    // Create a synthetic event with the capitalized value
+    const syntheticEvent = {
+      target: {
+        name: name,
+        value: capitalizedValue
+      }
+    };
+    
+    handlePatientChange(syntheticEvent);
+  };
+
   // Calculate DOB from age input
   const calculateDobFromAge = (ageString) => {
     if (!ageString) return null;
@@ -95,8 +120,6 @@ const PatientInfoForm = ({
     }, 800); // 800ms delay
   };
 
-  // REMOVED: The useEffect that was updating age input from DOB
-
   // 1) Put this helper near the top of the file (inside or above the component)
   const RequiredLabel = ({ children, required }) => (
     <label className="block mb-1 font-medium text-gray-700">
@@ -113,7 +136,7 @@ const PatientInfoForm = ({
         placeholder="Enter full name"
         icon="user"
         value={patient.Name}
-        onChange={handlePatientChange}
+        onChange={handleNameChange} // Changed to use the new handler
         required
       />
       <InputField
