@@ -50,230 +50,242 @@ const UpdateReport = () => {
 
   // Print-related functions
   const preparePrintData = (testIds) => {
-    if (!patientTestById) return null;
+  if (!patientTestById) return null;
 
-    const patientPrintData = {
-      printData: patientTestById,
+  const patientPrintData = {
+    printData: patientTestById,
+  };
+
+  const testsToPrint = testIds.length > 0
+    ? selectedTests.filter((test) => testIds.includes(test.test))
+    : selectedTests;
+
+  const testResults = testsToPrint.map((test) => {
+    const currentResults = formData.results[test.test] || [];
+    return {
+      testName: test.testDetails.testName,
+      testId: test.test, // ADD THIS - the actual test ID
+      fields: currentResults.map((result) => ({
+        fieldName: result.fieldName,
+        value: result.value,
+        unit: result.unit,
+        normalRange: result.normalRange,
+        notes: result.notes,
+      })),
+      notes: formData.notes,
     };
+  });
 
-    const testsToPrint = testIds.length > 0
-      ? selectedTests.filter((test) => testIds.includes(test.test))
-      : selectedTests;
+  return { patientData: patientPrintData, testResults };
+};
 
-    const testResults = testsToPrint.map((test) => {
-      const currentResults = formData.results[test.test] || [];
-      return {
-        testName: test.testDetails.testName,
-        fields: currentResults.map((result) => ({
-          fieldName: result.fieldName,
-          value: result.value,
-          unit: result.unit,
-          normalRange: result.normalRange,
-          notes: result.notes,
-        })),
-        notes: formData.notes,
-      };
-    });
-
-    return { patientData: patientPrintData, testResults };
-  };
-
-  const proceedWithPrint = async (testIds) => {
-    try {
-      // Save all selected tests before printing
-      for (const tid of testIds) {
-        const def = testDefinitions.find((td) => td._id === tid);
-        if (!def || !Array.isArray(def.fields)) {
-          console.warn('Skipping (no fields):', tid);
-          continue;
-        }
-
-        const rows = formData?.results?.[tid] || [];
-        const updateData = {
-          results: rows
-            .filter((r) => r?.fieldName?.trim()?.length)
-            .map((r) => ({
-              fieldName: r.fieldName,
-              value: r.value,
-              notes: r.notes,
-              testId: tid,
-            })),
-          status: statusByTest[tid] ?? 'pending',
-          notes: formData.notes ?? '',
-        };
-
-        await dispatch(
-          updatePatientTestResults({
-            patientTestId: id,
-            testId: tid,
-            updateData,
-          })
-        ).unwrap();
-      }
-
-      // Prepare and print the report
-      const printData = preparePrintData(testIds);
-      if (!printData) return;
-
-      const printWindow = window.open('', '_blank');
-      if (!printWindow) {
-        alert('Please allow popups for printing');
-        return;
-      }
-
-      const printContent = ReactDOMServer.renderToStaticMarkup(
-        <PrintTestReport
-          patientTest={printData.patientData.printData.patientTest}
-          testDefinitions={printData.testResults}
-        />
-      );
-
-      printWindow.document.open();
-      printWindow.document.write(`
-        <!DOCTYPE html>
-        <html>
-          <head>
-            <title>Print Test Report</title>
-            <style>
-              @page {
-                size: A4;
-                margin: 5mm 10mm;
-              }
-              
-              body {
-                margin: 0;
-                padding: 5mm;
-                color: #333;
-                width: 190mm;
-                height: 277mm;
-                position: relative;
-                font-size: 13px;
-                line-height: 1.3;
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
-                font-family: Arial, sans-serif;
-              }
-
-              .header {
-                text-align: center;
-                margin-bottom: 10px;
-                border-bottom: 2px solid #2b6cb0;
-                padding-bottom: 10px;
-              }
-
-              .hospital-name {
-                font-size: 24px;
-                font-weight: bold;
-                color: #2b6cb0;
-                margin-bottom: 5px;
-              }
-
-              .hospital-subtitle {
-                font-size: 14px;
-                color: #555;
-                margin-bottom: 5px;
-              }
-
-              .patient-info {
-                width: 100%;
-                border-collapse: collapse;
-                margin-bottom: 15px;
-              }
-
-              .patient-info td {
-                padding: 3px 5px;
-                vertical-align: top;
-              }
-
-              .patient-info .label {
-                font-weight: bold;
-                width: 120px;
-              }
-
-              .test-section {
-                margin-bottom: 20px;
-              }
-
-              .test-title {
-                font-weight: bold;
-                font-size: 16px;
-                margin-bottom: 5px;
-                color: #2b6cb0;
-              }
-
-              .test-table {
-                width: 100%;
-                border-collapse: collapse;
-                margin-bottom: 10px;
-              }
-
-              .test-table th {
-                background-color: #f0f0f0;
-                border: 1px solid #ddd;
-                padding: 5px;
-                text-align: left;
-                font-weight: bold;
-              }
-
-              .test-table td {
-                border: 1px solid #ddd;
-                padding: 5px;
-              }
-
-              .footer {
-                position: absolute;
-                bottom: 10mm;
-                width: 100%;
-                display: flex;
-                justify-content: space-between;
-              }
-
-              .signature {
-                text-align: center;
-                width: 150px;
-                border-top: 1px solid #000;
-                padding-top: 5px;
-                margin-top: 30px;
-                font-size: 12px;
-              }
-
-              .normal-range {
-                font-size: 11px;
-                color: #666;
-              }
-
-              .abnormal {
-                color: red;
-                font-weight: bold;
-              }
-
-              @media print {
-                body {
-                  padding: 0;
-                  margin: 0;
-                  width: 210mm;
-                  height: 297mm;
-                }
-              }
-            </style>
-          </head>
-          <body>${printContent}</body>
-          <script>
-            window.onload = function() {
-              setTimeout(() => {
-                window.print();
-                window.close();
-              }, 500);
-            };
-          </script>
-        </html>
-      `);
-      printWindow.document.close();
-    } catch (error) {
-      alert(`Failed to save and print: ${error.message || 'Unknown error'}`);
+const enhancedPrintCSS = `
+  <style>
+    @page {
+      size: A4;
+      margin: 0;
     }
-  };
+    
+    body {
+      margin: 0;
+      padding: 0;
+      color: #333;
+      font-family: Arial, sans-serif;
+      font-size: 12pt;
+      line-height: 1.3;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+      background: white;
+    }
 
+    /* Page container for each page */
+    .page-container {
+      width: 210mm;
+      min-height: 297mm;
+      position: relative;
+      page-break-inside: avoid;
+    }
+
+    /* Letterhead space - 25% of page */
+    .letterhead-space {
+      height: 74mm;
+      background-color: transparent;
+    }
+
+    /* Content area - starts after letterhead */
+    .content-area {
+      padding: 0 10mm;
+      min-height: 223mm;
+    }
+
+    /* ENHANCED PAGE BREAK SUPPORT */
+    .separate-page-test {
+      page-break-after: always !important;
+      page-break-before: always !important;
+    }
+
+    .grouped-tests-page {
+      page-break-inside: avoid;
+    }
+
+    .grouped-test {
+      page-break-inside: avoid;
+    }
+
+    /* Ensure tables are visible and properly formatted */
+    table {
+      border-collapse: collapse;
+      width: 100%;
+    }
+
+    th, td {
+      border: 1px solid #ddd;
+      padding: 4px 6px;
+      text-align: left;
+    }
+
+    th {
+      background-color: #f0f0f0;
+      font-weight: bold;
+    }
+
+    /* Patient info styling */
+    .patient-info {
+      margin-bottom: 8mm;
+    }
+
+    .legal-notice {
+      text-align: right;
+      margin-bottom: 4mm;
+      font-size: 10pt;
+      color: #666;
+    }
+
+    /* Test section styling */
+    .test-section {
+      margin-bottom: 8mm;
+    }
+
+    .test-title {
+      font-weight: bold;
+      font-size: 13pt;
+      margin-bottom: 3mm;
+      color: #2b6cb0;
+      border-bottom: 2px solid #2b6cb0;
+      padding-bottom: 2px;
+    }
+
+    @media print {
+      body {
+        margin: 0;
+        padding: 0;
+        width: 210mm;
+      }
+      
+      .separate-page-test {
+        page-break-after: always !important;
+        page-break-before: always !important;
+      }
+      
+      .grouped-tests-page {
+        page-break-after: always;
+      }
+      
+      /* Ensure everything is visible when printing */
+      * {
+        visibility: visible !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+
+      /* Hide letterhead space in print if needed */
+      .letterhead-space {
+        background-color: transparent !important;
+      }
+    }
+
+    /* Abnormal result styling */
+    .abnormal {
+      color: red !important;
+      font-weight: bold !important;
+    }
+  </style>
+`;
+
+ const proceedWithPrint = async (testIds) => {
+  try {
+    // Save all selected tests before printing
+    for (const tid of testIds) {
+      const def = testDefinitions.find((td) => td._id === tid);
+      if (!def || !Array.isArray(def.fields)) {
+        console.warn('Skipping (no fields):', tid);
+        continue;
+      }
+
+      const rows = formData?.results?.[tid] || [];
+      const updateData = {
+        results: rows
+          .filter((r) => r?.fieldName?.trim()?.length)
+          .map((r) => ({
+            fieldName: r.fieldName,
+            value: r.value,
+            notes: r.notes,
+            testId: tid,
+          })),
+        status: statusByTest[tid] ?? 'pending',
+        notes: formData.notes ?? '',
+      };
+
+      await dispatch(
+        updatePatientTestResults({
+          patientTestId: id,
+          testId: tid,
+          updateData,
+        })
+      ).unwrap();
+    }
+
+    // Prepare and print the report
+    const printData = preparePrintData(testIds);
+    if (!printData) return;
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      alert('Please allow popups for printing');
+      return;
+    }
+
+    const printContent = ReactDOMServer.renderToStaticMarkup(
+      <PrintTestReport
+        patientTest={printData.patientData.printData.patientTest}
+        testDefinitions={printData.testResults}
+      />
+    );
+
+    printWindow.document.open();
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Print Test Report</title>
+            ${enhancedPrintCSS}
+        </head>
+        <body>${printContent}</body>
+        <script>
+          window.onload = function() {
+            setTimeout(() => {
+              window.print();
+              window.close();
+            }, 500);
+          };
+        </script>
+      </html>
+    `);
+    printWindow.document.close();
+  } catch (error) {
+    alert(`Failed to save and print: ${error.message || 'Unknown error'}`);
+  }
+};
   const handlePrint = () => {
     setSelectedTestIds(selectedTests.map((test) => test.test));
     setSearchQuery('');

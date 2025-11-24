@@ -231,41 +231,43 @@ const TestReport = () => {
     setShowFilterPopup(false);
   };
 
-  const preparePrintData = (report, testIds) => {
-    if (!report || !report.fullData) return null;
+const preparePrintData = (report, testIds) => {
+  if (!report || !report.fullData) return null;
 
-    const patientTest = report.fullData;
-    const testDefinitions = report.fullData.testDefinitions;
+  const patientTest = report.fullData;
+  const testDefinitions = report.fullData.testDefinitions;
 
-    const selectedTests =
-      testIds.length > 0
-        ? patientTest.selectedTests.filter((test) =>
-            testIds.includes(test.test)
-          )
-        : patientTest.selectedTests;
+  const selectedTests =
+    testIds.length > 0
+      ? patientTest.selectedTests.filter((test) =>
+          testIds.includes(test.test)
+        )
+      : patientTest.selectedTests;
 
-    const testResults = selectedTests.map((test) => {
-      const definition = testDefinitions.find(
-        (def) => def.testCode === test.testDetails?.testCode
-      );
+  const testResults = selectedTests.map((test) => {
+    const definition = testDefinitions.find(
+      (def) => def.testCode === test.testDetails?.testCode
+    );
 
-      return {
-        testName: test.testDetails?.testName || 'Unknown Test',
-        fields: (definition?.fields || []).map((field) => ({
-          fieldName: field.name || 'Unknown Field',
-          value: field.value || '',
-          unit: field.unit || '',
-          normalRange: field.normalRange || null,
-          notes: field.notes || '',
-        })),
-        notes: test.notes || '',
-      };
-    });
     return {
-      patientTest,
-      testResults,
+      testName: test.testDetails?.testName || 'Unknown Test',
+      testId: test.test, // ADD THIS - the actual test ID
+      fields: (definition?.fields || []).map((field) => ({
+        fieldName: field.name || 'Unknown Field',
+        value: field.value || '',
+        unit: field.unit || '',
+        normalRange: field.normalRange || null,
+        notes: field.notes || '',
+      })),
+      notes: test.notes || '',
     };
+  });
+  
+  return {
+    patientTest,
+    testResults,
   };
+};
 
   const handlePrint = (report) => {
     setSelectedReport(report);
@@ -318,6 +320,139 @@ const TestReport = () => {
     proceedWithPrint(selectedReport, selectedTestIds);
   };
 
+const enhancedPrintCSS = `
+  <style>
+    @page {
+      size: A4;
+      margin: 0;
+    }
+    
+    body {
+      margin: 0;
+      padding: 0;
+      color: #333;
+      font-family: Arial, sans-serif;
+      font-size: 12pt;
+      line-height: 1.3;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+      background: white;
+    }
+
+    /* Page container for each page */
+    .page-container {
+      width: 210mm;
+      min-height: 297mm;
+      position: relative;
+      page-break-inside: avoid;
+    }
+
+    /* Letterhead space - 25% of page */
+    .letterhead-space {
+      height: 74mm;
+      background-color: transparent;
+    }
+
+    /* Content area - starts after letterhead */
+    .content-area {
+      padding: 0 10mm;
+      min-height: 223mm;
+    }
+
+    /* ENHANCED PAGE BREAK SUPPORT */
+    .separate-page-test {
+      page-break-after: always !important;
+      page-break-before: always !important;
+    }
+
+    .grouped-tests-page {
+      page-break-inside: avoid;
+    }
+
+    .grouped-test {
+      page-break-inside: avoid;
+    }
+
+    /* Ensure tables are visible and properly formatted */
+    table {
+      border-collapse: collapse;
+      width: 100%;
+    }
+
+    th, td {
+      border: 1px solid #ddd;
+      padding: 4px 6px;
+      text-align: left;
+    }
+
+    th {
+      background-color: #f0f0f0;
+      font-weight: bold;
+    }
+
+    /* Patient info styling */
+    .patient-info {
+      margin-bottom: 8mm;
+    }
+
+    .legal-notice {
+      text-align: right;
+      margin-bottom: 4mm;
+      font-size: 10pt;
+      color: #666;
+    }
+
+    /* Test section styling */
+    .test-section {
+      margin-bottom: 8mm;
+    }
+
+    .test-title {
+      font-weight: bold;
+      font-size: 13pt;
+      margin-bottom: 3mm;
+      color: #2b6cb0;
+      border-bottom: 2px solid #2b6cb0;
+      padding-bottom: 2px;
+    }
+
+    @media print {
+      body {
+        margin: 0;
+        padding: 0;
+        width: 210mm;
+      }
+      
+      .separate-page-test {
+        page-break-after: always !important;
+        page-break-before: always !important;
+      }
+      
+      .grouped-tests-page {
+        page-break-after: always;
+      }
+      
+      /* Ensure everything is visible when printing */
+      * {
+        visibility: visible !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+
+      /* Hide letterhead space in print if needed */
+      .letterhead-space {
+        background-color: transparent !important;
+      }
+    }
+
+    /* Abnormal result styling */
+    .abnormal {
+      color: red !important;
+      font-weight: bold !important;
+    }
+  </style>
+`;
+
   const proceedWithPrint = (report, testIds) => {
     const printData = preparePrintData(report, testIds);
     if (!printData) return;
@@ -341,138 +476,7 @@ const TestReport = () => {
       <html>
         <head>
           <title>Print Test Report</title>
-          <style>
-            @page {
-              size: A4;
-              margin: 5mm 10mm;
-            }
-            
-            body {
-              margin: 0;
-              padding: 5mm;
-              color: #333;
-              width: 190mm;
-              height: 277mm;
-              position: relative;
-              font-size: 13px;
-              line-height: 1.3;
-              -webkit-print-color-adjust: exact;
-              print-color-adjust: exact;
-              font-family: Arial, sans-serif;
-            }
-
-            .header {
-              text-align: center;
-              margin-bottom: 10px;
-              border-bottom: 2px solid #000;
-              padding-bottom: 10px;
-            }
-
-            .hospital-name {
-              font-size: 24px;
-              font-weight: bold;
-              color: #000;
-              margin-bottom: 5px;
-              text-transform: uppercase;
-            }
-
-            .patient-info {
-              width: 100%;
-              border-collapse: collapse;
-              margin-bottom: 15px;
-            }
-
-            .patient-info td {
-              padding: 3px 5px;
-              vertical-align: top;
-              border: none;
-            }
-
-            .patient-info .label {
-              font-weight: bold;
-              width: 120px;
-            }
-
-            .divider {
-              border-top: 1px dashed #000;
-              margin: 10px 0;
-            }
-
-            .test-section {
-              margin-bottom: 20px;
-            }
-
-            .test-title {
-              font-weight: bold;
-              font-size: 16px;
-              margin-bottom: 5px;
-              text-transform: uppercase;
-            }
-
-            .test-table {
-              width: 100%;
-              border-collapse: collapse;
-              margin-bottom: 10px;
-            }
-
-            .test-table th {
-              background-color: #f0f0f0;
-              border: 1px solid #ddd;
-              padding: 5px;
-              text-align: left;
-              font-weight: bold;
-              font-size: 12px;
-            }
-
-            .test-table td {
-              border: 1px solid #ddd;
-              padding: 5px;
-              font-size: 12px;
-            }
-
-            .footer {
-              margin-top: 30px;
-              width: 100%;
-            }
-
-            .signature {
-              text-align: center;
-              width: 150px;
-              display: inline-block;
-              margin: 0 10px;
-              font-size: 12px;
-            }
-
-            .signature-line {
-              border-top: 1px solid #000;
-              margin-top: 50px;
-              padding-top: 5px;
-            }
-
-            .abnormal {
-              color: red;
-              font-weight: bold;
-            }
-
-            .print-button {
-              position: fixed;
-              top: 10mm;
-              right: 10mm;
-              padding: 5px 10px;
-              background: #2b6cb0;
-              color: white;
-              border: none;
-              border-radius: 3px;
-              cursor: pointer;
-              z-index: 1000;
-            }
-
-            @media print {
-              .print-button {
-                display: none;
-              }
-            }
-          </style>
+            ${enhancedPrintCSS}
         </head>
         <body>${printContent}</body>
         <script>
