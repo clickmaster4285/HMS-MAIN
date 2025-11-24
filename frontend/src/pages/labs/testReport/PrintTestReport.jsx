@@ -156,8 +156,8 @@ const styles = {
     backgroundColor: '#fff',
     color: '#333',
     fontFamily: '"Arial", sans-serif',
-    fontSize: '12pt', // Reduced from 11pt
-    lineHeight: '1.1', // Reduced line height
+    fontSize: '14pt', // Reduced from 11pt
+    lineHeight: '1.2', // Reduced line height
     position: 'relative',
     overflow: 'hidden', // Prevent overflow to second page
     pageBreakInside: 'avoid',
@@ -208,7 +208,7 @@ const styles = {
     width: '100%',
     borderCollapse: 'collapse',
     margin: '8px 0', // Reduced from 15px
-    fontSize: '9pt', // Smaller font for table
+    fontSize: '11pt', // Smaller font for table
   },
 
   labelCell: {
@@ -217,14 +217,14 @@ const styles = {
     padding: '3px', // Reduced from 5px
     border: '1px solid #ddd',
     backgroundColor: '#f5f5f5',
-    fontSize: '9pt', // Consistent font size
+    fontSize: '11pt', // Consistent font size
   },
 
   valueCell: {
     padding: '3px', // Reduced from 5px
     border: '1px solid #ddd',
     width: '35%',
-    fontSize: '9pt', // Consistent font size
+    fontSize: '11pt', // Consistent font size
   },
 
   testSection: {
@@ -245,7 +245,7 @@ const styles = {
     borderCollapse: 'collapse',
     marginBottom: '8px', // Reduced from 10px
     tableLayout: 'fixed',
-    fontSize: '9pt', // Smaller font for test table
+    fontSize: '11pt', // Smaller font for test table
   },
 
   tableHeader: {
@@ -254,15 +254,16 @@ const styles = {
     padding: '3px', // Reduced from 5px
     textAlign: 'left',
     fontWeight: 'bold',
-    fontSize: '9pt', // Reduced from 11pt
+    fontSize: '11pt', // Reduced from 11pt
   },
 
   tableCell: {
     border: '1px solid #ddd',
     padding: '3px', // Reduced from 5px
-    fontSize: '9pt', // Reduced from 11pt
+    fontSize: '12pt', // Reduced from 11pt
+    fontWeight: 500,
     verticalAlign: 'top',
-    lineHeight: '1.1',
+    lineHeight: '1.2',
   },
 
   // Fixed width columns

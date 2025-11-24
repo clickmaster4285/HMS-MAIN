@@ -25,6 +25,27 @@ const normalizeRecord = (rec) => {
   // patient snapshot can be in patient_Detail or a flat patient object
   const patient = rec?.patient_Detail || rec?.patient || {};
 
+// Format age from "20 years 0 months 0 days" to "20/0/0"
+  const formatAge = (ageStr) => {
+    if (!ageStr || typeof ageStr !== 'string') return ageStr;
+    
+    try {
+      // Extract numbers using regex
+      const yearsMatch = ageStr.match(/(\d+)\s*years?/);
+      const monthsMatch = ageStr.match(/(\d+)\s*months?/);
+      const daysMatch = ageStr.match(/(\d+)\s*days?/);
+      
+      const years = yearsMatch ? yearsMatch[1] : '0';
+      const months = monthsMatch ? monthsMatch[1] : '0';
+      const days = daysMatch ? daysMatch[1] : '0';
+      
+      return `${years}/${months}/${days}`;
+    } catch (error) {
+      console.warn('Error parsing age:', ageStr, error);
+      return ageStr; // Return original if parsing fails
+    }
+  };
+
   // Support both old (selectedTests) and new (tests) shapes
   const rawTests =
     Array.isArray(rec?.tests) && rec.tests.length
@@ -130,7 +151,7 @@ const normalizeRecord = (rec) => {
           '',
         Gender:
           patient?.patient_Gender || patient?.Gender || patient?.gender || '',
-        Age: patient?.patient_Age || patient?.Age || patient?.age || '',
+           Age: formatAge(patient?.patient_Age || patient?.Age || patient?.age || ''),
         Guardian:
           patient?.patient_Guardian ||
           patient?.Guardian ||
@@ -423,7 +444,7 @@ const PatientTestsTable = () => {
 
   return (
     <div className="bg-gray-50 min-h-screen">
-      <div className="bg-white rounded-lg shadow-md p-6">
+      <div className="bg-white rounded-lg shadow-md p-4">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
           <h1 className="text-2xl font-bold text-gray-800 mb-4 md:mb-0">
             Patient Test Records
@@ -549,7 +570,7 @@ const PatientTestsTable = () => {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <Th>Token #</Th>
+                <Th>Token</Th>
                 <Th>MR No</Th>
                 <Th>Patient Name</Th>
                 <Th>Gender</Th>
