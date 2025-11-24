@@ -6,8 +6,13 @@ import {
 import { shouldPrintOnSeparatePage } from '../../../config/printConfig';
 
 const PrintTestReport = ({ patientTest, testDefinitions }) => {
-  // Helper function to handle empty values
-  const safeData = (value, fallback = 'N/A') => value || fallback;
+  // Enhanced helper function to handle empty values - hide "Nill" and empty strings
+  const safeData = (value, fallback = '') => {
+    if (!value || value === 'Nill' || value === 'NIL' || value === 'nil' || value.trim() === '') {
+      return '';
+    }
+    return value;
+  };
 
   // Extract patient data
   const patientData = {
@@ -42,13 +47,24 @@ const PrintTestReport = ({ patientTest, testDefinitions }) => {
     return ageString;
   };
 
-  // Get normal range based on gender
+  // Enhanced Get normal range - hide empty ranges
   const getFormattedRange = (field, patientData) => {
-    if (!field.normalRange) return 'NIL';
+    if (!field.normalRange || Object.keys(field.normalRange).length === 0) return '';
+    
     const range = getNormalRange(field.normalRange, patientData);
-    if (!range) return 'NIL';
-    const min = range.min !== undefined ? range.min : 'N/A';
-    const max = range.max !== undefined ? range.max : 'N/A';
+    if (!range) return '';
+    
+    const min = range.min !== undefined && range.min !== 'Nill' && range.min !== 'Nil' ? range.min : '';
+    // const max = range.max !== undefined && range.max !== 'Nill' && range.max !== 'Nil' ? range.max : '';
+    const max = range.max ;
+    
+    // If both min and max are empty, return empty string
+    if (!min && !max) return '';
+    
+    // If only one value exists, return just that value
+    if (!min) return max;
+    if (!max) return min;
+    
     return `${min} - ${max}`;
   };
 
@@ -86,6 +102,17 @@ const PrintTestReport = ({ patientTest, testDefinitions }) => {
 
   const { separatePageTests, groupedTests } = groupTestsByPage();
 
+  // Group tests into chunks of maximum 2 tests per page
+  const groupTestsIntoPages = (tests) => {
+    const pages = [];
+    for (let i = 0; i < tests.length; i += 2) {
+      pages.push(tests.slice(i, i + 2));
+    }
+    return pages;
+  };
+
+  const groupedTestPages = groupTestsIntoPages(groupedTests);
+
   // Render patient information section (repeated on every page)
   const renderPatientInfo = () => (
     <div style={styles.patientInfoSection}>
@@ -121,7 +148,58 @@ const PrintTestReport = ({ patientTest, testDefinitions }) => {
     </div>
   );
 
-  // Render a single test section with patient info
+  // Render a single test section
+  const renderTestSection = (testDef, index, showDivider = false) => (
+    <div key={index}>
+      <div style={styles.testSection}>
+        <div style={styles.testTitle}>{testDef.testName}</div>
+        <table style={styles.testTable}>
+          <thead>
+            <tr>
+              <th style={{...styles.tableHeader, ...styles.testNameHeader}}>Test Name</th>
+              <th style={{...styles.tableHeader, ...styles.resultHeader}}>Result</th>
+              <th style={{...styles.tableHeader, ...styles.unitHeader}}>Unit</th>
+              <th style={{...styles.tableHeader, ...styles.rangeHeader}}>Reference Range</th>
+            </tr>
+          </thead>
+          <tbody>
+            {testDef.fields && testDef.fields.map((field, idx) => {
+              // Get the formatted range (empty if no range)
+              const formattedRange = getFormattedRange(field, patientData);
+              
+              return (
+                <tr key={idx}>
+                  <td style={{...styles.tableCell, ...styles.testNameCell}}>
+                    {field.fieldName || field.name}
+                  </td>
+                  <td
+                    style={
+                      isAbnormal(field, field.value, patientData)
+                        ? {...styles.tableCell, ...styles.resultCell, ...styles.abnormal}
+                        : {...styles.tableCell, ...styles.resultCell}
+                    }
+                  >
+                    {safeData(field.value) || '  '}
+                  </td>
+                  <td style={{...styles.tableCell, ...styles.unitCell}}>
+                    {safeData(field.unit)}
+                  </td>
+                  <td style={{...styles.tableCell, ...styles.rangeCell}}>
+                    {formattedRange}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      
+      {/* Visual divider between tests (except for the last test on page) */}
+      {showDivider && <div style={styles.testDivider}></div>}
+    </div>
+  );
+
+  // Render a single test section with patient info (for separate page tests)
   const renderTestWithPatientInfo = (testDef, index, isSeparatePage = false) => (
     <div 
       className={isSeparatePage ? "separate-page-test" : "grouped-test"}
@@ -137,51 +215,17 @@ const PrintTestReport = ({ patientTest, testDefinitions }) => {
         {renderPatientInfo()}
         
         {/* Test content */}
-        <div style={styles.testSection}>
-          <div style={styles.testTitle}>{testDef.testName}</div>
-          <table style={styles.testTable}>
-            <thead>
-              <tr>
-                <th style={{...styles.tableHeader, ...styles.testNameHeader}}>Test Name</th>
-                <th style={{...styles.tableHeader, ...styles.resultHeader}}>Result</th>
-                <th style={{...styles.tableHeader, ...styles.unitHeader}}>Unit</th>
-                <th style={{...styles.tableHeader, ...styles.rangeHeader}}>Reference Range</th>
-              </tr>
-            </thead>
-            <tbody>
-              {testDef.fields && testDef.fields.map((field, idx) => (
-                <tr key={idx}>
-                  <td style={{...styles.tableCell, ...styles.testNameCell}}>
-                    {field.fieldName || field.name}
-                  </td>
-                  <td
-                    style={
-                      isAbnormal(field, field.value, patientData)
-                        ? {...styles.tableCell, ...styles.resultCell, ...styles.abnormal}
-                        : {...styles.tableCell, ...styles.resultCell}
-                    }
-                  >
-                    {field.value || '/-'}
-                  </td>
-                  <td style={{...styles.tableCell, ...styles.unitCell}}>{safeData(field.unit, '')}</td>
-                  <td style={{...styles.tableCell, ...styles.rangeCell}}>
-                    {getFormattedRange(field, patientData)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        {renderTestSection(testDef, index, false)}
       </div>
     </div>
   );
 
-  // Render grouped tests together on one page
-  const renderGroupedTests = () => {
-    if (groupedTests.length === 0) return null;
+  // Render grouped tests (2 per page) with clear separation
+  const renderGroupedTestsPage = (tests, pageIndex) => {
+    if (tests.length === 0) return null;
 
     return (
-      <div className="grouped-tests-page" style={styles.pageContainer}>
+      <div className="grouped-tests-page" style={styles.pageContainer} key={pageIndex}>
         {/* Letterhead space - 25% of page height */}
         <div style={styles.letterheadSpace}></div>
         
@@ -190,43 +234,9 @@ const PrintTestReport = ({ patientTest, testDefinitions }) => {
           {/* Patient information */}
           {renderPatientInfo()}
           
-          {/* All grouped tests */}
-          {groupedTests.map((testDef, index) => (
-            <div style={styles.testSection} key={index}>
-              <div style={styles.testTitle}>{testDef.testName}</div>
-              <table style={styles.testTable}>
-                <thead>
-                  <tr>
-                    <th style={{...styles.tableHeader, ...styles.testNameHeader}}>Test Name</th>
-                    <th style={{...styles.tableHeader, ...styles.resultHeader}}>Result</th>
-                    <th style={{...styles.tableHeader, ...styles.unitHeader}}>Unit</th>
-                    <th style={{...styles.tableHeader, ...styles.rangeHeader}}>Reference Range</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {testDef.fields && testDef.fields.map((field, idx) => (
-                    <tr key={idx}>
-                      <td style={{...styles.tableCell, ...styles.testNameCell}}>
-                        {field.fieldName || field.name}
-                      </td>
-                      <td
-                        style={
-                          isAbnormal(field, field.value, patientData)
-                            ? {...styles.tableCell, ...styles.resultCell, ...styles.abnormal}
-                            : {...styles.tableCell, ...styles.resultCell}
-                        }
-                      >
-                        {field.value || '/-'}
-                      </td>
-                      <td style={{...styles.tableCell, ...styles.unitCell}}>{safeData(field.unit, '')}</td>
-                      <td style={{...styles.tableCell, ...styles.rangeCell}}>
-                        {getFormattedRange(field, patientData)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+          {/* Render tests with visual separation */}
+          {tests.map((testDef, index) => (
+            renderTestSection(testDef, index, index < tests.length - 1)
           ))}
         </div>
       </div>
@@ -240,8 +250,10 @@ const PrintTestReport = ({ patientTest, testDefinitions }) => {
         renderTestWithPatientInfo(testDef, index, true)
       )}
 
-      {/* Render grouped tests together on one page */}
-      {renderGroupedTests()}
+      {/* Render grouped tests (2 per page) with clear separation */}
+      {groupedTestPages.map((pageTests, pageIndex) => 
+        renderGroupedTestsPage(pageTests, pageIndex)
+      )}
 
       {/* Show message if no tests */}
       {testDefinitions.length === 0 && (
@@ -259,7 +271,7 @@ const PrintTestReport = ({ patientTest, testDefinitions }) => {
   );
 };
 
-// Updated CSS for multi-page layout with letterhead
+// Updated CSS with visual separation between tests
 const styles = {
   mainContainer: {
     width: '210mm',
@@ -281,9 +293,8 @@ const styles = {
 
   // Letterhead space - 25% of A4 height (297mm * 0.25 = 74.25mm)
   letterheadSpace: {
-    height: '74mm', // 25% of 297mm
+    height: '60mm', // 20% of 297mm
     backgroundColor: 'transparent',
-    // This area will be empty for physical letterhead
   },
 
   // Content area - starts after letterhead
@@ -325,22 +336,31 @@ const styles = {
   },
 
   testSection: {
-    marginBottom: '8mm',
+    marginBottom: '4mm',
+  },
+
+  // Visual divider between tests
+  testDivider: {
+    height: '10mm',
+    margin: '6mm 0',
+    border: 'none',
+    borderRadius: '1mm',
   },
 
   testTitle: {
     fontWeight: 'bold',
     fontSize: '13pt',
     marginBottom: '3mm',
-    color: '#2b6cb0',
+    color: '#eaeff5ff',
+    backgroundColor: '#47484bff',
     padding: '2px 0',
-    borderBottom: '2px solid #2b6cb0',
+    borderBottom: '2px solid #bfc9d3ff',
   },
 
   testTable: {
     width: '100%',
     borderCollapse: 'collapse',
-    marginBottom: '4mm',
+    marginBottom: '2mm',
     tableLayout: 'fixed',
     fontSize: '10pt',
   },

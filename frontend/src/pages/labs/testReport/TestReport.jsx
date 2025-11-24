@@ -366,11 +366,20 @@ const enhancedPrintCSS = `
     }
 
     .grouped-tests-page {
-      page-break-inside: avoid;
+      page-break-after: always;
     }
 
     .grouped-test {
       page-break-inside: avoid;
+    }
+
+    /* Visual divider between tests */
+    .test-divider {
+      height: 1mm;
+      margin: 6mm 0;
+      background-color: #e0e0e0;
+      border: none;
+      border-radius: 1mm;
     }
 
     /* Ensure tables are visible and properly formatted */
@@ -404,7 +413,7 @@ const enhancedPrintCSS = `
 
     /* Test section styling */
     .test-section {
-      margin-bottom: 8mm;
+      margin-bottom: 4mm;
     }
 
     .test-title {

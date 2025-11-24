@@ -17,18 +17,19 @@ import {
   UpdateReport,
   BillDetailPage,
   EditPatientTest,
-LabBillSummary,
+  LabBillSummary,
   RadiologyForm,
 } from '../pages/labs/labsPages'
 import { Navigate, Route, Routes } from 'react-router-dom';
 import DynamicLayout from '../layouts/DynamicLayout';
 import ProtectedRoute from '../pages/auth/ProtectedRoute';
 import CrtitcalForm from '../pages/labs/critical Reports/CrtitcalForm';
+import { Expenses} from '../pages/reception/ReceptionPages';
 
 const LabRoutes = () => {
   return (
     <Routes>
-      <Route element={<ProtectedRoute allowedRoles={["lab",'Admin']} />}>
+      <Route element={<ProtectedRoute allowedRoles={["lab", 'Admin',]} />}>
         <Route element={<DynamicLayout />}>
           <Route index element={<Navigate to="dashboard" replace />} />
           {/* dashboard  */}
@@ -59,11 +60,11 @@ const LabRoutes = () => {
           {/* test billing */}
           <Route path="test-billing" element={<AllBillsPage />} />
           <Route path="bills/:id" element={<BillDetailPage />} />
-           <Route
+          <Route
             path="createradiologyreport"
             element={<CreateRadiologyReport />}
           />
-          <Route path='RadiologyForm' element={<RadiologyForm/>}/>
+          <Route path='RadiologyForm' element={<RadiologyForm />} />
           <Route path="RadiologyPennal" element={<RadiologyPennal />} />
           <Route
             path="RediologyPatientDetail/:id"
@@ -72,11 +73,12 @@ const LabRoutes = () => {
           <Route
             path="radiology-summer/:date"
             element={<RadiologySummer />}
-          /> 
+          />
+          <Route path="expenses" element={<Expenses />} />
           <Route
             path="bill-summery"
             element={<LabBillSummary />}
-          /> 
+          />
         </Route>
       </Route>
     </Routes>

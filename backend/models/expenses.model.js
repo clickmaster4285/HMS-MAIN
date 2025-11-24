@@ -1,39 +1,55 @@
 const mongoose = require('mongoose');
 
 const expenseSchema = new mongoose.Schema({
+  expenseType: {
+    type: String,
+    enum: ["doctor", "hospital"],
+    required: true
+  },
+
+  // Doctor related fields
   doctor: {
     type: String,
-    required: true,
-    trim: true
+    trim: true,
+    default: null
   },
+
   doctorWelfare: {
     type: Number,
-    required: true,
-    min: 0
+    min: 0,
+    default: 0
   },
+
+  // OT expenses (can be doctor or hospital)
   otExpenses: {
     type: Number,
-    required: true,
-    min: 0
+    min: 0,
+    default: 0
   },
+
+  // Other common expenses
   otherExpenses: {
     type: Number,
-    required: true,
-    min: 0
+    min: 0,
+    default: 0
   },
+
   description: {
     type: String,
     trim: true,
     default: ''
   },
+
   date: {
     type: Date,
     default: Date.now
   },
+
   total: {
     type: Number,
     required: true
   },
+
   deleted: {
     type: Boolean,
     default: false
@@ -42,57 +58,57 @@ const expenseSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Calculate total before saving
-expenseSchema.pre('save', function (next) {
+
+// Auto-calculate total
+expenseSchema.pre("save", function (next) {
   this.total = this.doctorWelfare + this.otExpenses + this.otherExpenses;
   next();
 });
 
-// Static method to get doctor summary
+
+// Doctor-wise summary
 expenseSchema.statics.getDoctorSummary = function () {
   return this.aggregate([
+    { $match: { expenseType: "doctor" } }, // only doctor expenses
     {
       $group: {
-        _id: '$doctor',
-        totalWelfare: { $sum: '$doctorWelfare' },
-        totalOT: { $sum: '$otExpenses' },
-        totalOther: { $sum: '$otherExpenses' },
-        totalAmount: { $sum: '$total' },
-        count: { $sum: 1 }
+        _id: "$doctor",
+        totalWelfare: { $sum: "$doctorWelfare" },
+        totalOT: { $sum: "$otExpenses" },
+        totalOther: { $sum: "$otherExpenses" },
+        totalAmount: { $sum: "$total" },
+        entries: { $sum: 1 }
       }
-    },
-    {
-      $sort: { totalAmount: -1 }
     }
   ]);
 };
 
-// Static method to get grand totals
-expenseSchema.statics.getGrandTotals = function () {
+
+// Hospital-wise summary
+expenseSchema.statics.getHospitalTotals = function () {
   return this.aggregate([
+    { $match: { expenseType: "hospital" } }, // only hospital expenses
     {
       $group: {
         _id: null,
-        grandWelfare: { $sum: '$doctorWelfare' },
-        grandOT: { $sum: '$otExpenses' },
-        grandOther: { $sum: '$otherExpenses' },
-        grandTotal: { $sum: '$total' },
-        totalEntries: { $sum: 1 },
-        uniqueDoctors: { $addToSet: '$doctor' }
+        welfare: { $sum: "$doctorWelfare" },
+        ot: { $sum: "$otExpenses" },
+        other: { $sum: "$otherExpenses" },
+        hospitalTotal: { $sum: "$total" },
+        entries: { $sum: 1 }
       }
     },
     {
       $project: {
         _id: 0,
-        grandWelfare: 1,
-        grandOT: 1,
-        grandOther: 1,
-        grandTotal: 1,
-        totalEntries: 1,
-        totalDoctors: { $size: '$uniqueDoctors' }
+        welfare: 1,
+        ot: 1,
+        other: 1,
+        hospitalTotal: 1,
+        entries: 1
       }
     }
   ]);
 };
 
-module.exports = mongoose.model('Expense', expenseSchema);
+module.exports = mongoose.model("Expense", expenseSchema);
