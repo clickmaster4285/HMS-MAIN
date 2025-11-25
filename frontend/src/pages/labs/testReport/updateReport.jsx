@@ -653,12 +653,20 @@ const enhancedPrintCSS = `
 
       {/* Save All Button */}
       <div className="flex justify-end mt-6">
+        <div className="flex space-x-2">
         <button
           onClick={handleSubmitAll}
           className="flex items-center px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:from-green-700 hover:to-green-800 transition-all duration-200 shadow-md transform hover:scale-105"
         >
           <FiSave className="mr-2" /> Save All Results
         </button>
+          <button
+            onClick={handlePrint}
+            className="flex items-center px-4 py-2 bg-white text-gray-700 rounded-lg hover:bg-gray-50 transition-all duration-200 shadow-md"
+          >
+            <FiPrinter className="mr-2" /> Save & Print
+          </button>
+          </div>
       </div>
     </div>
   );

@@ -5,7 +5,7 @@ const utils = require("../utils/utilsIndex");
 const submitTestResults = async (req, res) => {
   const { patientTestId, testId } = req.params;
   const testIdArray = testId.split(',');
-  
+
   try {
     const { results: testResults, notes, status = "draft" } = req.body;
     const performedBy = req.user.user_Name;
@@ -55,7 +55,7 @@ const submitTestResults = async (req, res) => {
         throw { testId, message: "Test definition not found" };
       }
 
-      const filteredResults = Array.isArray(testResults) 
+      const filteredResults = Array.isArray(testResults)
         ? testResults.filter(result => result.testId === testId || !result.testId)
         : [];
 
@@ -119,9 +119,9 @@ const submitTestResults = async (req, res) => {
       success: true,
       message: "Test results saved successfully",
       data: {
-        testResults: operationResults.map(r => r.value || { 
-          error: r.reason.message, 
-          testId: r.reason.testId 
+        testResults: operationResults.map(r => r.value || {
+          error: r.reason.message,
+          testId: r.reason.testId
         }),
         patientDetails: {
           name: patientTest.patient_Detail.patient_Name,
@@ -197,7 +197,7 @@ const getAllTestResults = async (req, res) => {
 const getPatientByResultId = async (req, res) => {
   try {
     const { resultId } = req.params;
-
+    console.log("the id is", resultId)
     if (!mongoose.Types.ObjectId.isValid(resultId)) {
       return res.status(400).json({
         success: false,
@@ -211,12 +211,12 @@ const getPatientByResultId = async (req, res) => {
     })
       .populate({
         path: "patientTestId",
-        select: "patient_Detail",
+        select: "patient_Detail createdAt",
       })
       .populate({
         path: "testId",
         select: "testName testCode",
-        model: "TestManagment",
+        model: "TestManagment createdAt",
       })
       .lean();
 
@@ -226,7 +226,8 @@ const getPatientByResultId = async (req, res) => {
         message: "Test result not found",
       });
     }
-
+    console.log("the testResult is ", testResult)
+    console.log("the patientDetails is", patientDetails)
     return res.status(200).json({
       success: true,
       data: {
@@ -275,9 +276,9 @@ const getSummaryByDate = async (req, res) => {
       };
     }
     const patients = await hospitalModel.PatientTest.find(query)
-    .sort({ createdAt: 1 })
-    .lean();
-    
+      .sort({ createdAt: 1 })
+      .lean();
+
     const patientTestIds = patients.map(patient => patient._id);
     const testResults = await hospitalModel.TestResult.find({
       patientTestId: { $in: patientTestIds }
@@ -322,18 +323,11 @@ module.exports = {
   submitTestResults,
   getAllTestResults,
   getPatientByResultId,
-  
+
   // // Payments
   // processTestPayment,
   // processTestRefund,
-  
+
   // Reporting
   getSummaryByDate
 };
-
-// module.exports = {
-//   submitTestResults,
-//   getAllTestResults,
-//   getPatientByResultId,
-//   getSummaryByDate,
-// };
