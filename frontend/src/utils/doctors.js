@@ -15,6 +15,7 @@ const doctorList = [
   "Dr. Mehnaz Kashif",
   "Dr. Muhammad Mubashir",
   "Dr. Noor-E-Hira",
+  "Dr. Nazreen",
   "Dr. Omer",
   "Dr. Qaisar Jahan",
   "Dr. Shahzad",

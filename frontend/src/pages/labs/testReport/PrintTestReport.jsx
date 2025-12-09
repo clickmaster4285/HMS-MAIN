@@ -22,20 +22,38 @@ const PrintTestReport = ({ patientTest, testDefinitions }) => {
     isPregnant: patientTest.patient_Detail?.isPregnant,
   };
 
-  // Format date to "DD-MM-YYYY" format
-  const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
-    try {
-      const date = new Date(dateString);
-      if (isNaN(date.getTime())) return 'N/A';
-      const day = date.getDate().toString().padStart(2, '0');
-      const month = (date.getMonth() + 1).toString().padStart(2, '0');
-      const year = date.getFullYear();
-      return `${day}-${month}-${year}`;
-    } catch {
-      return 'N/A';
-    }
-  };
+  // Format date to "DD-MM-YYYY HH:MM" format in Pakistani timezone
+const formatDate = (dateString) => {
+  if (!dateString) return 'N/A';
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return 'N/A';
+    
+    // Convert to Pakistani time (UTC+5)
+    const options = {
+      timeZone: 'Asia/Karachi',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    };
+    
+    const formatter = new Intl.DateTimeFormat('en-PK', options);
+    const parts = formatter.formatToParts(date);
+    
+    const day = parts.find(part => part.type === 'day').value;
+    const month = parts.find(part => part.type === 'month').value;
+    const year = parts.find(part => part.type === 'year').value;
+    const hour = parts.find(part => part.type === 'hour').value;
+    const minute = parts.find(part => part.type === 'minute').value;
+    
+    return `${day}-${month}-${year} ${hour}:${minute}`;
+  } catch {
+    return 'N/A';
+  }
+};
 
   // Format age from "X years Y months Z days" to "(X)Y, (Y)M, (Z)D"
   const formatAge = (ageString) => {
@@ -122,7 +140,7 @@ const PrintTestReport = ({ patientTest, testDefinitions }) => {
           <tr>
             <td style={styles.labelCell}>Lab #</td>
             <td style={styles.valueCell}>{safeData(patientData.patient_MRNo)}</td>
-            <td style={styles.labelCell}>Date</td>
+            <td style={styles.labelCell}>Sample Date</td>
             <td style={styles.valueCell}>{formatDate(patientTest.createdAt)}</td>
           </tr>
           <tr>
@@ -140,8 +158,8 @@ const PrintTestReport = ({ patientTest, testDefinitions }) => {
           <tr>
             <td style={styles.labelCell}>Contact #</td>
             <td style={styles.valueCell}>{safeData(patientData.patient_ContactNo)}</td>
-            <td style={styles.labelCell}></td>
-            <td style={styles.valueCell}></td>
+            <td style={styles.labelCell}>Report Date</td>
+            <td style={styles.valueCell}>{formatDate(getReportDate())}</td>
           </tr>
         </tbody>
       </table>
@@ -242,6 +260,18 @@ const PrintTestReport = ({ patientTest, testDefinitions }) => {
       </div>
     );
   };
+
+  // In the component, add this function to get the report date
+const getReportDate = () => {
+  // If there are test definitions with createdAt, use the latest one
+  if (testDefinitions && testDefinitions.length > 0) {
+    const testWithDate = testDefinitions.find(test => test.updatedAt);
+    if (testWithDate) return testWithDate.updatedAt;
+  }
+  
+  // Fallback to patientTest creation date
+  return patientTest.updatedAt;
+};
 
   return (
     <div style={styles.mainContainer}>
