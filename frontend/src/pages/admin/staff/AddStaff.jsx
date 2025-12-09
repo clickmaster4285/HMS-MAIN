@@ -253,7 +253,22 @@ const StaffFormPage = () => {
         start: formData.shiftTiming.start ? convertTo24Hour(formData.shiftTiming.start) : null,
         end: formData.shiftTiming.end ? convertTo24Hour(formData.shiftTiming.end) : null,
       },
-      user_Email: formData.user_Email || undefined,
+      user_Email: formData.user_Email || '',
+
+      // FIX: Clean shift field - don't send empty string
+      shift: formData.shift && formData.shift.trim() !== '' ? formData.shift : undefined,
+
+      // FIX: Clean other optional fields
+      designation: formData.designation || undefined,
+      gender: formData.gender || undefined,
+
+      // FIX: Clean emergency contact
+      emergencyContact: (formData.emergencyContact &&
+        (formData.emergencyContact.name ||
+          formData.emergencyContact.relation ||
+          formData.emergencyContact.phone))
+        ? formData.emergencyContact
+        : undefined,
     };
 
     try {

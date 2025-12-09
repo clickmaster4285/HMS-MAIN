@@ -4,11 +4,18 @@ const userSchema = new mongoose.Schema(
   {
     user_Identifier: { type: String, unique: true, },
     user_Name: { type: String },
-    user_Email: { type: String, unique: true,  sparse: true,
-      default: null, // Add default null
+    user_Email: {
+      type: String,
+      unique: true,
+      sparse: true,
+      // Remove default so field doesn't get created automatically
       set: function (email) {
-        // Convert empty strings to null
-        return email && email.trim() !== '' ? email.trim() : null;
+        // Only return value if email exists
+        if (email && typeof email === 'string' && email.trim() !== '') {
+          return email.trim().toLowerCase();
+        }
+        // Return undefined to prevent field creation
+        return undefined;
       }
     },
     user_Password: { type: String, required: true },

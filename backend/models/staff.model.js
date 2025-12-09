@@ -20,7 +20,7 @@ const staffSchema = new mongoose.Schema({
     },
 
     // Shift information
-    shift: { type: String, enum: ['Morning', 'Evening', 'Night', 'Rotational'] },
+    shift: { type: String, enum: ['Morning', 'Evening', 'Night', 'Rotational'], default: undefined },
     shiftTiming: {
         start: { type: String }, // e.g. '08:00'
         end: { type: String }    // e.g. '16:00'

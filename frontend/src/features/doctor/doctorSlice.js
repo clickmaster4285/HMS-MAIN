@@ -23,7 +23,6 @@ export const createDoctor = createAsyncThunk(
       const response = await axios.post(`${API_URL}/doctor/create-doctor`, doctorData, {
         headers: getAuthHeader(),
       });
-      console.log("Create doctor response:", response.data);
       return response.data;
     } catch (error) {
       console.error("Detailed create doctor error:", error.response?.data || error.message);
