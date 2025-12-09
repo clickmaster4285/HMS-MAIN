@@ -40,7 +40,7 @@ router.delete(
 );
 
 
-router.post('/discharge-patient/:id?', controller.admittedPatient.dischargePatient);
+router.post('/discharge-patient/:id', controller.admittedPatient.dischargePatient);
 
 
 module.exports = router;
