@@ -1,4 +1,4 @@
-require('dotenv').config();
+require('dotenv').config({ quiet: true });
 const express = require('express');
 const connectDB = require('./config/db');
 const indexRouter = require('./routes/index.route');
@@ -10,9 +10,7 @@ const app = express();
 
 app.use(
   cors({
-    // origin: [ 'https://hms.clickmasters.pk' ], // or '*' temporarily
-    // origin: [process.env.Frontend_URL || 'http://localhost:5173'],
-    origin: [process.env.Frontend_URL || 'http://192.168.10.253:5173'],
+    origin: [process.env.Frontend_URL],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     credentials: true
   })
@@ -31,7 +29,7 @@ connectDB()
     process.exit(1);
   });
 
-  
+
 // Serve static uploads
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/', indexRouter);

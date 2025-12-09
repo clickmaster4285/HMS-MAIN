@@ -39,7 +39,7 @@ const testManagementSchema = new mongoose.Schema(
 );
 
 // Add indexes for better performance
-testManagementSchema.index({ testCode: 1 });
+// testManagementSchema.index({ testCode: 1 });
 
 const TestManagement = mongoose.model("TestManagement", testManagementSchema, "testmanagements");
 

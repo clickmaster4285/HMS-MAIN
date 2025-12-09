@@ -45,7 +45,7 @@ const visitSchema = new mongoose.Schema({
     enum: ['not_refunded', 'partially_refunded', 'fully_refunded'],
     default: 'not_refunded'
   },
-  
+
   token: { type: String, },
   referredBy: { type: String },
 }, { timestamps: true });
@@ -74,7 +74,7 @@ const patientSchema = new mongoose.Schema(
 
     // Patient financial summary
     totalAmountPaid: { type: Number, default: 0 },
-    totalAmountDue: { type: Number, default: 0 }, 
+    totalAmountDue: { type: Number, default: 0 },
 
     deleted: { type: Boolean, default: false },
   },
@@ -84,8 +84,8 @@ const patientSchema = new mongoose.Schema(
 );
 
 // Indexes for faster search
-patientSchema.index({ patient_MRNo: 1 });
-patientSchema.index({ patient_CNIC: 1 });
+// patientSchema.index({ patient_MRNo: 1 });
+// patientSchema.index({ patient_CNIC: 1 });
 patientSchema.index({ patient_ContactNo: 1 });
 patientSchema.index({ patient_Name: 1 });
 patientSchema.index({ "patient_Guardian.guardian_Contact": 1 });

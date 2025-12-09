@@ -1,5 +1,5 @@
 {
-   "//": "To install package: npm install pakage-name -w folder-name",
+   "//": "To install package: npm install pakage-name -w folder-name, to check updates = npx npm-check-updates -u -w",
    "name": "realestate-monorepo",
    "private": true,
    "workspaces": [
@@ -14,6 +14,6 @@
       "clean": "rd /s /q node_modules 2>nul && npm run clean --workspaces"
    },
    "devDependencies": {
-      "concurrently": "^9.2.0"
+      "concurrently": "^9.2.1"
    }
 }
