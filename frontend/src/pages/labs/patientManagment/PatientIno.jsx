@@ -139,22 +139,6 @@ const PatientInfoForm = ({
         onChange={handleNameChange} // Changed to use the new handler
         required
       />
-      <InputField
-        name="CNIC"
-        label="CNIC"
-        placeholder="Enter CNIC"
-        icon="idCard"
-        value={patient.CNIC}
-        onChange={handlePatientChange}
-      />
-      <InputField
-        name="Guardian"
-        label="Guardian Name"
-        placeholder="Enter full name"
-        icon="user"
-        value={patient.Guardian}
-        onChange={handlePatientChange}
-      />
 
       <div>
         <label
@@ -176,6 +160,7 @@ const PatientInfoForm = ({
           <option value="Other">Other</option>
         </select>
       </div>
+
       <InputField
         name="ContactNo"
         label="Contact No"
@@ -184,6 +169,23 @@ const PatientInfoForm = ({
         value={patient.ContactNo}
         onChange={handlePatientChange}
         required
+      />
+
+      <InputField
+        name="CNIC"
+        label="CNIC"
+        placeholder="Enter CNIC"
+        icon="idCard"
+        value={patient.CNIC}
+        onChange={handlePatientChange}
+      />
+      <InputField
+        name="Guardian"
+        label="Guardian Name"
+        placeholder="Enter full name"
+        icon="user"
+        value={patient.Guardian}
+        onChange={handlePatientChange}
       />
 
       <div className="flex items-center ">

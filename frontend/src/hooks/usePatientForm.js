@@ -105,9 +105,6 @@ export const usePatientForm = (mode = "create") => {
    const populateForm = (patientData, visitId = null) => {
       if (!patientData) return;
 
-      console.log("Populating form with patient data:", patientData);
-      console.log("Visit ID provided:", visitId);
-
       // If no visitId provided, use the latest visit
       let targetVisit = patientData.visits?.[patientData.visits.length - 1] || {};
 
@@ -119,9 +116,6 @@ export const usePatientForm = (mode = "create") => {
 
       const doctor = targetVisit.doctor || {};
       const user = doctor.user || {};
-
-      console.log("Doctor object:", doctor);
-      console.log("User object:", user);
 
       // Build the new form data object with CORRECT field names
       const newFormData = {
@@ -292,11 +286,6 @@ export const usePatientForm = (mode = "create") => {
                   // Doctor details (if available in response)
                   doctorDetails: serverPatient.doctorDetails || prev.doctorDetails
                }));
-
-               console.log("Form updated with server data:", {
-                  patient_MRNo: serverPatient.patient_MRNo,
-                  token: latestVisit.token
-               });
             }
             navigate(getRoleRoute(`/OPD/manage`));
             return result;
@@ -311,7 +300,7 @@ export const usePatientForm = (mode = "create") => {
                mrNo: formData.patient_MRNo,
                updatedData: payload
             })).unwrap();
-
+            navigate(getRoleRoute(`/OPD/manage`));
             toast.success("Patient updated successfully!");
 
             // For edit mode, also update with returned data if available

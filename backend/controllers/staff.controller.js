@@ -22,39 +22,48 @@ const createStaff = async (req, res) => {
       shiftTiming
     } = req.body;
 
-    // console.log(`Received staff creation request`, req.body);
+    console.log(`Received staff creation request`, req.body);
+
+    const cleanData = { ...req.body };
+
+    // Remove empty strings - convert to undefined
+    Object.keys(cleanData).forEach(key => {
+      if (cleanData[key] === '') {
+        cleanData[key] = undefined;
+      }
+    });
+
+    // Handle nested objects
+    if (cleanData.emergencyContact &&
+      Object.values(cleanData.emergencyContact).every(val => !val || val === '')) {
+      cleanData.emergencyContact = undefined;
+    }
 
     // Basic required field check
     if (!user_Name || !user_Contact || !user_CNIC || !user_Password || !department || !user_Access) {
       return res.status(400).json({
         success: false,
-        message: "Missing required fields: user_Name, user_Contact, user_CNIC, user_Password, department, or user_Access"
+        message: "Missing required fields"
       });
     }
 
-    // Format validations
+    // CNIC validation
     const cnicRegex = /^[0-9]{5}-[0-9]{7}-[0-9]$/;
     if (!cnicRegex.test(user_CNIC)) {
       return res.status(400).json({
         success: false,
-        message: "Invalid CNIC format. Expected format: 12345-1234567-1"
+        message: "Invalid CNIC format"
       });
     }
 
-    if (user_Email && !/^\S+@\S+\.\S+$/.test(user_Email)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid email format"
-      });
-    }
-    // console.log("the i am here: ")
-
-    const allowedStaffTypes = ["Receptionist", "Lab", "Radiology", "Nurse"];
-    if (!allowedStaffTypes.includes(user_Access)) {
-      return res.status(400).json({
-        success: false,
-        message: `Invalid staff type. Must be one of: ${allowedStaffTypes.join(", ")}`
-      });
+    if (shift && shift.trim() !== '') {
+      const validShifts = ['Morning', 'Evening', 'Night', 'Rotational'];
+      if (!validShifts.includes(shift)) {
+        return res.status(400).json({
+          success: false,
+          message: `Invalid shift. Must be: ${validShifts.join(', ')}`
+        });
+      }
     }
 
     // Check for existing user
@@ -62,43 +71,22 @@ const createStaff = async (req, res) => {
       $or: [
         { user_CNIC },
         { user_Contact },
-        ...(user_Email ? [{ user_Email }] : [])
-      ]
+        ...(user_Email && user_Email.trim() !== '' ? [{ user_Email }] : [])
+      ],
+      isDeleted: false
     });
 
     if (existingUser) {
-      let conflictField = '';
-      if (existingUser.user_CNIC === user_CNIC) conflictField = 'CNIC';
-      else if (existingUser.user_Contact === user_Contact) conflictField = 'phone number';
-      else if (user_Email && existingUser.user_Email === user_Email) conflictField = 'email';
-
       return res.status(409).json({
         success: false,
-        message: `User with this ${conflictField} already exists`,
-        conflictField
+        message: "User with these details already exists"
       });
     }
 
-    // Attempt to generate user identifier
-    let user_Identifier;
-    try {
-      user_Identifier = await utils.generateUniqueStaffId(user_Access, user_Name.trim());
-    } catch (err) {
-      return res.status(500).json({
-        success: false,
-        message: "Failed to generate unique staff ID",
-        error: process.env.NODE_ENV === 'development' ? err.message : undefined
-      });
-    }
+    // Generate ID
+    const user_Identifier = await utils.generateUniqueStaffId(user_Access, user_Name.trim());
 
-    const profilePicture = req.files?.profilePicture?.[0];
-    if (req.files && !profilePicture) {
-      return res.status(400).json({
-        success: false,
-        message: "Profile picture upload failed or not properly formatted"
-      });
-    }
-
+    // Create user
     const userData = {
       user_Identifier,
       user_Name,
@@ -108,64 +96,52 @@ const createStaff = async (req, res) => {
       user_Address,
       user_Contact,
       isVerified: true,
-      isDeleted: false,
-      ...(user_Email && { user_Email })
-    };
-
-    const newUser = await hospitalModel.User.create(userData);
-
-    const staffData = {
-      user: newUser._id,
-      designation,
-      department,
-      qualifications: Array.isArray(qualifications) ? qualifications : [qualifications].filter(Boolean),
-      gender,
-      dateOfBirth,
-      emergencyContact,
-      shift,
-      shiftTiming,
-      profilePicture: profilePicture
-        ? { filePath: `/uploads/staff/profile/${profilePicture.filename}` }
-        : undefined,
-      isVerified: true,
       isDeleted: false
     };
 
-    if (user_Access === "Lab") {
-      staffData.labSpecialization = req.body.labSpecialization;
-    } else if (user_Access === "Radiology") {
-      staffData.radiologyCertification = req.body.radiologyCertification;
+    if (user_Email && user_Email.trim() !== '') {
+      userData.user_Email = user_Email.trim();
     }
 
-    const newStaff = await hospitalModel.Staff.create(staffData);
+    const newUser = await hospitalModel.User.create([userData]);
+
+    const staffData = {
+      user: newUser[0]._id,
+      designation: designation || undefined,
+      department,
+      qualifications: Array.isArray(qualifications) ? qualifications.filter(q => q && q.trim() !== '') : [],
+      gender: gender || undefined,
+      dateOfBirth: dateOfBirth || undefined,
+      emergencyContact: (emergencyContact &&
+        (emergencyContact.name || emergencyContact.relation || emergencyContact.phone))
+        ? emergencyContact
+        : undefined,
+      // shift: (shift && shift.trim() !== '') ? shift : undefined, // FIX: Don't send empty string
+      ...(shift && ['Morning', 'Evening', 'Night', 'Rotational'].includes(shift) && { shift }),
+      shiftTiming: shiftTiming || undefined,
+      isVerified: true,
+      isDeleted: false
+    };
+   
+    const newStaff = await hospitalModel.Staff.create([staffData]);
 
     return res.status(201).json({
       success: true,
       message: "Staff successfully created",
       data: {
-        staff: newStaff,
-        user: newUser
+        staff: newStaff[0],
+        user: newUser[0]
       }
     });
 
   } catch (error) {
     console.error('Staff creation error:', error);
 
-    if (error.code === 11000) {
-      const field = Object.keys(error.keyPattern)[0];
-      const value = error.keyValue[field];
-
-      return res.status(409).json({
-        success: false,
-        message: `Duplicate entry: ${field} (${value}) already exists.`,
-        errorType: 'DUPLICATE_KEY',
-        field,
-        value
-      });
-    }
-
     if (error.name === 'ValidationError') {
-      const errors = Object.values(error.errors).map(err => err.message);
+      const errors = Object.values(error.errors).map(err => ({
+        field: err.path,
+        message: err.message
+      }));
       return res.status(400).json({
         success: false,
         message: "Validation failed",
@@ -173,20 +149,10 @@ const createStaff = async (req, res) => {
       });
     }
 
-    if (error.name === 'CastError') {
-      return res.status(400).json({
-        success: false,
-        message: `Invalid value for field '${error.path}': ${error.value}`
-      });
-    }
-
     return res.status(500).json({
       success: false,
-      message: "An unexpected error occurred while creating staff",
-      error: process.env.NODE_ENV === 'development' ? {
-        message: error.message,
-        stack: error.stack
-      } : undefined
+      message: "Error creating staff",
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 };

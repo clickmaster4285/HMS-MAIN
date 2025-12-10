@@ -64,12 +64,12 @@ const DoctorForm = ({
                fullWidth
             />
 
-            <InputField
+            {/* <InputField
                label="Doctor Gender"
                icon="man"
                value={formData.doctorDetails.gender}
                readOnly
-            />
+            /> */}
 
             <InputField
                label="Qualification"

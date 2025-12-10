@@ -13,19 +13,10 @@ const RefundSearch = ({ onPatientSelect }) => {
    const handleSearch = async (e) => {
       e.preventDefault();
       if (searchTerm.trim()) {
-         // console.log('Searching for MR Number:', searchTerm); // Log the input
-
          try {
             const result = await dispatch(getPatientWithRefundHistory(searchTerm)).unwrap();
-            // console.log('API Response:', result); // Log the full response
 
             if (result.success) {
-               // console.group('Patient Data Retrieved');
-               // console.log('Patient Data:', result.data.patient); // Log patient data
-               // console.log('Visits:', result.data.visits); // Log visits
-               // console.log('Refunds:', result.data.refunds); // Log refunds
-               // console.log('Refund Summary:', result.data.refundSummary); // Log summary
-               // console.groupEnd();
 
                onPatientSelect(result.data);
             }

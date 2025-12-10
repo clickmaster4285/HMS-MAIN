@@ -79,7 +79,6 @@ export const getAllAdmittedPatients = createAsyncThunk(
           headers: getAuthHeaders()
         }
       );
-      console.log("API Response:", response.data);
       return response.data;
     } catch (error) {
       const message = error.response?.data?.message || 'Failed to fetch admitted patients';
