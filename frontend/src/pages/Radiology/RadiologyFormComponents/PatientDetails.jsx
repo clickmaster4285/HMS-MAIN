@@ -27,54 +27,122 @@ const PatientDetails = ({
     setPatient((prev) => ({ ...prev, [name]: value }));
   };
 
-const handleDobChange = (d) => {
-  setErrors((p) => ({ ...p, dob: '' }));
+  const handleDobChange = (d) => {
+    setErrors((p) => ({ ...p, dob: '', ageManual: '' }));
 
-  if (!d) {
-    setDob(null);
-    setPatient((prev) => ({ ...prev, Age: '' }));
-    setAgeInput('');
-    return;
-  }
-
-  if (d > new Date()) {
-    setErrors((p) => ({ ...p, dob: 'DOB cannot be in the future' }));
-    return;
-  }
-
-  setDob(d);
-
-  const ageStr = ageStringFromDob(d);
-  setPatient((prev) => ({ ...prev, Age: ageStr }));
-  setAgeInput(ageStr); // keep the age input in sync with DOB
-};
-
-const handleAgeInputChange = (e) => {
-  const value = e.target.value;
-  setAgeInput(value);
-
-  if (ageTimer.current) clearTimeout(ageTimer.current);
-  ageTimer.current = setTimeout(() => {
-    if (!value.trim()) {
-      setErrors((prev) => ({ ...prev, ageManual: '' }));
+    if (!d) {
       setDob(null);
       setPatient((prev) => ({ ...prev, Age: '' }));
+      setAgeInput('');
       return;
     }
 
-    const d = parseFlexibleAgeToDob(value);
-    if (d && d <= new Date()) {
-      setDob(d);
-      const ageStr = ageStringFromDob(d);
-      setPatient((prev) => ({ ...prev, Age: ageStr }));
-      setAgeInput(ageStr); // normalize the input to computed value
-      setErrors((prev) => ({ ...prev, ageManual: '' }));
-    } else {
-      setErrors((prev) => ({ ...prev, ageManual: 'Invalid age format' }));
+    if (d > new Date()) {
+      setErrors((p) => ({ ...p, dob: 'DOB cannot be in the future' }));
+      return;
     }
-  }, 600);
-};
 
+    setDob(d);
+
+    const ageStr = ageStringFromDob(d);
+    setPatient((prev) => ({ ...prev, Age: ageStr }));
+    setAgeInput(ageStr); // keep the age input in sync with DOB
+  };
+
+  // Calculate DOB from age input (similar to your provided method)
+  const calculateDobFromAge = (ageString) => {
+    if (!ageString) return null;
+
+    const today = new Date();
+    const ageParts = ageString.toLowerCase().split(' ');
+
+    let years = 0;
+    let months = 0;
+    let days = 0;
+
+    // Handle decimal input like "0.2" (meaning 0.2 years = 2.4 months ≈ 2 months)
+    if (ageString.includes('.')) {
+      const decimalValue = parseFloat(ageString);
+      if (!isNaN(decimalValue)) {
+        if (decimalValue < 1) {
+          // If less than 1 year, treat as months
+          months = Math.round(decimalValue * 12);
+        } else {
+          // If 1 or more years, split into years and months
+          years = Math.floor(decimalValue);
+          months = Math.round((decimalValue - years) * 12);
+        }
+      }
+    } else {
+      // Parse age string (e.g., "20 years", "2 months", "1 year 6 months")
+      for (let i = 0; i < ageParts.length; i++) {
+        if (ageParts[i] === 'year' || ageParts[i] === 'years') {
+          years = parseInt(ageParts[i - 1]) || 0;
+        } else if (ageParts[i] === 'month' || ageParts[i] === 'months') {
+          months = parseInt(ageParts[i - 1]) || 0;
+        } else if (ageParts[i] === 'day' || ageParts[i] === 'days') {
+          days = parseInt(ageParts[i - 1]) || 0;
+        }
+      }
+
+      // If it's just a number, assume it's years
+      if (!isNaN(ageString) && years === 0 && months === 0 && days === 0) {
+        years = parseInt(ageString);
+      }
+    }
+
+    // Calculate DOB
+    const calculatedDob = new Date(today);
+    calculatedDob.setFullYear(today.getFullYear() - years);
+    calculatedDob.setMonth(today.getMonth() - months);
+    calculatedDob.setDate(today.getDate() - days);
+
+    return calculatedDob;
+  };
+
+  // Handle age input change with debounce (similar to your provided method)
+  const handleAgeInputChange = (e) => {
+    const value = e.target.value;
+    setAgeInput(value);
+
+    // Clear existing timeout
+    if (ageTimer.current) {
+      clearTimeout(ageTimer.current);
+    }
+
+    // Set new timeout
+    ageTimer.current = setTimeout(() => {
+      if (!value.trim()) {
+        setErrors((prev) => ({ ...prev, ageManual: '' }));
+        setDob(null);
+        setPatient((prev) => ({ ...prev, Age: '' }));
+        return;
+      }
+
+      // Try using your parseFlexibleAgeToDob first
+      const dobFromUtils = parseFlexibleAgeToDob(value);
+      if (dobFromUtils && dobFromUtils <= new Date()) {
+        setDob(dobFromUtils);
+        const ageStr = ageStringFromDob(dobFromUtils);
+        setPatient((prev) => ({ ...prev, Age: ageStr }));
+        setAgeInput(ageStr);
+        setErrors((prev) => ({ ...prev, ageManual: '' }));
+        return;
+      }
+
+      // Fallback to calculateDobFromAge
+      const calculatedDob = calculateDobFromAge(value);
+      if (calculatedDob && calculatedDob <= new Date()) {
+        setDob(calculatedDob);
+        const ageStr = ageStringFromDob(calculatedDob);
+        setPatient((prev) => ({ ...prev, Age: ageStr }));
+        setAgeInput(ageStr);
+        setErrors((prev) => ({ ...prev, ageManual: '' }));
+      } else {
+        setErrors((prev) => ({ ...prev, ageManual: 'Invalid age format' }));
+      }
+    }, 800); // 800ms delay as in your example
+  };
 
   const onToggleDefaultContact = (checked) => {
     setUseDefaultContact(checked);
@@ -91,6 +159,7 @@ const handleAgeInputChange = (e) => {
 
   return (
     <>
+      {/* MR Number for existing patients only */}
       {mode === 'existing' && (
         <div className="md:col-span-3 flex gap-2 items-end">
           <div className="" data-nav>
@@ -125,6 +194,7 @@ const handleAgeInputChange = (e) => {
         </div>
       )}
 
+      {/* SEQUENCE: 1. Name */}
       <div data-nav>
         <InputField
           name="Name"
@@ -137,28 +207,65 @@ const handleAgeInputChange = (e) => {
         />
       </div>
 
-      <div data-nav>
-        <InputField
-          name="CNIC"
-          label="CNIC"
-          placeholder="Enter CNIC"
-          icon="idCard"
-          value={patient.CNIC}
-          onChange={handlePatientChange}
-        />
-      </div>
+      {/* SEQUENCE: 2. Age & DOB */}
+      {mode === 'new' ? (
+        <>
+          {/* Age Input Field for new patients */}
+          <div data-nav>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Age (auto-calculates DOB) <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              placeholder="e.g., 20, 0.2, 2 months, 1.5"
+              value={ageInput}
+              onChange={handleAgeInputChange}
+              className="border border-gray-300 shadow-sm rounded px-3 py-2 h-[42px] w-full"
+            />
+            {errors.ageManual && (
+              <p className="text-red-600 text-sm mt-1">{errors.ageManual}</p>
+            )}
+          </div>
 
-      <div data-nav>
-        <InputField
-          name="Guardian"
-          label="Guardian Name"
-          placeholder="Enter full name"
-          icon="user"
-          value={patient.Guardian}
-          onChange={handlePatientChange}
-        />
-      </div>
+          {/* Date of Birth for new patients */}
+          <div data-nav>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Date of Birth <span className="text-red-500">*</span>
+            </label>
+            <div className="border rounded border-gray-300 shadow-sm focus-within:ring-2 focus-within:ring-primary-500 focus-within:border-primary-500 h-[42px]">
+              <DatePicker
+                selected={dob}
+                onChange={handleDobChange}
+                dateFormat="yyyy-MM-dd"
+                showMonthDropdown
+                showYearDropdown
+                dropdownMode="select"
+                maxDate={new Date()}
+                placeholderText="Select DOB"
+                className="w-full h-full px-3 py-2 focus:outline-none"
+                onKeyDown={() => {}}
+              />
+            </div>
+            {errors.dob && (
+              <p className="text-red-600 text-sm mt-1">{errors.dob}</p>
+            )}
+          </div>
+        </>
+      ) : (
+        <div className="md:col-span-1" data-nav>
+          <InputField
+            name="Age"
+            label="Age"
+            icon="calendar"
+            placeholder="Age auto generated"
+            value={patient.Age}
+            onChange={handlePatientChange}
+            readOnly
+          />
+        </div>
+      )}
 
+      {/* SEQUENCE: 3. Gender */}
       <div>
         <label
           htmlFor="Gender"
@@ -183,6 +290,8 @@ const handleAgeInputChange = (e) => {
           <p className="text-red-600 text-sm mt-1">{errors.Gender}</p>
         )}
       </div>
+
+      {/* SEQUENCE: 4. Contact */}
       <div className="" data-nav>
         <InputField
           name="ContactNo"
@@ -198,6 +307,8 @@ const handleAgeInputChange = (e) => {
           <p className="text-red-600 text-sm mt-1">{errors.ContactNo}</p>
         )}
       </div>
+
+      {/* Default contact checkbox */}
       <div className="flex items-center">
         <div className="flex items-center mt-2">
           <input
@@ -213,61 +324,19 @@ const handleAgeInputChange = (e) => {
         </div>
       </div>
 
-      {mode === 'new' ? (
-        <>
-          <div data-nav>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Date of Birth <span className="text-red-500">*</span>
-            </label>
-            <div className="border rounded border-gray-300 shadow-sm focus-within:ring-2 focus-within:ring-primary-500 focus-within:border-primary-500 h-[42px]">
-              <DatePicker
-                selected={dob}
-                onChange={handleDobChange}
-                dateFormat="yyyy-MM-dd"
-                showMonthDropdown
-                showYearDropdown
-                dropdownMode="select"
-                maxDate={new Date()}
-                placeholderText="Select DOB"
-                className="w-full h-full px-3 py-2 focus:outline-none"
-                onKeyDown={() => {}}
-              />
-            </div>
-            {errors.dob && (
-              <p className="text-red-600 text-sm mt-1">{errors.dob}</p>
-            )}
-          </div>
+      {/* SEQUENCE: 5. CNIC */}
+      <div data-nav>
+        <InputField
+          name="CNIC"
+          label="CNIC"
+          placeholder="Enter CNIC"
+          icon="idCard"
+          value={patient.CNIC}
+          onChange={handlePatientChange}
+        />
+      </div>
 
-          <div data-nav>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Age (auto-calculates DOB) <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              placeholder="e.g., 20, 0.2, 2 months, 1.5"
-              value={ageInput}
-              onChange={handleAgeInputChange}
-              className="border border-gray-300 shadow-sm rounded px-3 py-2 h-[42px] w-full"
-            />
-           
-            {errors.ageManual && (
-              <p className="text-red-600 text-sm mt-1">{errors.ageManual}</p>
-            )}
-          </div>
-        </>
-      ) : (
-        <div className="md:col-span-1" data-nav>
-          <InputField
-            name="Age"
-            label="Age"
-            icon="calendar"
-            placeholder="Age auto generated"
-            value={patient.Age}
-            onChange={handlePatientChange}
-            readOnly
-          />
-        </div>
-      )}
+      {/* SEQUENCE: 6. Referred By */}
       <div className="">
         <label
           htmlFor="ReferredBy"
@@ -294,6 +363,18 @@ const handleAgeInputChange = (e) => {
         {errors.ReferredBy && (
           <p className="text-red-600 text-sm mt-1">{errors.ReferredBy}</p>
         )}
+      </div>
+
+      {/* Guardian Name - Optional field placed at the end */}
+      <div data-nav>
+        <InputField
+          name="Guardian"
+          label="Guardian Name"
+          placeholder="Enter full name"
+          icon="user"
+          value={patient.Guardian}
+          onChange={handlePatientChange}
+        />
       </div>
     </>
   );
