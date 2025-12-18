@@ -19,13 +19,13 @@ import { useNavigate } from 'react-router-dom';
 import PrintA4 from './PrintPatientTest';
 import ReactDOMServer from 'react-dom/server';
 import { toast } from 'react-toastify';
-// ------------- Normalizer -------------
+
 // ------------- Normalizer -------------
 const normalizeRecord = (rec) => {
   // patient snapshot can be in patient_Detail or a flat patient object
   const patient = rec?.patient_Detail || rec?.patient || {};
 
-// Format age from "20 years 0 months 0 days" to "20/0/0"
+  // Format age from "20 years 0 months 0 days" to "20/0/0"
   const formatAge = (ageStr) => {
     if (!ageStr || typeof ageStr !== 'string') return ageStr;
     
@@ -151,14 +151,12 @@ const normalizeRecord = (rec) => {
           '',
         Gender:
           patient?.patient_Gender || patient?.Gender || patient?.gender || '',
-           Age: formatAge(patient?.patient_Age || patient?.Age || patient?.age || ''),
+        Age: formatAge(patient?.patient_Age || patient?.Age || patient?.age || ''),
         Guardian:
           patient?.patient_Guardian ||
           patient?.Guardian ||
           patient?.guardian ||
           '',
-
-        // expose referredBy on patient snapshot too (useful in UI)
         ReferredBy:
           patient?.referredBy || patient?.ReferredBy || rec?.referredBy || '',
       },
@@ -175,7 +173,6 @@ const normalizeRecord = (rec) => {
         rec?.financialSummary?.updatedAt ??
         rec?.modifiedAt ??
         null,
-      // keep a top-level copy that survives across shapes
       referredBy:
         rec?.referredBy ?? patient?.referredBy ?? patient?.ReferredBy ?? '',
     },
@@ -201,12 +198,13 @@ const PatientTestsTable = () => {
   });
 
   const [isOpen, setIsOpen] = useState(false);
-  const [selectedTest, setSelectedTest] = useState(null); // stores normalized object
+  const [selectedTest, setSelectedTest] = useState(null);
 
   const openModal = (normalizedTest) => {
     setSelectedTest(normalizedTest);
     setIsOpen(true);
   };
+  
   const closeModal = () => {
     setIsOpen(false);
     setSelectedTest(null);
@@ -243,7 +241,6 @@ const PatientTestsTable = () => {
   }, [safeTests, sortByRecent]);
 
   const handleEdit = (id) => {
-    // Optional UI bump (visual only). Best is to have backend set updatedAt.
     setRows((cur) => {
       const idx = cur.findIndex((x) => x._id === id);
       if (idx === -1) return cur;
@@ -269,7 +266,7 @@ const PatientTestsTable = () => {
         await dispatch(deletepatientTest(id)).unwrap();
         // background refresh to stay in sync
         dispatch(fetchPatientTestAll());
-        toast.success('Record deleted sucessfully');
+        toast.success('Record deleted successfully');
       } catch (e) {
         // revert on error
         setRows(prevRows);
@@ -279,7 +276,7 @@ const PatientTestsTable = () => {
     }
   };
 
-  const handlePrint = (t /* normalized object */) => {
+  const handlePrint = (t) => {
     const printData = {
       tokenNumber: t.tokenNumber,
       patient: {
@@ -289,7 +286,6 @@ const PatientTestsTable = () => {
         ContactNo: t.patient.ContactNo,
         Gender: t.patient.Gender,
         Age: t.patient.Age,
-        // pull from _norm.referredBy first, then from patient.ReferredBy
         ReferredBy: t.referredBy || t.patient.ReferredBy || '',
         Guardian: t.patient.Guardian,
         MaritalStatus: t.patient.MaritalStatus,
@@ -312,8 +308,6 @@ const PatientTestsTable = () => {
         ? format(new Date(t.selectedTests[0].testDate), 'yyyy-MM-dd')
         : '',
     };
-
-    console.log('printdata', printData);
 
     const w = window.open('', '_blank');
     if (!w) {
@@ -443,7 +437,7 @@ const PatientTestsTable = () => {
   }
 
   return (
-    <div className="bg-gray-50 min-h-screen">
+    <div className="bg-gray-50 min-h-screen p-4">
       <div className="bg-white rounded-lg shadow-md p-4">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
           <h1 className="text-2xl font-bold text-gray-800 mb-4 md:mb-0">
@@ -534,7 +528,6 @@ const PatientTestsTable = () => {
                   </select>
                 </div>
 
-                {/* New Contact filter */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Contact No
@@ -570,18 +563,39 @@ const PatientTestsTable = () => {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <Th>Token</Th>
-                <Th>MR No</Th>
-                <Th>Patient Name</Th>
-                <Th>Gender</Th>
-                <Th>Contact No</Th>
-                <Th>Age</Th>
-                <Th>Tests</Th>
-                <Th>Total Amount</Th>
-                <Th>Remaining Amount</Th>
-                <Th>Date</Th>
-                <Th>Status</Th>
-                <Th className="px-3">Actions</Th>
+                <th className="w-20 px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Token
+                </th>
+                <th className="w-28 px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  MR No
+                </th>
+                <th className="w-40 px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <div className="truncate">Patient Name</div>
+                </th>
+                <th className="w-36 px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Contact No
+                </th>
+                <th className="w-20 px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Age
+                </th>
+                <th className="w-64 px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Tests
+                </th>
+                <th className="w-36 px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Total Amount
+                </th>
+                <th className="w-40 px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Remaining Amount
+                </th>
+                <th className="w-32 px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Date
+                </th>
+                <th className="w-28 px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Status
+                </th>
+                <th className="w-32 px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Actions
+                </th>
               </tr>
             </thead>
 
@@ -594,69 +608,73 @@ const PatientTestsTable = () => {
                       key={test._id || `${t.tokenNumber}-${t.createdAt}`}
                       className="hover:bg-gray-50"
                     >
-                      <Td center bold>
+                      <td className="w-20 px-3 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-center">
                         {t.tokenNumber}
-                      </Td>
-                      <Td>{t.patient.MRNo}</Td>
-                      <Td bold>{t.patient.Name}</Td>
-                      <Td center>{t.patient.Gender}</Td>
-                      <Td center>{t.patient.Contact || t.patient.ContactNo}</Td>
-                      <Td center>{t.patient.Age}</Td>
-
-                      <td className="px-6 py-4 text-sm text-gray-500">
-                        {t.selectedTests.slice(0, 2).map((x, i) => (
-                          <div key={i} className="mb-1 last:mb-0">
-                            <span className="font-medium">
-                              {x._norm.testName}
-                            </span>
-                            {x._norm.testCode ? (
-                              <span className="text-gray-400 ml-1">
-                                ({x._norm.testCode})
-                              </span>
-                            ) : null}
-                          </div>
-                        ))}
-                        {t.selectedTests.length > 2 && (
-                          <button
-                            onClick={() => openModal(t)}
-                            className="text-primary-500 hover:underline text-sm mt-1"
-                          >
-                            See More
-                          </button>
-                        )}
                       </td>
-
-                      <Td right>
+                      <td className="w-28 px-3 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <div className="truncate">{t.patient.MRNo}</div>
+                      </td>
+                      <td className="w-40 px-3 py-4 text-sm text-gray-500">
+                        <div className="font-medium truncate">{t.patient.Name}</div>
+                      </td>
+                      <td className="w-36 px-3 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
+                        <div className="truncate">{t.patient.Contact || t.patient.ContactNo}</div>
+                      </td>
+                      <td className="w-20 px-3 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
+                        {t.patient.Age}
+                      </td>
+                      <td className="w-64 px-3 py-4 text-sm text-gray-500">
+                        <div className="space-y-1">
+                          {t.selectedTests.slice(0, 2).map((x, i) => (
+                            <div key={i} className="truncate">
+                              <span className="font-medium">
+                                {x._norm.testName}
+                              </span>
+                              {x._norm.testCode && (
+                                <span className="text-gray-400 ml-1">
+                                  ({x._norm.testCode})
+                                </span>
+                              )}
+                            </div>
+                          ))}
+                          {t.selectedTests.length > 2 && (
+                            <button
+                              onClick={() => openModal(t)}
+                              className="text-primary-500 hover:underline text-sm mt-1"
+                            >
+                              See More (+{t.selectedTests.length - 2})
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                      <td className="w-36 px-3 py-4 text-sm text-right">
                         <div className="font-medium">
                           Rs. {t.totalAmount.toLocaleString()}
                         </div>
                         {t.totalDiscount > 0 && (
-                          <div className="text-xs text-gray-400">
+                          <div className="text-xs text-gray-400 truncate">
                             Discount: Rs. {t.totalDiscount.toLocaleString()}
                           </div>
                         )}
-                      </Td>
-
-                      <Td right>
+                      </td>
+                      <td className="w-40 px-3 py-4 text-sm text-right">
                         <div className="font-medium">
                           Rs. {t.remainingAmount.toLocaleString()}
                         </div>
                         {t.totalPaid > 0 && (
-                          <div className="text-xs text-gray-400">
+                          <div className="text-xs text-gray-400 truncate">
                             Paid: Rs. {t.totalPaid.toLocaleString()}
                           </div>
                         )}
-                      </Td>
-
-                      <Td>
+                      </td>
+                      <td className="w-32 px-3 py-4 whitespace-nowrap text-sm text-gray-500">
                         {t.createdAt
                           ? format(new Date(t.createdAt), 'dd-MMM-yyyy')
                           : ''}
-                      </Td>
-
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      </td>
+                      <td className="w-28 px-3 py-4 whitespace-nowrap text-center">
                         <span
-                          className={`px-2 py-1 text-xs font-medium rounded-full 
+                          className={`inline-flex px-2 py-1 text-xs font-medium rounded-full 
                           ${
                             t.paymentStatus === 'paid'
                               ? 'bg-green-100 text-green-800'
@@ -670,9 +688,8 @@ const PatientTestsTable = () => {
                           {t.paymentStatus}
                         </span>
                       </td>
-
-                      <td className="px-3 py-4">
-                        <div className="flex items-center gap-5 ml-7">
+                      <td className="w-32 px-3 py-4 whitespace-nowrap">
+                        <div className="flex items-center justify-center gap-3">
                           <button
                             onClick={() => handlePrint(t)}
                             className="text-green-600 hover:text-green-800"
@@ -702,7 +719,7 @@ const PatientTestsTable = () => {
               ) : (
                 <tr>
                   <td
-                    colSpan="12"
+                    colSpan="11"
                     className="px-6 py-4 text-center text-sm text-gray-500"
                   >
                     No records found matching your criteria
@@ -720,26 +737,32 @@ const PatientTestsTable = () => {
               <h3 className="text-lg font-medium text-gray-900 mb-4">
                 All Tests
               </h3>
-              <div className="mt-2 space-y-2">
+              <div className="mt-2 space-y-3">
                 {selectedTest.selectedTests.map((x, i) => (
-                  <div key={i} className="mb-1 last:mb-0">
-                    <span className="font-medium break-words">
-                      {x._norm.testName}
-                    </span>
-                    {x._norm.testCode ? (
-                      <span className="text-gray-400 ml-1">
-                        ({x._norm.testCode})
-                      </span>
-                    ) : null}
+                  <div key={i} className="border-b pb-2 last:border-0">
+                    <div className="font-medium text-gray-900">{x._norm.testName}</div>
+                    {x._norm.testCode && (
+                      <div className="text-sm text-gray-500">Code: {x._norm.testCode}</div>
+                    )}
+                    <div className="text-sm text-gray-600">
+                      Price: Rs. {x._norm.price.toLocaleString()} | 
+                      Discount: Rs. {x._norm.discount.toLocaleString()} | 
+                      Paid: Rs. {x._norm.paid.toLocaleString()}
+                    </div>
                   </div>
                 ))}
               </div>
-              <button
-                onClick={closeModal}
-                className="mt-4 bg-primary-100 text-primary-900 px-4 py-2 rounded-md hover:bg-primary-200"
-              >
-                Close
-              </button>
+              <div className="mt-6 flex justify-between items-center">
+                <div className="text-sm text-gray-600">
+                  Total Tests: {selectedTest.selectedTests.length}
+                </div>
+                <button
+                  onClick={closeModal}
+                  className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700"
+                >
+                  Close
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -747,25 +770,5 @@ const PatientTestsTable = () => {
     </div>
   );
 };
-
-// Small presentational helpers
-const Th = ({ children, className = '' }) => (
-  <th
-    scope="col"
-    className={`px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ${className}`}
-  >
-    {children}
-  </th>
-);
-
-const Td = ({ children, right, center, bold }) => (
-  <td
-    className={`px-6 py-4 whitespace-nowrap text-sm ${
-      right ? 'text-right' : center ? 'text-center' : 'text-left'
-    } ${bold ? 'font-medium text-gray-900' : 'text-gray-500'}`}
-  >
-    {children}
-  </td>
-);
 
 export default PatientTestsTable;

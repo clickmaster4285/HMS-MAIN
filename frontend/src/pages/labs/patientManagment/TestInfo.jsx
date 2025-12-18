@@ -165,22 +165,7 @@ const TestInformationForm = ({
                 className="absolute z-20 w-full mt-1 bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-y-auto"
                 onKeyDown={handleKeyDown}
               >
-                <div className="p-2 border-b border-gray-200 bg-gray-50">
-                  <label className="flex items-center space-x-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={selectedTests.length === availableTests.length && availableTests.length > 0}
-                      onChange={handleSelectAll}
-                      className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-                    />
-                    <span className="text-sm font-medium">
-                      {selectedTests.length === availableTests.length ? 'Deselect All' : 'Select All'}
-                    </span>
-                    <span className="text-xs text-gray-500">
-                      ({selectedTests.length} selected) • Double Enter to add
-                    </span>
-                  </label>
-                </div>
+
 
                 <div className="divide-y divide-gray-100">
                   {availableTests.map((test) => (

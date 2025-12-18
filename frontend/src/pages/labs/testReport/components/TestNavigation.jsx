@@ -36,45 +36,29 @@ export const TestNavigation = ({
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6">
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-        {/* Test Info */}
-        <div className="flex-1">
-          <div className="flex items-center gap-4">
-            <h3 className="text-lg font-semibold text-gray-800">
-              {currentTest?.testDetails?.testName || 'Test Results'}
-            </h3>
-            <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(
-              statusByTest[currentTest?.test] || getCurrentStatus(currentTest?.statusHistory)
-            )}`}>
-              {statusByTest[currentTest?.test] || getCurrentStatus(currentTest?.statusHistory)}
-            </span>
-          </div>
-          <p className="text-sm text-gray-600 mt-1">
-            Test {activeTestIndex + 1} of {totalTests}
-          </p>
-        </div>
 
         {/* Navigation Controls */}
-        <div className="flex items-center gap-3">
+     <div className="flex items-center gap-3 ml-auto">
           {/* Previous Button */}
           <button
             onClick={onSaveAndPrev}
             disabled={isFirstTest}
-            className={`flex items-center px-4 py-2 rounded-lg transition-all duration-200 ${
+            className={`group flex items-center px-6 py-2.5 rounded-xl font-medium transition-all duration-300 shadow-md ${
               isFirstTest
-                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                : 'bg-primary-600 text-white hover:bg-primary-700 transform hover:scale-105'
+                ? 'bg-gray-100 text-gray-400 cursor-not-allowed shadow-none'
+                : 'bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0'
             }`}
           >
-            <FiChevronLeft className="mr-2" />
+            <FiChevronLeft className={`mr-2 transition-transform duration-300 ${!isFirstTest && 'group-hover:-translate-x-1'}`} />
             Previous
           </button>
 
           {/* Save Current */}
           <button
             onClick={onSave}
-            className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all duration-200 transform hover:scale-105"
+            className="group flex items-center px-6 py-2.5 bg-gradient-to-r from-emerald-600 to-green-600 text-white rounded-xl font-medium hover:from-emerald-700 hover:to-green-700 transition-all duration-300 shadow-md hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0"
           >
-            <FiSave className="mr-2" />
+            <FiSave className="mr-2 transition-transform duration-300 group-hover:rotate-12" />
             Save
           </button>
 
@@ -82,31 +66,18 @@ export const TestNavigation = ({
           <button
             onClick={onSaveAndNext}
             disabled={isLastTest}
-            className={`flex items-center px-4 py-2 rounded-lg transition-all duration-200 ${
+            className={`group flex items-center px-6 py-2.5 rounded-xl font-medium transition-all duration-300 shadow-md ${
               isLastTest
-                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                : 'bg-primary-600 text-white hover:bg-primary-700 transform hover:scale-105'
+                ? 'bg-gray-100 text-gray-400 cursor-not-allowed shadow-none'
+                : 'bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0'
             }`}
           >
             Next
-            <FiChevronRight className="ml-2" />
+            <FiChevronRight className={`ml-2 transition-transform duration-300 ${!isLastTest && 'group-hover:translate-x-1'}`} />
           </button>
         </div>
       </div>
 
-      {/* Progress Bar */}
-      <div className="mt-4">
-        <div className="flex items-center justify-between text-sm text-gray-600 mb-2">
-          <span>Progress</span>
-          <span>{Math.round(((activeTestIndex + 1) / totalTests) * 100)}%</span>
-        </div>
-        <div className="w-full bg-gray-200 rounded-full h-2">
-          <div
-            className="bg-primary-600 h-2 rounded-full transition-all duration-500 ease-out"
-            style={{ width: `${((activeTestIndex + 1) / totalTests) * 100}%` }}
-          ></div>
-        </div>
-      </div>
     </div>
   );
 };

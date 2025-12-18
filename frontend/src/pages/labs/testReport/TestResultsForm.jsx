@@ -2,7 +2,6 @@
 import React, { useEffect, useRef } from 'react';
 import { FiClipboard } from 'react-icons/fi';
 import { FieldInputRenderer } from './components/FieldInputRenderer';
-import { TestNavigation } from './components/TestNavigation';
 
 const TestResultsForm = ({
   selectedTests,
@@ -19,13 +18,35 @@ const TestResultsForm = ({
   saveCurrentTest,
   getCurrentStatus,
 }) => {
-  const currentTestId = selectedTests?.[activeTestIndex]?.test;
+  const currentTest = selectedTests?.[activeTestIndex];
+  const currentTestId = currentTest?.test;
   const resultRows = formData?.results?.[currentTestId] || [];
+  const totalTests = selectedTests.length;
   
   const valueInputRefs = useRef([]);
   const performedByRef = useRef(null);
   const statusRef = useRef(null);
   const overallReportRef = useRef(null);
+
+  // Status color helper function
+  const getStatusColor = (status) => {
+    switch (status?.toLowerCase()) {
+      case 'completed':
+        return 'bg-green-100 text-green-800 border-green-300';
+      case 'verified':
+        return 'bg-blue-100 text-blue-800 border-blue-300';
+      case 'processing':
+        return 'bg-yellow-100 text-yellow-800 border-yellow-300';
+      case 'registered':
+        return 'bg-gray-100 text-gray-800 border-gray-300';
+      case 'cancelled':
+        return 'bg-red-100 text-red-800 border-red-300';
+      case 'draft':
+        return 'bg-purple-100 text-purple-800 border-purple-300';
+      default:
+        return 'bg-gray-100 text-gray-800 border-gray-300';
+    }
+  };
 
   // Keyboard navigation handlers
   const handleResultKeyDown = (e, i) => {
@@ -68,52 +89,48 @@ const TestResultsForm = ({
     return () => clearTimeout(id);
   }, [currentTestId, resultRows.length]);
 
-  // Navigation handlers
-  const goToIndex = (index) => {
-    if (index >= 0 && index < selectedTests.length) {
-      setActiveTestIndex(index);
-    }
-  };
-
-  const handleSaveAndNext = async () => {
-    try {
-      await saveCurrentTest(currentTestId);
-      goToIndex(activeTestIndex + 1);
-    } catch (error) {
-      console.error('Failed to save and navigate:', error);
-    }
-  };
-
-  const handleSaveAndPrev = async () => {
-    try {
-      await saveCurrentTest(currentTestId);
-      goToIndex(activeTestIndex - 1);
-    } catch (error) {
-      console.error('Failed to save and navigate:', error);
-    }
-  };
-
-  const handleSaveCurrent = async () => {
-    try {
-      await saveCurrentTest(currentTestId);
-    } catch (error) {
-      console.error('Failed to save:', error);
-    }
-  };
+  if (!currentTest) {
+    return (
+      <div className="p-6 text-center text-gray-500">
+        No test selected
+      </div>
+    );
+  }
 
   return (
     <div className="p-6">
-      {/* Test Navigation */}
-      <TestNavigation
-        selectedTests={selectedTests}
-        activeTestIndex={activeTestIndex}
-        onTestChange={setActiveTestIndex}
-        onSave={handleSaveCurrent}
-        onSaveAndNext={handleSaveAndNext}
-        onSaveAndPrev={handleSaveAndPrev}
-        statusByTest={statusByTest}
-        getCurrentStatus={getCurrentStatus}
-      />
+      {/* Test Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex-1">
+          <div className="flex items-center gap-4">
+            <h3 className="text-lg font-semibold text-gray-800">
+              {currentTest?.testDetails?.testName || 'Test Results'}
+            </h3>
+            <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(
+              statusByTest[currentTest?.test] || getCurrentStatus(currentTest?.statusHistory)
+            )}`}>
+              {statusByTest[currentTest?.test] || getCurrentStatus(currentTest?.statusHistory)}
+            </span>
+          </div>
+          <p className="text-sm text-gray-600 mt-1">
+            Test {activeTestIndex + 1} of {totalTests}
+          </p>
+        </div>
+      </div>
+
+      {/* Progress Bar */}
+      <div className="mb-6">
+        <div className="flex items-center justify-between text-sm text-gray-600 mb-2">
+          <span>Progress</span>
+          <span>{Math.round(((activeTestIndex + 1) / totalTests) * 100)}%</span>
+        </div>
+        <div className="w-full bg-gray-200 rounded-full h-2">
+          <div
+            className="bg-primary-600 h-2 rounded-full transition-all duration-500 ease-out"
+            style={{ width: `${((activeTestIndex + 1) / totalTests) * 100}%` }}
+          ></div>
+        </div>
+      </div>
 
       {/* Results Fields */}
       <div className="space-y-4 mb-8">

@@ -10,7 +10,7 @@ const app = express();
 
 app.use(
   cors({
-    origin: [process.env.Frontend_URL],
+    origin: [process.env.Frontend_URL, 'http://192.168.88.7:5173', 'http://192.168.88.20:5173'],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     credentials: true
   })

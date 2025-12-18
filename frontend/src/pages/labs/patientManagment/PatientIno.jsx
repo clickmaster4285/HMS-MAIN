@@ -127,19 +127,47 @@ const PatientInfoForm = ({
     </label>
   );
 
-  // Common fields that appear in both modes
+  // Common fields that appear in both modes - REORDERED to match sequence
   const commonFields = (
     <>
+      {/* 1. Name */}
       <InputField
         name="Name"
         label="Name"
         placeholder="Enter full name"
         icon="user"
         value={patient.Name}
-        onChange={handleNameChange} // Changed to use the new handler
+        onChange={handleNameChange}
         required
       />
 
+      {/* 2. Age - Different for each mode */}
+      {mode === 'new' ? (
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Age (auto-calculates DOB)<span className="text-red-500"> *</span>
+          </label>
+          <input
+            type="text"
+            placeholder="e.g., 20, 0.2, 2 months, 1.5"
+            value={ageInput}
+            onChange={handleAgeChange}
+            className="border rounded px-3 py-2 h-[42px] w-full border-gray-300 shadow-sm"
+          />
+        </div>
+      ) : (
+        <InputField
+          name="Age"
+          label="Age"
+          icon="calendar"
+          placeholder="Age auto Generated"
+          value={patient.Age}
+          onChange={handlePatientChange}
+          readOnly
+        />
+      )}
+
+      {/* 3. Gender */}
       <div>
         <label
           htmlFor="Gender"
@@ -161,6 +189,7 @@ const PatientInfoForm = ({
         </select>
       </div>
 
+      {/* 4. Contact */}
       <InputField
         name="ContactNo"
         label="Contact No"
@@ -170,25 +199,8 @@ const PatientInfoForm = ({
         onChange={handlePatientChange}
         required
       />
-
-      <InputField
-        name="CNIC"
-        label="CNIC"
-        placeholder="Enter CNIC"
-        icon="idCard"
-        value={patient.CNIC}
-        onChange={handlePatientChange}
-      />
-      <InputField
-        name="Guardian"
-        label="Guardian Name"
-        placeholder="Enter full name"
-        icon="user"
-        value={patient.Guardian}
-        onChange={handlePatientChange}
-      />
-
-      <div className="flex items-center ">
+      {/* Default contact checkbox */}
+      <div className="flex items-center">
         <div className="flex items-center mt-2">
           <input
             type="checkbox"
@@ -202,29 +214,54 @@ const PatientInfoForm = ({
           </label>
         </div>
       </div>
+      {/* 5. CNIC */}
+      <InputField
+        name="CNIC"
+        label="CNIC"
+        placeholder="Enter CNIC"
+        icon="idCard"
+        value={patient.CNIC}
+        onChange={handlePatientChange}
+      />
+<div>
+  <label
+    htmlFor="ReferredBy"
+    className="block mb-1 font-medium text-gray-700"
+  >
+    Referred By
+  </label>
+  <select
+    id="ReferredBy"
+    name="ReferredBy"
+    value={patient.ReferredBy || ''}
+    onChange={handlePatientChange}
+    className="border h-[42px] p-2 rounded w-full border-gray-300 shadow-sm"
+  >
+    <option value="">Select Referred By</option>
+    <option value={doctorList[0]}>Self</option>
+    <option value={doctorList[1]}>THQ</option>
+    <optgroup label="Doctors">
+      {doctorList.slice(2).map((doctor, index) => (
+        <option key={index} value={doctor}>
+          {doctor}
+        </option>
+      ))}
+    </optgroup>
+  </select>
+</div>
+      {/* Guardian Name - Not in your sequence, keeping it as is */}
+      <InputField
+        name="Guardian"
+        label="Guardian Name"
+        placeholder="Enter full name"
+        icon="user"
+        value={patient.Guardian}
+        onChange={handlePatientChange}
+      />
 
-      <div>
-        <label
-          htmlFor="ReferredBy"
-          className="block mb-1 font-medium text-gray-700"
-        >
-          Referred By
-        </label>
-        <select
-          id="ReferredBy"
-          name="ReferredBy"
-          value={patient.ReferredBy || ''}
-          onChange={handlePatientChange}
-          className="border  h-[42px] p-2 rounded w-full  border-gray-300 shadow-smborder-gray-300 shadow-sm"
-        >
-          <option value="">Select Doctor</option>
-          {doctorList.map((doctor, index) => (
-            <option key={index} value={doctor}>
-              {doctor}
-            </option>
-          ))}
-        </select>
-      </div>
+
+
+
     </>
   );
 
@@ -250,39 +287,19 @@ const PatientInfoForm = ({
     </div>
   );
 
-  // Fields specific to new patient mode
-  const newPatientFields = (
-    <>
-      <div className="grid grid-cols-2 gap-4 col-span-2">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Age (auto-calculates DOB)<span className="text-red-500"> *</span>
-          </label>
-          <input
-            type="text"
-            placeholder="e.g., 20, 0.2, 2 months, 1.5"
-            value={ageInput}
-            onChange={handleAgeChange}
-            className="border rounded px-3 py-2 h-[42px] w-full border-gray-300 shadow-sm"
-          />{' '}
-        
-        </div>
-
-        <div>
-          <div>
-            <label className="block mb-1 font-medium text-gray-700">
-              Date of Birth <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="date"
-              value={dob ? dob.toISOString().split('T')[0] : ''}
-              onChange={(e) => handleDobChange(e.target.value ? new Date(e.target.value) : null)}
-              className="border rounded px-3 py-2 h-[42px] w-full border-gray-300 shadow-sm"
-            />
-          </div>
-        </div>
-      </div>
-    </>
+  // Date of Birth field only for new patients
+  const newPatientDOBField = (
+    <div>
+      <label className="block mb-1 font-medium text-gray-700">
+        Date of Birth <span className="text-red-500">*</span>
+      </label>
+      <input
+        type="date"
+        value={dob ? dob.toISOString().split('T')[0] : ''}
+        onChange={(e) => handleDobChange(e.target.value ? new Date(e.target.value) : null)}
+        className="border rounded px-3 py-2 h-[42px] w-full border-gray-300 shadow-sm"
+      />
+    </div>
   );
 
   return (
@@ -313,20 +330,8 @@ const PatientInfoForm = ({
 
         {commonFields}
 
-        {/* Age field for existing patients (placed after common fields) */}
-        {mode === 'existing' && (
-          <InputField
-            name="Age"
-            label="Age"
-            icon="calendar"
-            placeholder="Age auto Generated"
-            value={patient.Age}
-            onChange={handlePatientChange}
-            readOnly
-          />
-        )}
-
-        {mode === 'new' && newPatientFields}
+        {/* Date of Birth for new patients only */}
+        {mode === 'new' && newPatientDOBField}
       </div>
     </div>
   );
