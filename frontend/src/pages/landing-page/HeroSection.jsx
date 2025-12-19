@@ -3,8 +3,16 @@ import { ChevronRight, ArrowRight, Star, Zap, Activity, BarChart2, Smartphone } 
 import Hero_Img from "../../assets/images/hero_img.png";
 import Doc1 from "../../assets/doctor/doc-1 (2).png";
 import { motion } from 'framer-motion';
+import { useSelector } from "react-redux";
 
 const HeroSection = () => {
+    const {
+      staffList,
+      deletedStaffList,
+      loading,
+      error,
+    } = useSelector((state) => state.staff);
+    console.log("Staff List tesing:", staffList);
   return (
     <section className="relative overflow-hidden bg-gradient-to-br from-indigo-900 via-indigo-950 to-primary-900 text-white pt-24 pb-32 md:pt-32 md:pb-48">
       {/* Animated background elements */}

@@ -1,6 +1,8 @@
 const hospitalModel = require("../models/index.model");
 const utils = require("../utils/utilsIndex");
 const bcrypt = require("bcrypt");
+const emitGlobalEvent = require("../utils/emitGlobalEvent");
+const EVENTS = require("../utils/socketEvents");
 
 const createDoctor = async (req, res) => {
   try {
@@ -129,6 +131,14 @@ const createDoctor = async (req, res) => {
     // Update user reference
     await hospitalModel.User.findByIdAndUpdate(newUser._id, {
       doctorProfile: newDoctor._id
+    });
+
+    emitGlobalEvent(req, EVENTS.DOCTOR, "create", {
+      _id: newDoctor._id,
+      user: newUser._id,
+      doctor_Department: newDoctor.doctor_Department,
+      doctor_Type: newDoctor.doctor_Type,
+      doctor_Specialization: newDoctor.doctor_Specialization
     });
 
     return res.status(201).json({
@@ -317,6 +327,10 @@ const deleteDoctor = async (req, res) => {
       { $set: { deleted: true } }
     );
 
+    emitGlobalEvent(req, EVENTS.DOCTOR, "delete", {
+      _id: doctor._id,
+      user: doctor.user,
+    });
     return res.status(200).json({
       success: true,
       message: "doctor deleted successfully.",
@@ -445,6 +459,10 @@ const updateDoctor = async (req, res) => {
       });
     }
 
+    emitGlobalEvent(req, EVENTS.DOCTOR, "update", {
+      _id: updatedDoctor._id,
+      user: updatedDoctor.user,
+    });
     return res.status(200).json({
       success: true,
       message: "Doctor updated successfully",

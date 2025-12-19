@@ -1,12 +1,15 @@
 const Appointment = require('../models/appointment.model');
-// const generateUniqueMrNo = require('../utils/generateUniqueMrNo');
 const utils = require('../utils/utilsIndex');
+const emitGlobalEvent = require("../utils/emitGlobalEvent");
+const EVENTS = require("../utils/socketEvents");
+
+
 const createAppointment = async (req, res) => {
     try {
         const {
             patientName,
             appointmentPatientCNIC,
-            appointmentDate,  // Make sure this is passed in format "YYYY-MM-DD"
+            appointmentDate,
             appointmentTime,
             appointmentDoctorName,
             appointmentType,
@@ -31,6 +34,8 @@ const createAppointment = async (req, res) => {
         });
 
         const savedAppointment = await newAppointment.save();
+        emitGlobalEvent(req, EVENTS.APPOINTMENT, "create", savedAppointment);
+
         return res.status(200).json({
             success: true,
             message: "Appointment created successfully",
@@ -73,7 +78,7 @@ const deleteAppointment = async (req, res) => {
         if (!appointment) {
             return res.status(404).json({ success: false, message: "Appointment not found" });
         }
-        res.json({ success: true, appointment });
+        emitGlobalEvent(req, EVENTS.APPOINTMENT, "delete", appointment._id);
     } catch (error) {
         return res.status(500).json({
             success: false,
@@ -94,6 +99,9 @@ const restoreAppointment = async (req, res) => {
             return res.status(404).json({ success: false, message: "Appointment not found" });
         }
         res.json({ success: true, appointment });
+
+        emitGlobalEvent(req, EVENTS.APPOINTMENT, "restore", appointment._id);
+
     } catch (error) {
         return res.status(500).json({
             success: false,
@@ -139,6 +147,8 @@ const updateAppointment = async (req, res) => {
             });
         }
 
+
+        emitGlobalEvent(req, EVENTS.APPOINTMENT, "update", updatedAppointment);
         return res.status(200).json({
             success: true,
             message: "Appointment updated successfully",

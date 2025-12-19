@@ -1,5 +1,6 @@
 const hospitalModel = require("../models/index.model")
-
+const emitGlobalEvent = require("../utils/emitGlobalEvent");
+const EVENTS = require("../utils/socketEvents");
 // Create a new department
 const createDepartments = async (req, res) => {
     try {
@@ -10,6 +11,7 @@ const createDepartments = async (req, res) => {
         });
 
         await newDepartment.save();
+        emitGlobalEvent(req, EVENTS.DEPARTMENT, "create", newDepartment);
         res.status(202).json({ message: "Department Added Successfully", departments: newDepartment });
     } catch (error) {
         console.error(error);
@@ -60,6 +62,7 @@ const updateDepartmentById = async (req, res) => {
         department.servicesOffered = servicesOffered || department.servicesOffered;
 
         await department.save();
+        emitGlobalEvent(req, EVENTS.DEPARTMENT, "update", department);
         res.status(200).json(department);
     } catch (error) {
         console.error(error);
@@ -77,6 +80,8 @@ const deleteDepartment = async (req, res) => {
             return res.status(404).json({ message: "Department not found" });
         }
 
+        emitGlobalEvent(req, EVENTS.DEPARTMENT, "delete", department);
+        
         res.status(200).json({ message: "Department deleted successfully", department });
     } catch (error) {
         res.status(500).json({ message: "Error deleting department", error: error.message });

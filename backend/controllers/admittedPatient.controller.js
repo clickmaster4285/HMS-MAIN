@@ -1,5 +1,8 @@
-const mongoose = require("mongoose"); // ADD THIS LINE
+const mongoose = require("mongoose");
 const hospitalModel = require("../models/index.model");
+const emitGlobalEvent = require("../utils/emitGlobalEvent");
+const EVENTS = require("../utils/socketEvents");
+
 
 const admittedPatient = async (req, res) => {
   try {
@@ -119,6 +122,9 @@ const admittedPatient = async (req, res) => {
       populatedAdmission = await populatedAdmission
         .populate('admission_Details.admitting_Doctor', 'name specialty');
     }
+
+    emitGlobalEvent(req, EVENTS.ADMISSION, "create", populatedAdmission);
+
 
     return res.status(201).json({
       success: true,
@@ -573,7 +579,8 @@ const updateAdmission = async (req, res) => {
       .populate('patient', 'patient_MRNo patient_Name patient_CNIC patient_Gender patient_DateOfBirth patient_Address patient_Guardian')
       .populate('admission_Details.admitting_Doctor', 'user_Name user_Email user_Contact');
 
-    console.log('Admission updated successfully for MR:', mrNo);
+    emitGlobalEvent(req, EVENTS.ADMISSION, "update", updatedAdmission);
+
 
     return res.status(200).json({
       success: true,
@@ -655,6 +662,10 @@ const deleteAdmission = async (req, res) => {
     admission.deleted = true;
     admission.deletedAt = new Date();
     await admission.save();
+
+
+    emitGlobalEvent(req, EVENTS.ADMISSION, "delete", admission._id);
+
 
     return res.status(200).json({
       success: true,

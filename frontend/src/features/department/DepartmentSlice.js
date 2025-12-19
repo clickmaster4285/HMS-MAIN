@@ -79,59 +79,56 @@ const initialState = {
 };
 
 const departmentSlice = createSlice({
-    name: 'department',
-    initialState,
-    reducers: {
-        reset: () => initialState,
-    },
-    extraReducers: (builder) => {
-        builder
-            .addCase(createDepartment.pending, (state) => {
-                state.loading = true;
-                state.error = null;
-            })
-            .addCase(createDepartment.fulfilled, (state, action) => {
-                state.loading = false;
-                state.department = action.payload; // Store the created department details
-            })
-            .addCase(createDepartment.rejected, (state, action) => {
-                state.loading = false;
-                state.error = action.payload?.message || 'Failed to create department';
-            })
+  name: 'department',
+  initialState,
+  reducers: {
+    reset: () => initialState,
+  },
+  extraReducers: (builder) => {
+    builder
 
-            //getall//
-            .addCase(getallDepartments.pending, (state) => {
-                state.loading = true;
-                state.error = null;
-            })
-            .addCase(getallDepartments.fulfilled, (state, action) => {
-                state.loading = false;
-                state.departments = action.payload;
-            })
-            .addCase(getallDepartments.rejected, (state, action) => {
-                state.loading = false;
-                state.error = action.payload?.message || 'Failed to fetch departments';
-            })
-            //updatedepartmentbyid//
-            .addCase(updatedepartmentbyid.pending, (state) => {
-                state.loading = true;
-                state.error = null;
-            })
-            .addCase(updatedepartmentbyid.fulfilled, (state, action) => {
-                state.loading = false;
-                const updatedDepartment = action.payload;
-                // console.log('the updated dept is', action.payload )
-                const index = state.departments.findIndex(dep => dep._id === updatedDepartment._id);
-                if (index !== -1) {
-                    state.departments[index] = updatedDepartment;
-                }
-            })
-            .addCase(updatedepartmentbyid.rejected, (state, action) => {
-                state.loading = false;
-                state.error = action.payload?.message || 'Failed to update department';
-            });
-    }
+      // ================= CREATE DEPARTMENT =================
+      .addCase(createDepartment.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(createDepartment.fulfilled, (state) => {
+        state.loading = false;
+      })
+      .addCase(createDepartment.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload?.message || 'Failed to create department';
+      })
+
+      // ================= GET ALL DEPARTMENTS =================
+      .addCase(getallDepartments.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(getallDepartments.fulfilled, (state, action) => {
+        state.loading = false;
+        state.departments = action.payload;
+      })
+      .addCase(getallDepartments.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload?.message || 'Failed to fetch departments';
+      })
+
+      // ================= UPDATE DEPARTMENT =================
+      .addCase(updatedepartmentbyid.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updatedepartmentbyid.fulfilled, (state) => {
+        state.loading = false;
+      })
+      .addCase(updatedepartmentbyid.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload?.message || 'Failed to update department';
+      });
+  }
 });
+
 
 export const { reset } = departmentSlice.actions;
 export default departmentSlice.reducer;

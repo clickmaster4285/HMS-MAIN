@@ -4,6 +4,8 @@ import {
   Route,
   Navigate,
 } from "react-router-dom";
+import axios from "axios";
+import React, { useEffect } from "react";
 import { selectCurrentUser } from './features/auth/authSlice';
 import { MantineProvider } from "@mantine/core";
 import { useSelector } from 'react-redux';
@@ -15,10 +17,16 @@ import DoctorRoutes from "./routes/DoctorRoutes";
 import LabRoutes from "./routes/LabRoutes";
 import Landing_Page from "./pages/landing-page/Index";
 import AuthRoutes from "./routes/AuthRoutes"
+// import { setUser, logout } from "./features/auth/authSlice";
+const API_URL = import.meta.env.VITE_REACT_APP_API_URL;
+
+
 
 const App = () => {
   const currentUser = useSelector(selectCurrentUser);
   const userAccess = currentUser?.user_Access?.toLowerCase();
+
+  
 
   return (
     <MantineProvider withGlobalStyles withNormalizeCSS>

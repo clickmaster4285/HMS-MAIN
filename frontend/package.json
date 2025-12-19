@@ -8,8 +8,8 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-   "production": "vite build && vite preview",
-   "clean": "rd /s /q node_modules 2>nul && rd /s /q .next 2>nul || echo \"Frontend cleaned\""
+    "production": "vite build && vite preview",
+    "clean": "rd /s /q node_modules 2>nul && rd /s /q .next 2>nul || echo \"Frontend cleaned\""
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -66,6 +66,7 @@
     "react-time-picker": "^8.0.2",
     "react-toastify": "^11.0.5",
     "recharts": "^3.5.1",
+    "socket.io-client": "^4.8.1",
     "swiper": "^12.0.3",
     "tailwindcss": "^4.1.17"
   },

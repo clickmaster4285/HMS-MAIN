@@ -23,6 +23,9 @@ const StaffListPage = () => {
     loading,
     error,
   } = useSelector((state) => state.staff);
+
+    console.log("Staff List:", staffList);
+
 // console.log("Staff List:", staffList);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('active');

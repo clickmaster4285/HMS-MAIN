@@ -268,6 +268,102 @@ const patienttestSlice = createSlice({
       state.error = null;
       state.patient = null;
     },
+    // 🔥 ADD THESE NEW REDUCERS FOR SOCKET UPDATES
+    updatePatientTestFromSocket: (state, action) => {
+      const updatedTest = action.payload;
+      const index = state.allPatientTests.findIndex(
+        test => test._id === updatedTest._id
+      );
+      
+      if (index !== -1) {
+        // Update existing test
+        state.allPatientTests[index] = {
+          ...state.allPatientTests[index],
+          ...updatedTest
+        };
+        
+        // Also update in testHistory if exists
+        const historyIndex = state.testHistory.findIndex(
+          test => test._id === updatedTest._id
+        );
+        if (historyIndex !== -1) {
+          state.testHistory[historyIndex] = {
+            ...state.testHistory[historyIndex],
+            ...updatedTest
+          };
+        }
+        
+        // Update patientTestById if it's the same test
+        if (state.patientTestById?._id === updatedTest._id) {
+          state.patientTestById = {
+            ...state.patientTestById,
+            ...updatedTest
+          };
+        }
+      }
+    },
+    
+    addNewPatientTestFromSocket: (state, action) => {
+      const newTest = action.payload;
+      
+      // Add to beginning of arrays
+      state.allPatientTests.unshift(newTest);
+      state.testHistory.unshift(newTest);
+      
+      // Update stats
+      state.stats.totalTests += 1;
+      state.stats.pendingTests += 1; // Assuming new tests are pending
+      state.stats.totalRevenue += (newTest.totalAmount || 0);
+      state.stats.pendingRevenue += (newTest.remainingAmount || newTest.totalAmount || 0);
+    },
+    
+    removePatientTestFromSocket: (state, action) => {
+      const testId = action.payload;
+      
+      // Remove from allPatientTests
+      state.allPatientTests = state.allPatientTests.filter(
+        test => test._id !== testId
+      );
+      
+      // Remove from testHistory
+      state.testHistory = state.testHistory.filter(
+        test => test._id !== testId
+      );
+      
+      // Clear patientTestById if it's the deleted test
+      if (state.patientTestById?._id === testId) {
+        state.patientTestById = null;
+      }
+    },
+    
+    updateCriticalResult: (state, action) => {
+      const criticalData = action.payload;
+      
+      // Add to alerts
+      state.alerts.unshift({
+        ...criticalData,
+        timestamp: new Date().toISOString(),
+        type: 'critical'
+      });
+      
+      // Keep only last 50 alerts
+      if (state.alerts.length > 50) {
+        state.alerts.pop();
+      }
+      
+      // Update the specific test status
+      const testIndex = state.allPatientTests.findIndex(
+        test => test._id === criticalData.testId
+      );
+      if (testIndex !== -1) {
+        state.allPatientTests[testIndex] = {
+          ...state.allPatientTests[testIndex],
+          status: 'critical',
+          isCritical: true,
+          criticalNote: criticalData.note
+        };
+      }
+    }
   },
   extraReducers: (builder) => {
     builder
@@ -387,5 +483,12 @@ const patienttestSlice = createSlice({
   },
 });
 
-export const { resetPatientTestStatus } = patienttestSlice.actions;
+export const { 
+  resetPatientTestStatus,
+  updatePatientTestFromSocket,       // Export new actions
+  addNewPatientTestFromSocket,
+  removePatientTestFromSocket,
+  updateCriticalResult
+} = patienttestSlice.actions;
+
 export default patienttestSlice.reducer;
