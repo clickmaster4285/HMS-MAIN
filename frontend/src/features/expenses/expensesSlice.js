@@ -171,7 +171,8 @@ const expensesSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      // Create expense cases
+
+      // ================= CREATE EXPENSE =================
       .addCase(createExpense.pending, (state) => {
         state.isLoading = true;
         state.isError = false;
@@ -181,24 +182,16 @@ const expensesSlice = createSlice({
       .addCase(createExpense.fulfilled, (state, action) => {
         state.isLoading = false;
         state.isSuccess = true;
-
-        // FIXED: Check the correct structure based on your API response
-        // Your API returns {success, message, data} not {expenseData}
-        if (action.payload && action.payload.data) {
-          state.expenses.unshift(action.payload.data);
-          state.message = action.payload.message || 'Expense created successfully';
-        } else {
-          // Fallback: If API structure is different, use the payload directly
-          state.expenses.unshift(action.payload);
-          state.message = 'Expense created successfully';
-        }
+        state.message =
+          action.payload?.message || 'Expense created successfully';
       })
       .addCase(createExpense.rejected, (state, action) => {
         state.isLoading = false;
         state.isError = true;
         state.message = action.payload;
       })
-      // Get expenses cases
+
+      // ================= GET EXPENSES =================
       .addCase(getExpenses.pending, (state) => {
         state.isLoading = true;
         state.isError = false;
@@ -209,26 +202,58 @@ const expensesSlice = createSlice({
         state.isLoading = false;
         state.isSuccess = true;
 
-        // FIX: Check the actual structure of your API response
-        // Option 1: If your API returns { success, message, data }
-        if (action.payload.data) {
+        if (action.payload?.data) {
           state.expenses = action.payload.data;
-        }
-        // Option 2: If your API returns the expenses array directly
-        else {
+          state.pagination.total = action.payload.total || action.payload.data.length;
+          state.pagination.pages =
+            action.payload.pages ||
+            Math.ceil(state.pagination.total / state.pagination.limit);
+        } else {
           state.expenses = action.payload;
+          state.pagination.total = action.payload.length;
+          state.pagination.pages =
+            Math.ceil(action.payload.length / state.pagination.limit);
         }
-
-        state.pagination.total = state.expenses.length;
-        state.pagination.pages = Math.ceil(state.pagination.total / state.pagination.limit);
       })
       .addCase(getExpenses.rejected, (state, action) => {
+        state.isLoading = false;
+        state.isError = true;
+        state.message = action.payload;
+      })
+
+      // ================= UPDATE EXPENSE =================
+      .addCase(updateExpense.pending, (state) => {
+        state.isLoading = true;
+      })
+      .addCase(updateExpense.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.isSuccess = true;
+        state.message =
+          action.payload?.message || 'Expense updated successfully';
+      })
+      .addCase(updateExpense.rejected, (state, action) => {
+        state.isLoading = false;
+        state.isError = true;
+        state.message = action.payload;
+      })
+
+      // ================= DELETE EXPENSE =================
+      .addCase(deleteExpense.pending, (state) => {
+        state.isLoading = true;
+      })
+      .addCase(deleteExpense.fulfilled, (state) => {
+        state.isLoading = false;
+        state.isSuccess = true;
+        state.message = 'Expense deleted successfully';
+      })
+      .addCase(deleteExpense.rejected, (state, action) => {
         state.isLoading = false;
         state.isError = true;
         state.message = action.payload;
       });
   },
 });
+
 
 export const { reset } = expensesSlice.actions;
 export default expensesSlice.reducer;

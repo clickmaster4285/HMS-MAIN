@@ -68,6 +68,7 @@ export const fetchPatientTestAll = createAsyncThunk(
       const response = await axios.get(`${API_URL}/patientTest`, {
         headers: getAuthHeaders(),
       });
+      // console.log('📄 All Patient Tests hellom    jkbb fetched:', response.data?.data);
       return response.data.data.patientTests;
     } catch (error) {
       const message =
@@ -83,6 +84,8 @@ export const fetchPatientTestById = createAsyncThunk(
   'patientTest/fetchPatientTestById',
   async (id, { rejectWithValue }) => {
     try {
+      console.log('Fetching patient test with ID:', id);
+  
       const response = await axios.get(`${API_URL}/patientTest/${id}`, {
         headers: getAuthHeaders(),
       });
@@ -268,106 +271,11 @@ const patienttestSlice = createSlice({
       state.error = null;
       state.patient = null;
     },
-    // 🔥 ADD THESE NEW REDUCERS FOR SOCKET UPDATES
-    updatePatientTestFromSocket: (state, action) => {
-      const updatedTest = action.payload;
-      const index = state.allPatientTests.findIndex(
-        test => test._id === updatedTest._id
-      );
-      
-      if (index !== -1) {
-        // Update existing test
-        state.allPatientTests[index] = {
-          ...state.allPatientTests[index],
-          ...updatedTest
-        };
-        
-        // Also update in testHistory if exists
-        const historyIndex = state.testHistory.findIndex(
-          test => test._id === updatedTest._id
-        );
-        if (historyIndex !== -1) {
-          state.testHistory[historyIndex] = {
-            ...state.testHistory[historyIndex],
-            ...updatedTest
-          };
-        }
-        
-        // Update patientTestById if it's the same test
-        if (state.patientTestById?._id === updatedTest._id) {
-          state.patientTestById = {
-            ...state.patientTestById,
-            ...updatedTest
-          };
-        }
-      }
-    },
-    
-    addNewPatientTestFromSocket: (state, action) => {
-      const newTest = action.payload;
-      
-      // Add to beginning of arrays
-      state.allPatientTests.unshift(newTest);
-      state.testHistory.unshift(newTest);
-      
-      // Update stats
-      state.stats.totalTests += 1;
-      state.stats.pendingTests += 1; // Assuming new tests are pending
-      state.stats.totalRevenue += (newTest.totalAmount || 0);
-      state.stats.pendingRevenue += (newTest.remainingAmount || newTest.totalAmount || 0);
-    },
-    
-    removePatientTestFromSocket: (state, action) => {
-      const testId = action.payload;
-      
-      // Remove from allPatientTests
-      state.allPatientTests = state.allPatientTests.filter(
-        test => test._id !== testId
-      );
-      
-      // Remove from testHistory
-      state.testHistory = state.testHistory.filter(
-        test => test._id !== testId
-      );
-      
-      // Clear patientTestById if it's the deleted test
-      if (state.patientTestById?._id === testId) {
-        state.patientTestById = null;
-      }
-    },
-    
-    updateCriticalResult: (state, action) => {
-      const criticalData = action.payload;
-      
-      // Add to alerts
-      state.alerts.unshift({
-        ...criticalData,
-        timestamp: new Date().toISOString(),
-        type: 'critical'
-      });
-      
-      // Keep only last 50 alerts
-      if (state.alerts.length > 50) {
-        state.alerts.pop();
-      }
-      
-      // Update the specific test status
-      const testIndex = state.allPatientTests.findIndex(
-        test => test._id === criticalData.testId
-      );
-      if (testIndex !== -1) {
-        state.allPatientTests[testIndex] = {
-          ...state.allPatientTests[testIndex],
-          status: 'critical',
-          isCritical: true,
-          criticalNote: criticalData.note
-        };
-      }
-    }
   },
   extraReducers: (builder) => {
     builder
-      // 🔁 Submit Lab Test
+
+      // ================= SUBMIT PATIENT TEST =================
       .addCase(SubmitPatientTest.pending, (state) => {
         state.status.submit = 'pending';
         state.isLoading = true;
@@ -383,10 +291,10 @@ const patienttestSlice = createSlice({
         state.status.submit = 'failed';
         state.isLoading = false;
         state.isError = true;
-        state.error = action.payload.message || 'Lab test submission failed';
+        state.error = action.payload?.message || 'Lab test submission failed';
       })
 
-      // 🔁 Fetch Patient by MR No
+      // ================= FETCH PATIENT BY MR =================
       .addCase(fetchPatientByMRNo.pending, (state) => {
         state.status.fetch = 'pending';
         state.isLoading = true;
@@ -402,9 +310,10 @@ const patienttestSlice = createSlice({
         state.status.fetch = 'failed';
         state.isLoading = false;
         state.isError = true;
-        state.error = action.payload.message || 'Failed to fetch patient';
+        state.error = action.payload?.message || 'Failed to fetch patient';
       })
 
+      // ================= FETCH PATIENT TEST BY ID =================
       .addCase(fetchPatientTestById.pending, (state) => {
         state.status.fetchById = 'pending';
         state.isLoading = true;
@@ -421,8 +330,10 @@ const patienttestSlice = createSlice({
         state.isLoading = false;
         state.isError = true;
         state.error =
-          action.payload.message || 'Failed to fetch patient test by ID';
+          action.payload?.message || 'Failed to fetch patient test by ID';
       })
+
+      // ================= FETCH ALL PATIENT TESTS =================
       .addCase(fetchPatientTestAll.pending, (state) => {
         state.status.fetchAll = 'pending';
         state.isLoading = true;
@@ -439,10 +350,42 @@ const patienttestSlice = createSlice({
         state.isLoading = false;
         state.isError = true;
         state.error =
-          action.payload.message || 'Failed to fetch all patient tests';
+          action.payload?.message || 'Failed to fetch all patient tests';
       })
 
-      // 🔁 Fetch All Tests
+      // ================= UPDATE PATIENT TEST =================
+      .addCase(updatepatientTest.pending, (state) => {
+        state.isLoading = true;
+        state.isError = false;
+        state.error = null;
+      })
+      .addCase(updatepatientTest.fulfilled, (state) => {
+        state.isLoading = false;
+      })
+      .addCase(updatepatientTest.rejected, (state, action) => {
+        state.isLoading = false;
+        state.isError = true;
+        state.error =
+          action.payload?.message || 'Failed to update patient test';
+      })
+
+      // ================= DELETE PATIENT TEST =================
+      .addCase(deletepatientTest.pending, (state) => {
+        state.isLoading = true;
+        state.isError = false;
+        state.error = null;
+      })
+      .addCase(deletepatientTest.fulfilled, (state) => {
+        state.isLoading = false;
+      })
+      .addCase(deletepatientTest.rejected, (state, action) => {
+        state.isLoading = false;
+        state.isError = true;
+        state.error =
+          action.payload?.message || 'Failed to delete patient test';
+      })
+
+      // ================= FETCH ALL TEST DEFINITIONS =================
       .addCase(fetchAllTests.pending, (state) => {
         state.status.fetchTests = 'pending';
         state.isLoading = true;
@@ -458,9 +401,10 @@ const patienttestSlice = createSlice({
         state.status.fetchTests = 'failed';
         state.isLoading = false;
         state.isError = true;
-        state.error = action.payload.message || 'Failed to fetch tests';
+        state.error = action.payload?.message || 'Failed to fetch tests';
       })
 
+      // ================= TEST HISTORY =================
       .addCase(getTestHistory.pending, (state) => {
         state.status.fetchAll = 'pending';
         state.isLoading = true;
@@ -470,25 +414,20 @@ const patienttestSlice = createSlice({
       .addCase(getTestHistory.fulfilled, (state, action) => {
         state.status.fetchAll = 'succeeded';
         state.isLoading = false;
-        state.testHistory = action.payload.tests || action.payload;
-        state.stats = action.payload.stats || state.stats;
-        state.alerts = action.payload.alerts || state.alerts;
+        state.testHistory = action.payload?.tests || action.payload;
+        state.stats = action.payload?.stats || state.stats;
+        state.alerts = action.payload?.alerts || state.alerts;
       })
       .addCase(getTestHistory.rejected, (state, action) => {
         state.status.fetchAll = 'failed';
         state.isLoading = false;
         state.isError = true;
-        state.error = action.payload.message || 'Failed to fetch test history';
+        state.error =
+          action.payload?.message || 'Failed to fetch test history';
       });
   },
 });
 
-export const { 
-  resetPatientTestStatus,
-  updatePatientTestFromSocket,       // Export new actions
-  addNewPatientTestFromSocket,
-  removePatientTestFromSocket,
-  updateCriticalResult
-} = patienttestSlice.actions;
 
+export const { resetPatientTestStatus } = patienttestSlice.actions;
 export default patienttestSlice.reducer;

@@ -23,7 +23,6 @@ const createStaff = async (req, res) => {
       shiftTiming
     } = req.body;
 
-    console.log(`Received staff creation request`, req.body);
 
     const cleanData = { ...req.body };
 

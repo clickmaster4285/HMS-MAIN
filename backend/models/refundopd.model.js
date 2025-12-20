@@ -40,24 +40,28 @@ const refundSchema = new mongoose.Schema({
 });
 
 // Pre-save middleware to update remaining amount and status
-refundSchema.pre('save', function (next) {
-   // Calculate remaining amount
-   this.remainingAmount = this.originalAmount - this.refundAmount;
+refundSchema.pre('save', function () {
+   const original = this.originalAmount || 0;
+   const refunded = this.refundAmount || 0;
 
-   // Calculate refund percentage
-   this.refundPercentage = (this.refundAmount / this.originalAmount) * 100;
+   // Remaining amount
+   this.remainingAmount = original - refunded;
 
-   // Update refund status
-   if (this.refundAmount === 0) {
+   // Refund percentage (safe divide)
+   this.refundPercentage = original > 0
+     ? (refunded / original) * 100
+     : 0;
+
+   // Refund status
+   if (refunded === 0) {
       this.refundStatus = 'pending';
-   } else if (this.refundAmount === this.originalAmount) {
+   } else if (refunded === original) {
       this.refundStatus = 'full';
-   } else if (this.refundAmount > 0) {
+   } else if (refunded > 0) {
       this.refundStatus = 'partial';
    }
 
    this.updatedAt = Date.now();
-   next();
 });
 
 // Indexes for faster queries

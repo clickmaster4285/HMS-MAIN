@@ -235,59 +235,56 @@ const ipdPatientSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      // Admit Patient
-      .addCase(admitPatient.pending, (state) => {
-        state.status.admit = 'pending';
-        state.isLoading = true;
-        state.isError = false;
-        state.error = null;
-      })
-      .addCase(admitPatient.fulfilled, (state, action) => {
-        state.status.admit = 'succeeded';
-        state.isSuccess = true;
-        state.isLoading = false;
-        state.admissionData = action.payload;
-        state.patientsList.unshift(action.payload);
-      })
-      // In extraReducers, add proper state cleaning for each rejection
-      .addCase(admitPatient.rejected, (state, action) => {
-        state.status.admit = 'failed';
-        state.isSuccess = false;
-        state.isLoading = false;
-        state.isError = true;
-        state.error = {
-          message: action.payload?.message || 'Admission failed',
-          statusCode: action.payload?.statusCode,
-          validationErrors: action.payload?.validationErrors
-        };
-        // Clear previous admission data on failure
-        state.admissionData = null;
-      })
+      // ================= ADMIT PATIENT =================
+    .addCase(admitPatient.pending, (state) => {
+      state.status.admit = 'pending';
+      state.isLoading = true;
+      state.isError = false;
+      state.error = null;
+    })
+    .addCase(admitPatient.fulfilled, (state, action) => {
+      state.status.admit = 'succeeded';
+      state.isSuccess = true;
+      state.isLoading = false;
+      state.admissionData = action.payload;
+    })
+    .addCase(admitPatient.rejected, (state, action) => {
+      state.status.admit = 'failed';
+      state.isSuccess = false;
+      state.isLoading = false;
+      state.isError = true;
+      state.error = {
+        message: action.payload?.message || 'Admission failed',
+        statusCode: action.payload?.statusCode,
+        validationErrors: action.payload?.validationErrors
+      };
+      state.admissionData = null;
+    })
 
-      // Get All Admitted Patients
-      .addCase(getAllAdmittedPatients.pending, (state) => {
-        state.status.fetch = 'pending';
-        state.isLoading = true;
-        state.isError = false;
-        state.error = null;
-      })
-      .addCase(getAllAdmittedPatients.fulfilled, (state, action) => {
-        state.status.fetch = 'succeeded';
-        state.isLoading = false;
-        state.patientsList = action.payload.data || [];
-        state.pagination = {
-          currentPage: action.payload.page || 1,
-          totalPages: action.payload.pages || 1,
-          totalItems: action.payload.total || 0,
-          limit: action.payload.limit || 20
-        };
-      })
-      .addCase(getAllAdmittedPatients.rejected, (state, action) => {
-        state.status.fetch = 'failed';
-        state.isLoading = false;
-        state.isError = true;
-        state.error = action.payload?.message || 'Failed to fetch patients';
-      })
+     // ================= GET ALL ADMITTED PATIENTS =================
+    .addCase(getAllAdmittedPatients.pending, (state) => {
+      state.status.fetch = 'pending';
+      state.isLoading = true;
+      state.isError = false;
+      state.error = null;
+    })
+    .addCase(getAllAdmittedPatients.fulfilled, (state, action) => {
+      state.status.fetch = 'succeeded';
+      state.isLoading = false;
+      state.patientsList = action.payload.data || [];
+      state.pagination = {
+        currentPage: action.payload.page || 1,
+        totalPages: action.payload.pages || 1,
+        totalItems: action.payload.total || 0,
+        limit: action.payload.limit || 20
+      };
+    })
+    .addCase(getAllAdmittedPatients.rejected, (state, action) => {
+      state.status.fetch = 'failed';
+      state.isLoading = false;
+      state.isError = true;
+      state.error = action.payload?.message || 'Failed to fetch patients';
+    })
 
       // Get Patient by MRNO
       .addCase(getIpdPatientByMrno.pending, (state) => {
@@ -297,10 +294,10 @@ const ipdPatientSlice = createSlice({
         state.error = null;
       })
       .addCase(getIpdPatientByMrno.fulfilled, (state, action) => {
-        state.status.search = 'succeeded';
-        state.isLoading = false;
-        state.currentPatient = action.payload;
-      })
+      state.status.search = 'succeeded';
+      state.isLoading = false;
+      state.currentPatient = action.payload;
+    })
       .addCase(getIpdPatientByMrno.rejected, (state, action) => {
         state.status.search = 'failed';
         state.isLoading = false;
@@ -318,17 +315,12 @@ const ipdPatientSlice = createSlice({
         state.isError = false;
         state.error = null;
       })
-      .addCase(updatePatientAdmission.fulfilled, (state, action) => {
-        state.isSuccess = true;
-        state.status.update = 'succeeded';
-        state.isLoading = false;
-        state.patientsList = state.patientsList.map(patient =>
-          patient._id === action.payload._id ? action.payload : patient
-        );
-        if (state.currentPatient?._id === action.payload._id) {
-          state.currentPatient = action.payload;
-        }
-      })
+         .addCase(updatePatientAdmission.fulfilled, (state) => {
+      state.status.update = 'succeeded';
+      state.isSuccess = true;
+      state.isLoading = false;
+    })
+
       .addCase(updatePatientAdmission.rejected, (state, action) => {
         state.status.update = 'failed';
         state.isSuccess = false;
@@ -347,22 +339,12 @@ const ipdPatientSlice = createSlice({
         state.isError = false;
         state.error = null;
       })
-      .addCase(dischargePatient.fulfilled, (state, action) => {
-        state.status.discharge = 'succeeded';
-        state.isLoading = false;
-        // Remove from admitted patients list
-        state.patientsList = state.patientsList.filter(
-          patient => patient._id !== action.payload.data?._id
-        );
-        // Add to discharged patients list if we have the full record
-        if (action.payload.data) {
-          state.dischargedPatients.push(action.payload.data);
-        }
-        // Clear current patient if it's the discharged one
-        if (state.currentPatient?._id === action.payload.data?._id) {
-          state.currentPatient = null;
-        }
-      })
+    .addCase(dischargePatient.fulfilled, (state) => {
+      state.status.discharge = 'succeeded';
+      state.isLoading = false;
+      state.currentPatient = null;
+    })
+
       .addCase(dischargePatient.rejected, (state, action) => {
         state.status.discharge = 'failed';
         state.isLoading = false;
@@ -380,13 +362,10 @@ const ipdPatientSlice = createSlice({
         state.isError = false;
         state.error = null;
       })
-      .addCase(deleteAdmission.fulfilled, (state, action) => {
-        state.status.delete = 'succeeded';
-        state.isLoading = false;
-        state.patientsList = state.patientsList.filter(
-          patient => patient._id !== action.payload.id
-        );
-      })
+     .addCase(deleteAdmission.fulfilled, (state) => {
+      state.status.delete = 'succeeded';
+      state.isLoading = false;
+    })
       .addCase(deleteAdmission.rejected, (state, action) => {
         state.status.delete = 'failed';
         state.isLoading = false;

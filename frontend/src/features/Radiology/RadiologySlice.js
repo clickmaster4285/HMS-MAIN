@@ -224,10 +224,9 @@ const initialState = {
 // ─── Slice ─────────────────────────────────────────────────────────────────
 
 const radiologySlice = createSlice({
-  name: 'radiology',
+  name: "radiology",
   initialState,
   reducers: {
-    // FULL reset — brings the slice back to its initial shape
     resetRadiologyStatus: () => ({
       ...initialState,
       status: { ...initialState.status },
@@ -241,207 +240,181 @@ const radiologySlice = createSlice({
       state.filteredReports = [];
     },
   },
+
   extraReducers: (builder) => {
     builder
-      // ── Create Report ─────────────────────
+
+      /* ================= CREATE REPORT ================= */
       .addCase(createRadiologyReport.pending, (state) => {
-        state.status.create = 'pending';
+        state.status.create = "pending";
         state.isLoading = true;
         state.isError = false;
         state.error = null;
       })
-      .addCase(createRadiologyReport.fulfilled, (state, action) => {
-        state.status.create = 'succeeded';
+      .addCase(createRadiologyReport.fulfilled, (state) => {
+        state.status.create = "succeeded";
         state.isLoading = false;
-        // state.patient = action.payload?.patient || action.payload;
-        state.radiology = action.payload; // ← Fix: assuming reports is array
       })
       .addCase(createRadiologyReport.rejected, (state, action) => {
-        state.status.create = 'failed';
+        state.status.create = "failed";
         state.isLoading = false;
         state.isError = true;
-        state.error = action.payload.message || 'Failed to create report';
+        state.error = action.payload?.message || "Failed to create report";
       })
 
-      // Fetch All Reports
+      /* ================= FETCH ALL REPORTS ================= */
       .addCase(fetchAllRadiologyReports.pending, (state) => {
-        state.status.fetchAll = 'pending';
+        state.status.fetchAll = "pending";
         state.isLoading = true;
         state.isError = false;
         state.error = null;
       })
       .addCase(fetchAllRadiologyReports.fulfilled, (state, action) => {
-        state.status.fetchAll = 'succeeded';
+        state.status.fetchAll = "succeeded";
         state.isLoading = false;
         state.reports = action.payload;
       })
       .addCase(fetchAllRadiologyReports.rejected, (state, action) => {
-        state.status.fetchAll = 'failed';
+        state.status.fetchAll = "failed";
         state.isLoading = false;
         state.isError = true;
-        state.error = action.payload.message || 'Failed to fetch reports';
+        state.error = action.payload?.message || "Failed to fetch reports";
       })
 
-      // ── Fetch by ID ───────────────────────
+      /* ================= FETCH BY ID ================= */
       .addCase(fetchRadiologyReportById.pending, (state) => {
-        state.status.fetchById = 'pending';
+        state.status.fetchById = "pending";
         state.isLoading = true;
         state.isError = false;
         state.error = null;
       })
       .addCase(fetchRadiologyReportById.fulfilled, (state, action) => {
-        state.status.fetchById = 'succeeded';
+        state.status.fetchById = "succeeded";
         state.isLoading = false;
         state.currentReport = action.payload;
       })
       .addCase(fetchRadiologyReportById.rejected, (state, action) => {
-        state.status.fetchById = 'failed';
+        state.status.fetchById = "failed";
         state.isLoading = false;
         state.isError = true;
-        state.error = action.payload.message || 'Failed to fetch report';
+        state.error = action.payload?.message || "Failed to fetch report";
       })
 
-      // ── Update Report ─────────────────────
+      /* ================= UPDATE REPORT ================= */
       .addCase(updateRadiologyReport.pending, (state) => {
-        state.status.update = 'pending';
+        state.status.update = "pending";
         state.isLoading = true;
         state.isError = false;
         state.error = null;
       })
-      .addCase(updateRadiologyReport.fulfilled, (state, action) => {
-        state.status.update = 'succeeded';
+      .addCase(updateRadiologyReport.fulfilled, (state) => {
+        state.status.update = "succeeded";
         state.isLoading = false;
-        state.currentReport = action.payload;
       })
       .addCase(updateRadiologyReport.rejected, (state, action) => {
-        state.status.update = 'failed';
+        state.status.update = "failed";
         state.isLoading = false;
         state.isError = true;
-        state.error = action.payload.message || 'Failed to update report';
+        state.error = action.payload?.message || "Failed to update report";
       })
 
-      //--------------------------------------update final report
-
+      /* ================= UPDATE FINAL CONTENT ================= */
       .addCase(updatefinalContent.pending, (state) => {
-        state.status.update = 'pending';
+        state.status.update = "pending";
         state.isLoading = true;
         state.isError = false;
         state.error = null;
       })
-      .addCase(updatefinalContent.fulfilled, (state, action) => {
-        state.status.update = 'succeeded';
+      .addCase(updatefinalContent.fulfilled, (state) => {
+        state.status.update = "succeeded";
         state.isLoading = false;
-        state.currentReport = action.payload;
       })
       .addCase(updatefinalContent.rejected, (state, action) => {
-        state.status.update = 'failed';
+        state.status.update = "failed";
         state.isLoading = false;
         state.isError = true;
-        state.error = action.payload.message || 'Failed to update report';
+        state.error = action.payload?.message || "Failed to update report";
       })
 
-      // ── Fetch Templates ───────────────────
+      /* ================= FETCH TEMPLATES ================= */
       .addCase(fetchAvailableTemplates.pending, (state) => {
-        state.status.fetchTemplates = 'pending';
+        state.status.fetchTemplates = "pending";
         state.isLoading = true;
         state.isError = false;
         state.error = null;
       })
       .addCase(fetchAvailableTemplates.fulfilled, (state, action) => {
-        state.status.fetchTemplates = 'succeeded';
+        state.status.fetchTemplates = "succeeded";
         state.isLoading = false;
         state.templates = action.payload;
       })
       .addCase(fetchAvailableTemplates.rejected, (state, action) => {
-        state.status.fetchTemplates = 'failed';
+        state.status.fetchTemplates = "failed";
         state.isLoading = false;
         state.isError = true;
-        state.error = action.payload.message || 'Failed to fetch templates';
+        state.error =
+          action.payload?.message || "Failed to fetch templates";
       })
+
+      /* ================= FETCH BY DATE ================= */
       .addCase(fetchRadiologyReportsByDate.pending, (state) => {
-        state.status.fetchByDate = 'pending';
+        state.status.fetchByDate = "pending";
         state.isLoading = true;
         state.isError = false;
         state.error = null;
       })
       .addCase(fetchRadiologyReportsByDate.fulfilled, (state, action) => {
-        state.status.fetchByDate = 'succeeded';
+        state.status.fetchByDate = "succeeded";
         state.isLoading = false;
         state.filteredReports = action.payload;
       })
       .addCase(fetchRadiologyReportsByDate.rejected, (state, action) => {
-        state.status.fetchByDate = 'failed';
+        state.status.fetchByDate = "failed";
         state.isLoading = false;
         state.isError = true;
         state.error =
-          action.payload.message || 'Failed to fetch reports by date';
+          action.payload?.message || "Failed to fetch reports by date";
       })
-      // ── Fetch by MRNO ───────────────────────
+
+      /* ================= FETCH BY MRNO ================= */
       .addCase(fetchReportByMrno.pending, (state) => {
-        state.status.fetchByMrno = 'pending';
+        state.status.fetchByMrno = "pending";
         state.isLoading = true;
         state.isError = false;
         state.error = null;
       })
       .addCase(fetchReportByMrno.fulfilled, (state, action) => {
-        state.status.fetchByMrno = 'succeeded';
+        state.status.fetchByMrno = "succeeded";
         state.isLoading = false;
-        state.currentReport = action.payload; // single report object
+        state.currentReport = action.payload;
       })
       .addCase(fetchReportByMrno.rejected, (state, action) => {
-        state.status.fetchByMrno = 'failed';
+        state.status.fetchByMrno = "failed";
         state.isLoading = false;
         state.isError = true;
         state.error =
-          action.payload?.message || 'Failed to fetch report by MRNO';
+          action.payload?.message || "Failed to fetch report by MRNO";
       })
-      // ── Soft Delete Study (by studyId) ─────────────────────
+
+      /* ================= SOFT DELETE STUDY ================= */
       .addCase(softDeleteStudy.pending, (state) => {
-        state.status.deleteStudy = 'pending';
+        state.status.deleteStudy = "pending";
         state.isError = false;
         state.error = null;
       })
-      .addCase(softDeleteStudy.fulfilled, (state, action) => {
-        state.status.deleteStudy = 'succeeded';
-        const studyId = action.payload.studyId;
-
-        // 1) Update currentReport (if the open report contains this study)
-        if (state.currentReport?.studies?.length) {
-          const idx = state.currentReport.studies.findIndex(
-            (s) => String(s._id) === String(studyId)
-          );
-          if (idx !== -1) {
-            // either mark as deleted to hide in UI, or remove from array
-            // since your GET already hides deleted ones, marking is enough:
-            state.currentReport.studies[idx]._delete = true;
-            // optional: also remove from array
-            // state.currentReport.studies.splice(idx, 1);
-          }
-        }
-
-        // 2) Update the reports list (if you keep full docs there)
-        if (Array.isArray(state.reports)) {
-          state.reports = state.reports.map((r) => {
-            if (!r?.studies?.length) return r;
-            const has = r.studies.some(
-              (s) => String(s._id) === String(studyId)
-            );
-            if (!has) return r;
-
-            const studies = r.studies.map((s) =>
-              String(s._id) === String(studyId) ? { ...s, _delete: true } : s
-            );
-            return { ...r, studies };
-          });
-        }
+      .addCase(softDeleteStudy.fulfilled, (state) => {
+        state.status.deleteStudy = "succeeded";
       })
       .addCase(softDeleteStudy.rejected, (state, action) => {
-        state.status.deleteStudy = 'failed';
+        state.status.deleteStudy = "failed";
         state.isError = true;
-        state.error = action.payload?.message || 'Failed to soft delete study';
+        state.error =
+          action.payload?.message || "Failed to soft delete study";
       });
   },
 });
+
+/* ================= EXPORTS ================= */
 
 export const {
   resetRadiologyStatus,

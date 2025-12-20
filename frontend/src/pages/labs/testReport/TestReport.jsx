@@ -47,7 +47,7 @@ const paymentStatusMap = {
   partial: 'Partial',
   refunded: 'Refunded',
 };
-
+console.log("test detauil file");
 const TestReport = () => {
   const [showFilterPopup, setShowFilterPopup] = useState(false);
   const [filters, setFilters] = useState({
@@ -285,6 +285,7 @@ const preparePrintData = (report, testIds) => {
         : [...prev, testId]
     );
   };
+
   const handleCompletedAll = () => {
     const completedTestIds = selectedReport.tests
       .filter((test) => test.status === 'completed')
@@ -650,7 +651,7 @@ const enhancedPrintCSS = `
   };
 
   const reports = filteredReports();
-
+console.log("the report data is ", reports)
   return (
     <div className="bg-white rounded-xl shadow-sm p-6 relative">
       <ConfirmModal

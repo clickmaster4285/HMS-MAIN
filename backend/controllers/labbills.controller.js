@@ -1,7 +1,8 @@
 const hospitalModel = require('../models/index.model');
 const mongoose = require('mongoose');
 const utils = require('../utils/utilsIndex');
-
+const emitGlobalEvent = require("../utils/emitGlobalEvent");
+const EVENTS = require("../utils/socketEvents");
 const getAllTestBills = async (req, res) => {
   try {
     const {

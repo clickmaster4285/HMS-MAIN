@@ -1,5 +1,6 @@
 const hospitalModel = require("../models/index.model");
-
+const emitGlobalEvent = require("../utils/emitGlobalEvent");
+const EVENTS = require("../utils/socketEvents");
 // Adding inventory record to the database
 const createInventory = async (req, res) => {
     try {

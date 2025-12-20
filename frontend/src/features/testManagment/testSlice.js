@@ -124,8 +124,8 @@ const testSlice = createSlice({
     error: null,
     successMessage: '',
     createdTest: null,
-    tests: [], // all lab tests
-    selectedTest: null, // single test details
+    tests: [],
+    selectedTest: null,
     getAllLoading: false,
     getAllError: null,
     getByIdLoading: false,
@@ -139,6 +139,8 @@ const testSlice = createSlice({
   reducers: {},
   extraReducers: (builder) => {
     builder
+
+      // ================= CREATE TEST =================
       .addCase(createTest.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -146,29 +148,31 @@ const testSlice = createSlice({
       })
       .addCase(createTest.fulfilled, (state, action) => {
         state.loading = false;
-        state.createdTest = action.payload.test;
-      console.log('Creation successful - payload:', action.payload);
+        state.createdTest = action.payload.test; // OK
         state.successMessage = action.payload.message;
       })
       .addCase(createTest.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
-         console.error('Creation failed:', action.payload);
       })
-      // Get all tests
+
+      // ================= GET ALL TESTS =================
       .addCase(getAllTests.pending, (state) => {
         state.getAllLoading = true;
         state.getAllError = null;
       })
       .addCase(getAllTests.fulfilled, (state, action) => {
         state.getAllLoading = false;
-        state.tests = Array.isArray(action.payload) ? action.payload : action.payload.tests || [];
+        state.tests = Array.isArray(action.payload)
+          ? action.payload
+          : action.payload.tests || [];
       })
       .addCase(getAllTests.rejected, (state, action) => {
         state.getAllLoading = false;
         state.getAllError = action.payload;
       })
-      // Get test by ID
+
+      // ================= GET TEST BY ID =================
       .addCase(getTestById.pending, (state) => {
         state.getByIdLoading = true;
         state.getByIdError = null;
@@ -182,7 +186,8 @@ const testSlice = createSlice({
         state.getByIdLoading = false;
         state.getByIdError = action.payload;
       })
-      // Update test
+
+      // ================= UPDATE TEST =================
       .addCase(updateTest.pending, (state) => {
         state.updateLoading = true;
         state.updateError = null;
@@ -191,13 +196,13 @@ const testSlice = createSlice({
       .addCase(updateTest.fulfilled, (state, action) => {
         state.updateLoading = false;
         state.successMessage = action.payload.message;
-        // Optionally update selectedTest or tests if needed
       })
       .addCase(updateTest.rejected, (state, action) => {
         state.updateLoading = false;
         state.updateError = action.payload;
       })
-      // Delete test
+
+      // ================= DELETE TEST =================
       .addCase(deleteTest.pending, (state) => {
         state.deleteLoading = true;
         state.deleteError = null;
@@ -206,7 +211,6 @@ const testSlice = createSlice({
       .addCase(deleteTest.fulfilled, (state, action) => {
         state.deleteLoading = false;
         state.deleteSuccess = action.payload.message;
-        state.tests = state.tests.filter(t => t._id !== action.payload.id);
       })
       .addCase(deleteTest.rejected, (state, action) => {
         state.deleteLoading = false;

@@ -102,131 +102,99 @@ const initialState = {
 };
 
 const roomSlice = createSlice({
-    name: 'room',
-    initialState,
-    reducers: {
-        resetRoom: (state) => {
-            state.room = initialState.room;
-            state.isLoading = false;
-            state.isError = false;
-            state.error = null;
-            state.success = false;
-        },
-        updateRoomField: (state, action) => {
-            const { field, value } = action.payload;
-            if (field == 'beds') {
-                state.room.beds = value
-            } else {
-                state.room[field] = value;
-            }
-        },
-        resetSuccess: (state) => {
-            state.success = false;
-        },
-        updateBedStatus: (state, action) => {
-            const { roomId, bedNumber, status } = action.payload;
-            const room = state.rooms.find(r => r._id === roomId);
-            if (room) {
-                const bed = room.beds.find(b => b.number === bedNumber);
-                if (bed) {
-                    bed.status = status;
-                    // Recalculate available beds if needed
-                    room.availableBeds = room.beds.filter(b => b.status === 'available').length;
-                }
-            }
-        },
-        addBedToRoom: (state, action) => {
-            const { roomId } = action.payload;
-            const room = state.rooms.find(r => r._id === roomId);
-            if (room) {
-                const newBedNumber = room.beds.length + 1;
-                room.beds.push({
-                    number: newBedNumber,
-                    status: 'available',
-                    otherInfo: ''
-                });
-                room.bedCount = room.beds.length;
-                room.availableBeds++;
-            }
-        }
+  name: 'room',
+  initialState,
+  reducers: {
+    resetRoom: (state) => {
+      state.room = initialState.room;
+      state.isLoading = false;
+      state.isError = false;
+      state.error = null;
+      state.success = false;
     },
-    extraReducers: (builder) => {
-        builder
-            // Create Room
-            .addCase(createRoom.pending, (state) => {
-                state.isLoading = true;
-                state.isError = false;
-                state.error = null;
-                state.success = false;
-            })
-            .addCase(createRoom.fulfilled, (state, action) => {
-                state.isLoading = false;
-                state.rooms.push(action.payload);
-                state.success = true;
-                state.room = action.payload
-            })
-            .addCase(createRoom.rejected, (state, action) => {
-                state.isLoading = false;
-                state.isError = true;
-                state.error = action.payload?.message;
-            })
+    updateRoomField: (state, action) => {
+      const { field, value } = action.payload;
+      if (field === 'beds') {
+        state.room.beds = value;
+      } else {
+        state.room[field] = value;
+      }
+    },
+    resetSuccess: (state) => {
+      state.success = false;
+    },
+  },
+  extraReducers: (builder) => {
+    builder
 
-            // Get All Rooms
-            .addCase(getAllRooms.pending, (state) => {
-                state.isLoading = true;
-                state.isError = false;
-                state.error = null;
-            })
-            .addCase(getAllRooms.fulfilled, (state, action) => {
-                state.isLoading = false;
-                state.rooms = action.payload || [];
-            })
-            .addCase(getAllRooms.rejected, (state, action) => {
-                state.isLoading = false;
-                state.isError = true;
-                state.error = action.payload?.message;
-            })
+      // ================= CREATE ROOM =================
+      .addCase(createRoom.pending, (state) => {
+        state.isLoading = true;
+        state.isError = false;
+        state.error = null;
+        state.success = false;
+      })
+      .addCase(createRoom.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.success = true;
+        state.room = action.payload;
+      })
+      .addCase(createRoom.rejected, (state, action) => {
+        state.isLoading = false;
+        state.isError = true;
+        state.error = action.payload?.message;
+      })
 
-            // Update Room
-            .addCase(updateRoom.pending, (state) => {
-                state.isLoading = true;
-                state.isError = false;
-                state.error = null;
-                state.success = false;
-            })
-            .addCase(updateRoom.fulfilled, (state, action) => {
-                state.isLoading = false;
-                const updatedRoom = action.payload;
-                // Find the index of the updated room in the rooms array
-                const index = state.rooms.findIndex(room => room._id === updatedRoom._id);
-                if (index !== -1) {
-                    state.rooms[index] = updatedRoom;
-                }
-                state.room = updatedRoom;
-                state.success = true;
-            })
-            .addCase(updateRoom.rejected, (state, action) => {
-                state.isLoading = false;
-                state.isError = true;
-                state.error = action.payload?.message;
-            })
+      // ================= GET ALL ROOMS =================
+      .addCase(getAllRooms.pending, (state) => {
+        state.isLoading = true;
+        state.isError = false;
+        state.error = null;
+      })
+      .addCase(getAllRooms.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.rooms = action.payload || [];
+      })
+      .addCase(getAllRooms.rejected, (state, action) => {
+        state.isLoading = false;
+        state.isError = true;
+        state.error = action.payload?.message;
+      })
 
-            // Delete Room
-            .addCase(deleteRoom.pending, (state) => {
-                state.isLoading = true;
-                state.isError = false;
-                state.error = null;
-            })
-            .addCase(deleteRoom.fulfilled, (state, action) => {
-                state.isLoading = false;
-                state.rooms = state.rooms.filter(room => room._id !== action.payload);
-            })
-            .addCase(deleteRoom.rejected, (state, action) => {
-                state.isLoading = false;
-                state.isError = true;
-                state.error = action.payload?.message;
-            });
-    }
+      // ================= UPDATE ROOM =================
+      .addCase(updateRoom.pending, (state) => {
+        state.isLoading = true;
+        state.isError = false;
+        state.error = null;
+        state.success = false;
+      })
+      .addCase(updateRoom.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.success = true;
+        state.room = action.payload;
+      })
+      .addCase(updateRoom.rejected, (state, action) => {
+        state.isLoading = false;
+        state.isError = true;
+        state.error = action.payload?.message;
+      })
+
+      // ================= DELETE ROOM =================
+      .addCase(deleteRoom.pending, (state) => {
+        state.isLoading = true;
+        state.isError = false;
+        state.error = null;
+      })
+      .addCase(deleteRoom.fulfilled, (state) => {
+        state.isLoading = false;
+        state.success = true;
+      })
+      .addCase(deleteRoom.rejected, (state, action) => {
+        state.isLoading = false;
+        state.isError = true;
+        state.error = action.payload?.message;
+      });
+  },
 });
 
 // Export actions

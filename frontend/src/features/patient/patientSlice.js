@@ -249,26 +249,25 @@ const patientSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      // Fetch all patients with pagination
-      .addCase(fetchPatients.pending, (state) => {
-        state.status = "loading";
-      })
-      .addCase(fetchPatients.fulfilled, (state, action) => {
-        state.status = "succeeded";
-        state.patients = action.payload.patients || action.payload;
+// ================= FETCH ALL PATIENTS =================
+.addCase(fetchPatients.pending, (state) => {
+  state.status = "loading";
+})
+.addCase(fetchPatients.fulfilled, (state, action) => {
+  state.status = "succeeded";
+  state.patients = action.payload.patients || action.payload;
 
-        // Update pagination info if available from backend
-        if (action.payload.pagination) {
-          state.pagination = {
-            ...state.pagination,
-            ...action.payload.pagination,
-          };
-        }
-      })
-      .addCase(fetchPatients.rejected, (state, action) => {
-        state.status = "failed";
-        state.error = action.payload;
-      })
+  if (action.payload.pagination) {
+    state.pagination = {
+      ...state.pagination,
+      ...action.payload.pagination,
+    };
+  }
+})
+.addCase(fetchPatients.rejected, (state, action) => {
+  state.status = "failed";
+  state.error = action.payload;
+})
 
       // Fetch patient by ID
       .addCase(fetchPatientById.pending, (state) => {
@@ -283,42 +282,29 @@ const patientSlice = createSlice({
         state.error = action.payload;
       })
 
-      // Create patient
-      .addCase(createPatient.pending, (state) => {
-        state.status = "loading";
-      })
-      .addCase(createPatient.fulfilled, (state, action) => {
-        state.status = "succeeded";
-        state.patients.unshift(action.payload); // Add new patient at beginning
-        state.pagination.totalPatients += 1;
-      })
-      .addCase(createPatient.rejected, (state, action) => {
-        state.status = "failed";
-        state.error = action.payload;
-      })
+   // ================= CREATE PATIENT =================
+.addCase(createPatient.pending, (state) => {
+  state.status = "loading";
+})
+.addCase(createPatient.fulfilled, (state) => {
+  state.status = "succeeded";
+})
+.addCase(createPatient.rejected, (state, action) => {
+  state.status = "failed";
+  state.error = action.payload;
+})
+   // ================= UPDATE PATIENT =================
+.addCase(updatePatient.pending, (state) => {
+  state.status = "loading";
+})
+.addCase(updatePatient.fulfilled, (state) => {
+  state.status = "succeeded";
+})
+.addCase(updatePatient.rejected, (state, action) => {
+  state.status = "failed";
+  state.error = action.payload;
+})
 
-      // Update patient
-      .addCase(updatePatient.pending, (state) => {
-        state.status = "loading";
-      })
-      .addCase(updatePatient.fulfilled, (state, action) => {
-        state.status = "succeeded";
-        const updatedPatient = action.payload;
-
-        // Update patients list
-        state.patients = state.patients.map(patient =>
-          patient.patient_MRNo === updatedPatient.patient_MRNo ? updatedPatient : patient
-        );
-
-        // Update selected patient if it's the one being edited
-        if (state.selectedPatient?.patient_MRNo === updatedPatient.patient_MRNo) {
-          state.selectedPatient = updatedPatient;
-        }
-      })
-      .addCase(updatePatient.rejected, (state, action) => {
-        state.status = "failed";
-        state.error = action.payload;
-      })
 
       // Fetch patient by MR No
       .addCase(fetchPatientByMrNo.pending, (state) => {
@@ -333,28 +319,18 @@ const patientSlice = createSlice({
         state.error = action.payload;
       })
 
-      // Delete patient
-      .addCase(deletePatient.pending, (state) => {
-        state.status = "loading";
-      })
-      .addCase(deletePatient.fulfilled, (state, action) => {
-        state.status = "succeeded";
-        // Remove the deleted patient from the state
-        state.patients = state.patients.filter(
-          (patient) => patient._id !== action.payload
-        );
-        state.pagination.totalPatients -= 1;
-
-        // Clear selected patient if it was the deleted one
-        if (state.selectedPatient?._id === action.payload) {
-          state.selectedPatient = null;
-          state.selectedPatientStatus = "idle";
-        }
-      })
-      .addCase(deletePatient.rejected, (state, action) => {
-        state.status = "failed";
-        state.error = action.payload;
-      })
+   
+// ================= DELETE PATIENT =================
+.addCase(deletePatient.pending, (state) => {
+  state.status = "loading";
+})
+.addCase(deletePatient.fulfilled, (state) => {
+  state.status = "succeeded";
+})
+.addCase(deletePatient.rejected, (state, action) => {
+  state.status = "failed";
+  state.error = action.payload;
+})
 
       // Search patients
       .addCase(searchPatients.pending, (state) => {

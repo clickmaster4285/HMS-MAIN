@@ -6,7 +6,7 @@ const createCriticalResult = async (req, res) => {
   try {
     const newResult = new CriticalResult(req.body);
     await newResult.save();
-    emitGlobalEvent(req, EVENTS.CRITICAL_RESULT, "create", newResult);
+    emitGlobalEvent(req, EVENTS.CRITICAL, "create", newResult);
     res.status(201).json({ success: true, data: newResult });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -51,7 +51,7 @@ const updateCriticalResult = async (req, res) => {
         .status(404)
         .json({ success: false, message: 'Result not found' });
     }
-    emitGlobalEvent(req, EVENTS.CRITICAL_RESULT, "update", updated);  
+    emitGlobalEvent(req, EVENTS.CRITICAL, "update", updated);  
     res.status(200).json({ success: true, data: updated });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -67,7 +67,7 @@ const deleteCriticalResult = async (req, res) => {
         .status(404)
         .json({ success: false, message: 'Result not found' });
     }
-    emitGlobalEvent(req, EVENTS.CRITICAL_RESULT, "delete", deleted);
+    emitGlobalEvent(req, EVENTS.CRITICAL, "delete", deleted);
     res
       .status(200)
       .json({ success: true, message: 'Result deleted successfully' });
