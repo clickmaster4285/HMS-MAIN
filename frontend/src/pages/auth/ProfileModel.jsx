@@ -122,7 +122,7 @@ const ProfileModal = () => {
             </motion.p>
 
             {/* Profiles Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 px-6 pb-6 overflow-y-auto flex-grow">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 px-6 pb-6 overflow-y-auto grow">
               {profiles.map((profile, index) => (
                 <motion.div
                   key={index}

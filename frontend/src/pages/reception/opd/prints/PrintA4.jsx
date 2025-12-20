@@ -186,7 +186,7 @@ const PrintA4 = ({ formData }) => {
             }
 
             .detail-value {
-              flex-grow: 1;
+              grow: 1;
               word-break: break-word;
             }
 
