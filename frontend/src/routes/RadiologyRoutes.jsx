@@ -1,34 +1,33 @@
-import {
-  RadiologyPennal,
-  RediologyPatientDetail,
-  RadiologySummer,
-  Dashboard,
-
-} from "../pages/Radiology/RadiologyPages";
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import DynamicLayout from "../layouts/DynamicLayout";
 import ProtectedRoute from "../pages/auth/ProtectedRoute";
 
-const LabRoutes = () => {
+import RDashboard from "../pages/Radiology/dashboard/RDashboard";
+import RadiologyPennal from "../pages/Radiology/RadiologyPennal";
+import RediologyPatientDetail from "../pages/Radiology/RediologyPatientDetail";
+import RadiologySummer from "../pages/Radiology/RadiologySummer";
+import CreateRadiologyReport from "../pages/Radiology/CreateRadiologyReport";
+import RadiologyForm from "../pages/Radiology/RadiologyForm";
+
+const RadiologyRoutes = () => {
   return (
     <Routes>
-      <Route element={<ProtectedRoute allowedRoles={["Radiology" , 'Admin']} />}>
+      <Route element={<ProtectedRoute allowedRoles={["Radiology", "Admin"]} />}>
         <Route element={<DynamicLayout />}>
-          <Route index element={<Navigate to="RadiologyPennal" replace />} />
-          <Route path="dashboard" element={<Dashboard />} />
-          <Route path="RadiologyPennal" element={<RadiologyPennal />} />
-          <Route
-            path="RediologyPatientDetail/:id"
-            element={<RediologyPatientDetail />}
-          />
-          <Route
-            path="radiology-summer/:date"
-            element={<RadiologySummer />}
-          />
+
+          <Route index element={<Navigate to="dashboard" replace />} />
+
+          <Route path="dashboard" element={<RDashboard />} />
+          <Route path="panel" element={<RadiologyPennal />} />
+          <Route path="create-report" element={<CreateRadiologyReport />} />
+          <Route path="form/:id" element={<RadiologyForm />} />
+          <Route path="patient/:id" element={<RediologyPatientDetail />} />
+          <Route path="summary/:date" element={<RadiologySummer />} />
+
         </Route>
       </Route>
     </Routes>
   );
 };
 
-export default LabRoutes;
+export default RadiologyRoutes;

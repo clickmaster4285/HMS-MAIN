@@ -991,6 +991,9 @@ const updatePatientTest = async (req, res) => {
   try {
     const { id } = req.params;
     const body = req.body;
+
+    console.log("Update Patient Test Payload:", body);
+    
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res
         .status(400)
