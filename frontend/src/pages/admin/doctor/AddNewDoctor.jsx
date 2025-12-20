@@ -70,7 +70,6 @@ const DoctorForm = ({ mode = 'create' }) => {
   useEffect(() => {
     if (isEditMode && doctorId) {
       dispatch(fetchDoctorById(doctorId));
-      console.log("Edit mode for doctor ID:", doctorId);
     }
     dispatch(getallDepartments());
   }, [dispatch, doctorId, isEditMode]);
@@ -78,7 +77,6 @@ const DoctorForm = ({ mode = 'create' }) => {
   // Effect for populating form in edit mode
   useEffect(() => {
     if (isEditMode && currentDoctor) {
-      console.log("Populating form for edit:", currentDoctor);
       setFormData({
         doctor_Name: currentDoctor.user.user_Name || '',
         doctor_Email: currentDoctor.user.user_Email || '',

@@ -12,7 +12,7 @@ const Header = () => {
   };
 
   return (
-    <header className="bg-gradient-to-r from-indigo-900 to-primary-800 text-white">
+    <header className="bg-linear-to-r from-indigo-900 to-primary-800 text-white">
       <div className="container mx-auto px-4 py-4 flex justify-between items-center">
         <div className="flex items-center">
           <div className="h-auto w-14 rounded-md flex items-center justify-center mr-2">

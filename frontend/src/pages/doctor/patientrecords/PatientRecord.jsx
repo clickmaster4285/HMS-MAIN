@@ -22,10 +22,8 @@ const PatientRecord = () => {
   const { currentDoctor, patients, status, error } = useSelector(state => state.doctor);
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState('all');
-  // Get user ID from localStorage
   const user = JSON.parse(localStorage.getItem('user'));
   const userId = user.doctorProfile._id;
-  // console.log("currentDoctor", currentDoctor);
 
   useEffect(() => {
     if (userId) {
@@ -46,15 +44,6 @@ const PatientRecord = () => {
       const startDay = new Date(startDate.toDateString());
       const endDay = new Date(endDate.toDateString());
 
-      // Debug logs
-      // console.log('Comparing dates:', {
-      //   patient: patientDay,
-      //   start: startDay,
-      //   end: endDay,
-      //   inRange: patientDay >= startDay && patientDay <= endDay
-      // });
-
-      
       const dateInRange = patientDay >= startDay && patientDay <= endDay;
 
       const matchesSearch = patient.patient_Name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -72,13 +61,6 @@ const PatientRecord = () => {
     }
   }) || [];
 
-// useEffect(() => {
-//   console.log("Date range updated - filtering patients", dateRange);
-//   console.log("Current patients data:", patients);
-// }, [dateRange, patients]);
-
-  // console.log("filteredPatients", filteredPatients);
-
   if (status === 'loading') {
     return (
       <div className="flex justify-center items-center h-64">
@@ -91,7 +73,7 @@ const PatientRecord = () => {
     return (
       <div className="bg-red-50 border-l-4 border-red-500 p-4">
         <div className="flex">
-          <div className="flex-shrink-0">
+          <div className="shrink-0">
             <svg className="h-5 w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
             </svg>
@@ -109,7 +91,7 @@ const PatientRecord = () => {
     <div className="p-2">
       {/* Doctor Profile Card */}
       <div className="bg-white rounded-lg shadow-md overflow-hidden mb-6">
-        <div className="bg-gradient-to-r from-primary-500 to-primary-700 p-4 text-white">
+        <div className="bg-linear-to-r from-primary-500 to-primary-700 p-4 text-white">
           <div className="flex items-center">
             <div className="mr-4">
               <img
@@ -206,7 +188,6 @@ const PatientRecord = () => {
                     startDate={dateRange.start}
                     endDate={dateRange.end}
                     onChange={(newRange) => {
-                      // console.log("Date range changed:", newRange); // Debug log
                       setDateRange(newRange);
                     }}
                     className="w-full"
@@ -257,7 +238,7 @@ const PatientRow = ({ patient, navigate }) => (
   <tr className="hover:bg-gray-50 transition-colors">
     <td className="px-6 py-4 whitespace-nowrap">
       <div className="flex items-center">
-        <div className="flex-shrink-0 h-10 w-10">
+        <div className="shrink-0 h-10 w-10">
           <img
             src={`https://api.dicebear.com/6.x/avataaars/svg?seed=${encodeURIComponent(patient.patient_MRNo || patient.patient_Name || "User")}`}
             alt={patient.patient_Name}

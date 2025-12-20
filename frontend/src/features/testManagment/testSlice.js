@@ -24,7 +24,6 @@ export const createTest = createAsyncThunk(
         getAuthHeaders()
       );
       if (response.status >= 200 && response.status < 300) {
-       console.log('the response data is ', response.data)
         return response.data;
       } else {
         return rejectWithValue(response.data?.message || 'Server returned an error');

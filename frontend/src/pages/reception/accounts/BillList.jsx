@@ -457,7 +457,7 @@ const BillManagement = () => {
                     <tr key={bill.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
-                          <div className={`flex-shrink-0 h-8 w-8 rounded-full flex items-center justify-center text-white ${getAvatarColor(bill.patientName)}`}>
+                          <div className={`shrink-0 h-8 w-8 rounded-full flex items-center justify-center text-white ${getAvatarColor(bill.patientName)}`}>
                             {bill.patientInitial}
                           </div>
                           <div className="ml-4">

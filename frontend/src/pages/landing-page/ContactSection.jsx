@@ -33,7 +33,7 @@ const ContactSection = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-sky-900 to-primary-900 relative overflow-hidden">
+    <div className="min-h-screen bg-linear-to-br from-indigo-900 via-sky-900 to-primary-900 relative overflow-hidden">
       {/* Animated background elements */}
       <div className="absolute inset-0">
         <div className="absolute top-20 left-20 w-72 h-72 bg-sky-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse"></div>
@@ -53,7 +53,7 @@ const ContactSection = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.2 }}
-              className="inline-flex justify-center items-center gap-2 bg-gradient-to-r from-sky-600/20 to-primary-600/20 backdrop-blur-sm border border-sky-500/20 rounded-full px-6 py-3 mb-8 group hover:border-sky-500/40 transition-all duration-500"
+              className="inline-flex justify-center items-center gap-2 bg-linear-to-r from-sky-600/20 to-primary-600/20 backdrop-blur-sm border border-sky-500/20 rounded-full px-6 py-3 mb-8 group hover:border-sky-500/40 transition-all duration-500"
             >
               <motion.div
                 animate={{
@@ -69,7 +69,7 @@ const ContactSection = () => {
                 <Sparkles className="w-8 h-8 md:w-9 md:h-9 text-sky-400 group-hover:text-sky-300 transition-colors duration-300" />
               </motion.div>
 
-              <h1 className="text-3xl md:text-5xl font-bold bg-gradient-to-r from-white via-sky-200 to-primary-200 bg-clip-text text-transparent mb-0 group-hover:bg-gradient-to-r group-hover:from-sky-100 group-hover:via-sky-300 group-hover:to-primary-300 transition-all duration-500">
+              <h1 className="text-3xl md:text-5xl font-bold bg-linear-to-r from-white via-sky-200 to-primary-200 bg-clip-text text-transparent mb-0 group-hover:bg-linear-to-r group-hover:from-sky-100 group-hover:via-sky-300 group-hover:to-primary-300 transition-all duration-500">
                 Contact Us
               </h1>
             </motion.div>
@@ -87,8 +87,8 @@ const ContactSection = () => {
                 </h2>
 
                 <div className="space-y-6">
-                  <div className="flex items-center gap-4 p-4 rounded-2xl bg-gradient-to-r from-sky-600/20 to-transparent hover:from-sky-600/30 transition-all duration-300 group/item cursor-pointer">
-                    <div className="bg-gradient-to-r from-sky-500 to-primary-500 p-3 rounded-xl group-hover/item:scale-110 transition-transform">
+                  <div className="flex items-center gap-4 p-4 rounded-2xl bg-linear-to-r from-sky-600/20 to-transparent hover:from-sky-600/30 transition-all duration-300 group/item cursor-pointer">
+                    <div className="bg-linear-to-r from-sky-500 to-primary-500 p-3 rounded-xl group-hover/item:scale-110 transition-transform">
                       <Mail className="w-5 h-5 text-white" />
                     </div>
                     <div>
@@ -97,8 +97,8 @@ const ContactSection = () => {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-4 p-4 rounded-2xl bg-gradient-to-r from-primary-600/20 to-transparent hover:from-primary-600/30 transition-all duration-300 group/item cursor-pointer">
-                    <div className="bg-gradient-to-r from-primary-500 to-cyan-500 p-3 rounded-xl group-hover/item:scale-110 transition-transform">
+                  <div className="flex items-center gap-4 p-4 rounded-2xl bg-linear-to-r from-primary-600/20 to-transparent hover:from-primary-600/30 transition-all duration-300 group/item cursor-pointer">
+                    <div className="bg-linear-to-r from-primary-500 to-cyan-500 p-3 rounded-xl group-hover/item:scale-110 transition-transform">
                       <Phone className="w-5 h-5 text-white" />
                     </div>
                     <div>
@@ -107,8 +107,8 @@ const ContactSection = () => {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-4 p-4 rounded-2xl bg-gradient-to-r from-green-600/20 to-transparent hover:from-green-600/30 transition-all duration-300 group/item cursor-pointer">
-                    <div className="bg-gradient-to-r from-green-500 to-emerald-500 p-3 rounded-xl group-hover/item:scale-110 transition-transform">
+                  <div className="flex items-center gap-4 p-4 rounded-2xl bg-linear-to-r from-green-600/20 to-transparent hover:from-green-600/30 transition-all duration-300 group/item cursor-pointer">
+                    <div className="bg-linear-to-r from-green-500 to-emerald-500 p-3 rounded-xl group-hover/item:scale-110 transition-transform">
                       <MapPin className="w-5 h-5 text-white" />
                     </div>
                     <div>
@@ -129,7 +129,7 @@ const ContactSection = () => {
                     ].map((social, index) => (
                       <button
                         key={index}
-                        className={`bg-gradient-to-br ${social.color} ${social.hoverColor} p-3 rounded-xl transition-all duration-300 hover:scale-110 hover:shadow-lg`}
+                        className={`bg-linear-to-br ${social.color} ${social.hoverColor} p-3 rounded-xl transition-all duration-300 hover:scale-110 hover:shadow-lg`}
                       >
                         <social.icon className="w-5 h-5 text-white" />
                       </button>
@@ -192,7 +192,7 @@ const ContactSection = () => {
                 <button
                   onClick={handleSubmit}
                   disabled={isSubmitting || submitted}
-                  className="w-full bg-gradient-to-r from-sky-600 to-primary-600 hover:from-sky-500 hover:to-primary-500 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-sky-500/25 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                  className="w-full bg-linear-to-r from-sky-600 to-primary-600 hover:from-sky-500 hover:to-primary-500 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-sky-500/25 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                 >
                   {isSubmitting ? (
                     <>

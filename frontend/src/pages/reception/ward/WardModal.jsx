@@ -59,8 +59,6 @@ const WardModal = ({
                 .unwrap()
                 .then((result) => {
                     if (result.success && result.suggestedWardNumber) {
-                        // Only auto-fill for new wards, but we can show the suggestion for both
-                        console.log('Suggested ward number:', result.suggestedWardNumber);
                     }
                 })
                 .catch(error => {

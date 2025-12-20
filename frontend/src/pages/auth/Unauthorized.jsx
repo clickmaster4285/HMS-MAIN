@@ -32,13 +32,13 @@ const UnauthorizedUser = () => {
   }, [ripples]);
 
   return (
-    <div className="relative flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-900 via-red-900 to-gray-800 overflow-hidden">
+    <div className="relative flex items-center justify-center min-h-screen bg-linear-to-br from-gray-900 via-red-900 to-gray-800 overflow-hidden">
       {/* Animated background elements */}
       <div className="absolute inset-0 overflow-hidden">
         {[...Array(8)].map((_, i) => (
           <motion.div
             key={i}
-            className="absolute rounded-full bg-gradient-to-r from-red-900/10 to-purple-900/10"
+            className="absolute rounded-full bg-linear-to-r from-red-900/10 to-purple-900/10"
             initial={{
               x: Math.random() * 100,
               y: Math.random() * 100,
@@ -106,7 +106,7 @@ const UnauthorizedUser = () => {
             </div>
             
             <motion.h1 
-              className="text-5xl font-bold mb-3 bg-gradient-to-r from-red-400 to-red-600 bg-clip-text text-transparent"
+              className="text-5xl font-bold mb-3 bg-linear-to-r from-red-400 to-red-600 bg-clip-text text-transparent"
               animate={{
                 backgroundPosition: ['0% 50%', '100% 50%', '0% 50%']
               }}
@@ -139,7 +139,7 @@ const UnauthorizedUser = () => {
                 createRipple(e);
                 navigate(-1);
               }}
-              className="relative flex items-center justify-center gap-2 flex-1 bg-gradient-to-r from-red-600 to-red-700 text-white px-6 py-4 rounded-xl font-medium overflow-hidden"
+              className="relative flex items-center justify-center gap-2 flex-1 bg-linear-to-r from-red-600 to-red-700 text-white px-6 py-4 rounded-xl font-medium overflow-hidden"
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.97 }}
             >

@@ -144,7 +144,7 @@ const RefundForm = ({ patient, visit, onCancel, onSuccess }) => {
          {/* Error Messages */}
          {(error || localError) && (
             <div className="mb-6 p-3 bg-red-100 border border-red-200 text-red-700 rounded-lg flex items-center">
-               <FiAlertCircle className="mr-2 flex-shrink-0" />
+               <FiAlertCircle className="mr-2 shrink-0" />
                <span>{error || localError}</span>
             </div>
          )}

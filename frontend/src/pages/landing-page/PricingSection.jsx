@@ -73,7 +73,7 @@ const PricingSection = () => {
   };
 
   return (
-    <section id="pricing" className="py-20 bg-gradient-to-br from-sky-50 to-primary-50 relative overflow-hidden">
+    <section id="pricing" className="py-20 bg-linear-to-br from-sky-50 to-primary-50 relative overflow-hidden">
       {/* Decorative elements */}
       <div className="absolute top-0 left-0 w-full h-full opacity-5">
         <div className="absolute top-20 left-10 w-40 h-40 rounded-full bg-sky-400 mix-blend-multiply filter blur-3xl"></div>
@@ -118,23 +118,23 @@ const PricingSection = () => {
               className={`relative rounded-xl overflow-hidden shadow-xl ${hoveredCard === index ? "shadow-2xl" : ""}`}
             >
               {plan.popular && (
-                <div className="absolute top-0 right-0 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs font-bold uppercase py-1 px-4 rounded-bl-lg">
+                <div className="absolute top-0 right-0 bg-linear-to-r from-purple-600 to-pink-600 text-white text-xs font-bold uppercase py-1 px-4 rounded-bl-lg">
                   Most Popular
                 </div>
               )}
               
-              <div className={`absolute inset-0 bg-gradient-to-br ${plan.color} opacity-10`}></div>
+              <div className={`absolute inset-0 bg-linear-to-br ${plan.color} opacity-10`}></div>
               
               <div className="relative bg-white bg-opacity-70 backdrop-blur-sm p-8 h-full">
                 <div className="flex items-center mb-4">
-                  <div className={`p-3 rounded-lg bg-gradient-to-br ${plan.color} text-white mr-4`}>
+                  <div className={`p-3 rounded-lg bg-linear-to-br ${plan.color} text-white mr-4`}>
                     {plan.icon}
                   </div>
                   <h3 className="font-bold text-2xl text-gray-800">{plan.name}</h3>
                 </div>
                 
                 <div className="flex items-end mb-6">
-                  <span className="text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-br from-gray-800 to-gray-600">
+                  <span className="text-5xl font-bold bg-clip-text text-transparent bg-linear-to-br from-gray-800 to-gray-600">
                     {plan.price}
                   </span>
                   {plan.period && (
@@ -147,7 +147,7 @@ const PricingSection = () => {
                 <ul className="space-y-3 mb-8">
                   {plan.features.map((feature, i) => (
                     <li key={i} className="flex items-start">
-                      <Check className="w-5 h-5 text-green-500 mt-0.5 mr-3 flex-shrink-0" />
+                      <Check className="w-5 h-5 text-green-500 mt-0.5 mr-3 shrink-0" />
                       <span className="text-gray-700">{feature}</span>
                     </li>
                   ))}
@@ -159,8 +159,8 @@ const PricingSection = () => {
                   whileTap={{ scale: 0.98 }}
                   className={`block w-full py-3 px-6 text-center rounded-lg font-medium transition-all ${
                     plan.popular 
-                      ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg hover:shadow-xl"
-                      : "bg-gradient-to-r from-gray-100 to-gray-200 text-gray-800 border border-gray-200 hover:border-gray-300"
+                      ? "bg-linear-to-r from-purple-600 to-pink-600 text-white shadow-lg hover:shadow-xl"
+                      : "bg-linear-to-r from-gray-100 to-gray-200 text-gray-800 border border-gray-200 hover:border-gray-300"
                   }`}
                 >
                   {plan.cta}

@@ -227,7 +227,7 @@ const getAllDoctors = async (req, res) => {
 const getDoctorById = async (req, res) => {
   try {
     const { doctorId } = req.params;
-    // console.log("the docotr id is ",doctorId)
+  
     const doctor = await hospitalModel.Doctor.findOne({
       _id: doctorId,
       deleted: false,
@@ -248,18 +248,9 @@ const getDoctorById = async (req, res) => {
       });
     }
 
-    // console.log("Searching for patients with:", {
-    //   doctorName: doctor.user.user_Name,
-    //   department: doctor.doctor_Department
-    // });
-
     const patients = await hospitalModel.Patient.find({
       "visits.doctor": doctor._id,
     });
-
-    // console.log("Found patients:", patients);
-
-    // console.log("Doctor details with patients: ", patients);
 
     // Mapping patients' information with the relevant doctor data
     const mappedPatients = patients.map((patient) => ({
@@ -511,8 +502,6 @@ const updateDoctor = async (req, res) => {
 const getAllDoctorsByDepartmentName = async (req, res) => {
   try {
     const { departmentName } = req.params;
-    // console.log("Requested department:", departmentName);
-    // console.log("Params:", req.params);
 
     const department = await hospitalModel.Department.findOne({
       name: departmentName,

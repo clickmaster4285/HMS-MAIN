@@ -83,17 +83,17 @@ const DoctorDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-primary-50 to-indigo-100">
+    <div className="min-h-screen bg-linear-to-br from-slate-50 via-primary-50 to-indigo-100">
       {/* Header */}
       <header className="bg-white/80 backdrop-blur-md border-b border-white/20 shadow-sm sticky top-0 z-5">
         <div className="px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <div className="w-10 h-10 bg-gradient-to-r from-primary-600 to-indigo-600 rounded-xl flex items-center justify-center">
+              <div className="w-10 h-10 bg-linear-to-r from-primary-600 to-indigo-600 rounded-xl flex items-center justify-center">
                 <Activity className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
+                <h1 className="text-2xl font-bold bg-linear-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
                   Al-Shahbaz Hospital Dashboard
                 </h1>
                 <p className="text-sm text-gray-500">Welcome back, Dr. Anderson</p>
@@ -138,7 +138,7 @@ const DoctorDashboard = () => {
             <div key={index} className="group hover:scale-105 transition-all duration-300">
               <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-white/20 shadow-lg hover:shadow-xl">
                 <div className="flex items-center justify-between mb-4">
-                  <div className={`w-12 h-12 rounded-xl bg-gradient-to-r ${stat.color} flex items-center justify-center transform group-hover:rotate-6 transition-transform duration-300`}>
+                  <div className={`w-12 h-12 rounded-xl bg-linear-to-r ${stat.color} flex items-center justify-center transform group-hover:rotate-6 transition-transform duration-300`}>
                     <stat.icon className="w-6 h-6 text-white" />
                   </div>
                   <span className={`text-sm font-medium px-2 py-1 rounded-full ${stat.change.startsWith('+') ? 'text-green-600 bg-green-100' : stat.change.startsWith('-') ? 'text-red-600 bg-red-100' : 'text-primary-600 bg-primary-100'}`}>
@@ -310,7 +310,7 @@ const DoctorDashboard = () => {
                   <div key={patient.id} className="group hover:bg-gray-50 rounded-xl p-4 transition-all duration-200 border border-gray-100">
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-gradient-to-r from-primary-500 to-indigo-500 rounded-full flex items-center justify-center">
+                        <div className="w-10 h-10 bg-linear-to-r from-primary-500 to-indigo-500 rounded-full flex items-center justify-center">
                           <User className="w-5 h-5 text-white" />
                         </div>
                         <div>
@@ -343,8 +343,8 @@ const DoctorDashboard = () => {
               <div className="space-y-4">
                 {upcomingAppointments.map((appointment, index) => (
                   <div key={index} className="flex items-center space-x-4 p-4 rounded-xl hover:bg-gray-50 transition-all duration-200">
-                    <div className="flex-shrink-0">
-                      <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl flex items-center justify-center">
+                    <div className="shrink-0">
+                      <div className="w-12 h-12 bg-linear-to-r from-green-500 to-emerald-500 rounded-xl flex items-center justify-center">
                         <Clock className="w-6 h-6 text-white" />
                       </div>
                     </div>

@@ -30,7 +30,6 @@ const PatientDetailModal = ({ patient, loading, onClose }) => {
 
   const visits = patient.visits || [];
   const totalVisits = visits.length;
-console.log("Patient Visits:", visits);
   // Calculate pagination
   const indexOfLastVisit = currentVisitPage * visitsPerPage;
   const indexOfFirstVisit = indexOfLastVisit - visitsPerPage;

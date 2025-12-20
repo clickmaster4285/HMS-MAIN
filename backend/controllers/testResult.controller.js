@@ -232,7 +232,6 @@ const getAllTestResults = async (req, res) => {
 const getPatientByResultId = async (req, res) => {
   try {
     const { resultId } = req.params;
-    console.log("the id is", resultId)
     if (!mongoose.Types.ObjectId.isValid(resultId)) {
       return res.status(400).json({
         success: false,
@@ -261,8 +260,6 @@ const getPatientByResultId = async (req, res) => {
         message: "Test result not found",
       });
     }
-    console.log("the testResult is ", testResult)
-    console.log("the patientDetails is", patientDetails)
     return res.status(200).json({
       success: true,
       data: {
@@ -317,7 +314,6 @@ const getSummaryByDate = async (req, res) => {
     const patientTestIds = patients.map(patient => patient._id);
     const testResults = await hospitalModel.TestResult.find({
       patientTestId: { $in: patientTestIds }
-      // console.log("The queryquery are: ",patients)
     }).lean();
 
     const responseData = patients.map(patient => ({

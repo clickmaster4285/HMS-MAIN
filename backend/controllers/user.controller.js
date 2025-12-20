@@ -66,12 +66,9 @@ const VerifyEmail = async (req, res) => {
       });
     }
 
-    console.log("📩 Received code:", code);
-
     const user = await userModel.findOne({ verificationCode: code });
 
     if (!user) {
-      console.log("⚠️ User not found for code:", code);
       return res.status(400).json({
         success: false,
         message: "Invalid or expired verification code",
@@ -106,8 +103,6 @@ emitGlobalEvent(req, EVENTS.USER, "update", {
 const login = async (req, res) => {
   try {
     let { user_Email, user_Password, user_Identifier } = req.body;
-    console.log("Login Request Body:", req.body);
-
     // Trim all inputs
     const input = (user_Email || user_Identifier)?.trim();
     const password = user_Password?.trim();
@@ -195,7 +190,7 @@ const login = async (req, res) => {
     });
 
   } catch (error) {
-    console.log("Login error:", error);
+    console.error("Login error:", error);
     return res.status(500).json({
       success: false,
       status: 500,

@@ -43,7 +43,6 @@ export const fetchAllRadiologyReports = createAsyncThunk(
       const response = await axios.get(`${API_URL}/radiology/get-reports`, {
         headers: getAuthHeaders(),
       });
-      // console.log("The response", response.data);
       return response.data.data;
     } catch (error) {
       const message =

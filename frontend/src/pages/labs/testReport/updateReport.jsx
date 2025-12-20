@@ -411,7 +411,7 @@ const UpdateReport = () => {
               </button>
               <button
                 onClick={onConfirm}
-                className="flex-1 px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-xl hover:from-red-700 hover:to-red-800 font-medium transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
+                className="flex-1 px-6 py-3 bg-linear-to-r from-red-600 to-red-700 text-white rounded-xl hover:from-red-700 hover:to-red-800 font-medium transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
               >
                 Confirm Print
               </button>
@@ -553,7 +553,7 @@ const UpdateReport = () => {
               </button>
               <button
                 onClick={onPrint}
-                className="flex-1 px-6 py-3 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-xl hover:from-primary-700 hover:to-primary-800 font-medium transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none flex items-center justify-center space-x-2"
+                className="flex-1 px-6 py-3 bg-linear-to-r from-primary-600 to-primary-700 text-white rounded-xl hover:from-primary-700 hover:to-primary-800 font-medium transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none flex items-center justify-center space-x-2"
                 disabled={selectedTestIds.length === 0}
               >
                 <FiPrinter size={20} />
@@ -664,7 +664,7 @@ const UpdateReport = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+    <div className="min-h-screen bg-linear-to-br from-blue-50 via-indigo-50 to-purple-50">
       {/* Modals */}
       <ConfirmModal
         isOpen={showConfirmModal}
@@ -695,7 +695,7 @@ const UpdateReport = () => {
 
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
             {/* Token Number Card */}
-            <div className="bg-gradient-to-br from-primary-500 to-primary-600 text-white px-6 py-3 rounded-xl shadow-lg">
+            <div className="bg-linear-to-br from-primary-500 to-primary-600 text-white px-6 py-3 rounded-xl shadow-lg">
               <p className="text-xs opacity-90 font-medium uppercase tracking-wide">Token Number</p>
               <p className="text-2xl font-bold mt-1">
                 #{patientData.tokenNumber}
@@ -705,7 +705,7 @@ const UpdateReport = () => {
             {/* Print Button */}
             <button
               onClick={handlePrint}
-              className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-xl hover:from-green-700 hover:to-green-800 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
+              className="flex items-center space-x-2 px-6 py-3 bg-linear-to-r from-green-600 to-green-700 text-white rounded-xl hover:from-green-700 hover:to-green-800 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
             >
               <FiPrinter size={20} />
               <span className="font-medium">Save & Print</span>
@@ -716,7 +716,7 @@ const UpdateReport = () => {
         {/* Main Content Card */}
         <div className="bg-white rounded-3xl shadow-2xl overflow-hidden">
           {/* Lab Header with Enhanced Design */}
-          <div className="relative bg-gradient-to-r from-primary-600 via-primary-700 to-primary-800 p-8 md:p-10 text-white overflow-hidden">
+          <div className="relative bg-linear-to-r from-primary-600 via-primary-700 to-primary-800 p-8 md:p-10 text-white overflow-hidden">
             {/* Decorative Background Pattern */}
             <div className="absolute inset-0 opacity-10">
               <div className="absolute top-0 left-0 w-64 h-64 bg-white rounded-full -translate-x-32 -translate-y-32"></div>
@@ -803,7 +803,7 @@ const UpdateReport = () => {
         <div className="flex justify-end mt-6">
           <button
             onClick={handlePrint}
-            className="flex items-center space-x-3 px-8 py-4 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-xl hover:from-green-700 hover:to-green-800 transition-all duration-200 shadow-xl hover:shadow-2xl transform hover:scale-105"
+            className="flex items-center space-x-3 px-8 py-4 bg-linear-to-r from-green-600 to-green-700 text-white rounded-xl hover:from-green-700 hover:to-green-800 transition-all duration-200 shadow-xl hover:shadow-2xl transform hover:scale-105"
           >
             <FiPrinter size={22} />
             <span className="font-semibold text-lg">Save & Print Report</span>

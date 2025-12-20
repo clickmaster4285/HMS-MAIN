@@ -72,7 +72,7 @@ const Prescription = () => {
         className="max-w-7xl mx-auto bg-white rounded-xl shadow-md overflow-hidden"
       >
         {/* Header */}
-        <div className="bg-gradient-to-r from-primary-600 to-primary-400 p-6 text-white">
+        <div className="bg-linear-to-r from-primary-600 to-primary-400 p-6 text-white">
           <motion.div
             initial={{ scale: 0.9 }}
             animate={{ scale: 1 }}

@@ -13,11 +13,7 @@ function initSocket(server) {
   });
 
   io.on("connection", (socket) => {
-    console.log("✅ Socket connected:", socket.id);
 
-    /**
-     * Optional: simple health check
-     */
     socket.on("ping", () => {
       socket.emit("pong", {
         message: "Socket connected successfully",

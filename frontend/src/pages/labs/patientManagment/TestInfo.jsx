@@ -294,7 +294,7 @@ const TestInformationForm = ({
                   <button
                     type="button"
                     onClick={() => handleRemoveSelectedTest(test.id)}
-                    className="ml-2 p-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded flex-shrink-0"
+                    className="ml-2 p-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded shrink-0"
                     title="Remove from selection"
                   >
                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">

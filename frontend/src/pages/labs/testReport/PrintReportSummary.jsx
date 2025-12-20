@@ -34,7 +34,6 @@ const PrintReportSummary = ({ reports, dateRange }) => {
   const calculateTotals = () => {
     return reports.reduce(
       (acc, report) => {
-        // console.log("the detailin gof the summery: ",acc, report )
         return {
           totalAmount: acc.totalAmount + report.totalAmount,
           totalDiscount: acc.totalDiscount + (report.discountAmount || 0),
@@ -49,7 +48,6 @@ const PrintReportSummary = ({ reports, dateRange }) => {
   };
 
   const totals = calculateTotals();
-  // console.log("the totalstotalstotals: ",totals )
 
   // Get referred doctors with counts
   const getReferredDoctors = () => {

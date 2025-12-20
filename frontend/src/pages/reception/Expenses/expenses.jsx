@@ -43,7 +43,6 @@ export default function Expenses() {
   const dispatch = useDispatch();
   const { expenses, isLoading, isError, isSuccess, message } = useSelector((state) => state.expenses);
   const { doctors = [] } = useSelector((state) => state.doctor);
-console.log("the doc is ", doctors)
   useEffect(() => {
     dispatch(getExpenses());
     dispatch(fetchAllDoctors());

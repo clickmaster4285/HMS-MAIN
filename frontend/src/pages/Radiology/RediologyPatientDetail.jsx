@@ -216,7 +216,7 @@ const RadiologyPatientDetail = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-teal-50 to-gray-100">
+      <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-teal-50 to-gray-100">
         <div className="text-teal-600 text-2xl font-semibold animate-pulse">
           Loading...
         </div>
@@ -226,7 +226,7 @@ const RadiologyPatientDetail = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-teal-50 to-gray-100">
+      <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-teal-50 to-gray-100">
         <div className="text-red-600 text-2xl font-semibold">
           Error: {error}
         </div>
@@ -236,7 +236,7 @@ const RadiologyPatientDetail = () => {
 
   if (!currentReport) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-teal-50 to-gray-100">
+      <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-teal-50 to-gray-100">
         <div className="text-teal-600 text-2xl font-semibold">
           No report found
         </div>
@@ -245,7 +245,7 @@ const RadiologyPatientDetail = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-teal-50 to-gray-100">
+    <div className="min-h-screen bg-linear-to-br from-teal-50 to-gray-100">
       <div className="mx-auto bg-white rounded-2xl shadow-2xl overflow-hidden transition-all duration-300 hover:shadow-3xl">
         <RadiologyReportHeader
           currentReport={currentReport}

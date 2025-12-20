@@ -19,7 +19,6 @@ const createInventory = async (req, res) => {
             status,
             specifications,
         } = req.body;
-console.log("the request is",req.body)
 
         // Validate currentStock doesn't exceed quantity
         if (currentStock < quantity) {
@@ -43,13 +42,12 @@ console.log("the request is",req.body)
             status: status || 'Available',
             specifications,
         });
-        console.log(newInventory)
         res.status(201).json({
             message: "Inventory record has been added successfully.",
             inventory: newInventory
         });
     } catch (error) {
-        console.log(error);
+        console.error(error);
         res.status(500).json({
             message: "Inventory record was not added successfully.",
             error: error.message
@@ -64,7 +62,7 @@ const getAllInventoryData = async (req, res) => {
         const inventoryList = await hospitalModel.inventory.find(filter).populate('department');
         res.status(200).json({message: "Inventory data fetched successfully" ,inventoryList});
     } catch (error) {
-        console.log(error)
+        console.error(error)
         res.status(500).json({
             message: "Error fetching records",
             error: error.message,
@@ -87,7 +85,7 @@ const getInventoryById = async (req, res) => {
             })
         }
     } catch (error) {
-        console.log(error)
+        console.error(error)
         res.status(500).json({
             message: "Error fetching record",
             error: error.message
@@ -138,18 +136,15 @@ const deleteInventoryById = async (req, res) => {
     const { id } = req.params;
     
     try {
-
-        console.log(req.params);
         const inventoryItem = await hospitalModel.inventory.findByIdAndUpdate( id,
             { deleted: true },
             { new: true });
-            console.log(inventoryItem);
         if (!inventoryItem) {
             return res.status(404).json({ message: "Inventory not found" });
         }
         res.status(200).json({ message: "Record deleted successfully" });
     } catch (error) {
-        console.log(error);
+        console.error(error);
         res.status(500).json({ message: "Server error", error: error.message })
     }
 };

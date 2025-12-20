@@ -444,7 +444,6 @@ const getPatientTestById = async (req, res) => {
         };
       }
     }
-    // console.log("The testDefinitions are: ", testDefinitions?.[0]?.fields?.[0] , resultLookup)
     // Enrich testDefinitions
     const enrichedTestDefinitions = testDefinitions.map((td) => {
       const testId = td._id.toString();
@@ -464,9 +463,6 @@ const getPatientTestById = async (req, res) => {
         fields: enrichedFields,
       };
     });
-
-    // If you need to return this or continue using it:
-    // console.log("Enriched Test Definitions", enrichedTestDefinitions?.[0]?.fields?.[0]);
 
     return res.status(200).json({
       success: true,
@@ -914,7 +910,6 @@ const PatientTestStates = async (req, res) => {
 
 const paymentAfterReport = async (req, res) => {
   const { patientId } = req.params;
-  console.log('Processing payment after report for patient:', patientId);
   try {
     if (!patientId) {
       return res.status(400).json({

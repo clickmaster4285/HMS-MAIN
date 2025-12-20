@@ -443,7 +443,7 @@ const IPDPatientsBill = () => {
                   <tr key={patient._id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
-                        <div className="flex-shrink-0 h-10 w-10 rounded-full bg-primary-100 flex items-center justify-center">
+                        <div className="shrink-0 h-10 w-10 rounded-full bg-primary-100 flex items-center justify-center">
                           <FiUser className="h-5 w-5 text-primary-600" />
                         </div>
                         <div className="ml-4">

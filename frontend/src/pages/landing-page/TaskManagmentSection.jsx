@@ -172,7 +172,7 @@ const DepartmentCard = ({ department }) => {
         <ul className="space-y-3 text-gray-700">
           {department.features.map((feature, index) => (
             <li key={index} className="flex items-start">
-              <CheckCircle className="text-green-500 mt-1 mr-2 flex-shrink-0" />
+              <CheckCircle className="text-green-500 mt-1 mr-2 shrink-0" />
               <span>{feature}</span>
             </li>
           ))}

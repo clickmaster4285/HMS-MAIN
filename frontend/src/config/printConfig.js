@@ -19,25 +19,6 @@ export const shouldPrintOnSeparatePage = (testId) => {
   );
 };
 
-// Debug function to log test IDs
-export const debugTestIds = (testDefinitions) => {
-  console.log('=== DEBUG TEST IDs ===');
-  testDefinitions.forEach((test, index) => {
-    const testId = test.testId || test._id || test.test;
-    console.log(`Test ${index}:`, {
-      name: test.testName,
-      id: testId,
-      shouldSeparate: shouldPrintOnSeparatePage(testId),
-      allIds: {
-        testId: test.testId,
-        _id: test._id,
-        test: test.test
-      }
-    });
-  });
-  console.log('=== END DEBUG ===');
-};
-
 export const PRINT_CONFIG = {
   separatePageTests: SEPARATE_PAGE_TESTS,
   maxTestsPerPage: 2,

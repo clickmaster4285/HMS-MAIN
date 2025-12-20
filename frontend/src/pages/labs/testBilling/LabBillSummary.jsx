@@ -85,7 +85,6 @@ const LabBillSummary = () => {
 
   // Extract test names from selectedTests array
   const getTestNames = (bill) => {
-    // console.log("the bill is ", bill)
         if (bill.selectedTests && Array.isArray(bill.selectedTests)) {
         return bill.selectedTests.map(test => 
             test.testDetails?.testName || test.testDetails?.testCode || "Unknown Test"

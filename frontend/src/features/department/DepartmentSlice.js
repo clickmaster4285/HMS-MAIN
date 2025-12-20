@@ -21,7 +21,6 @@ export const updatedepartmentbyid = createAsyncThunk(
                 updatedData,
                 { headers: getAuthHeaders() }
             );
-            // console.log('the updated data in api', response)
             return response.data;
             // Assuming your API returns this
         } catch (error) {

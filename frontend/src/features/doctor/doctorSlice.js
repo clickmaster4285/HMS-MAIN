@@ -5,7 +5,6 @@ const API_URL = import.meta.env.VITE_REACT_APP_API_URL;
 
 const getAuthHeader = () => {
   const jwtLoginToken = localStorage.getItem('jwtLoginToken');
-  // console.log("JWT Token from localStorage:", jwtLoginToken); // 🔍 This logs the token
   if (!jwtLoginToken) {
     console.warn("JWT token not found in localStorage!");
     throw new Error('No JWT token found. Please log in.');
@@ -69,8 +68,6 @@ export const fetchDoctorById = createAsyncThunk(
       const response = await axios.get(`${API_URL}/doctor/get-doctor-by-id/${doctorId}`, {
         headers: getAuthHeader(),
       });
-      // console.log("the data in doctor by id is ", response.data?.information?.doctor)
-      // console.log("the data in patient by id is ", response.data?.information)
       return {
         doctor: response.data?.information?.doctor,
         patients: response.data?.information?.patients

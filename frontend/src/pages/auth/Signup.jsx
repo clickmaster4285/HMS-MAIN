@@ -99,7 +99,7 @@ const SignupFormWithCode = () => {
 
             <button
               type="submit"
-              className="w-full bg-gradient-to-r from-purple-500 to-primary-500 hover:from-primary-500 hover:to-purple-500 text-white font-semibold py-2.5 rounded-xl shadow-lg transition-all"
+              className="w-full bg-linear-to-r from-purple-500 to-primary-500 hover:from-primary-500 hover:to-purple-500 text-white font-semibold py-2.5 rounded-xl shadow-lg transition-all"
             >
               Register & Send Code
             </button>
@@ -119,7 +119,7 @@ const SignupFormWithCode = () => {
             />
             <button
               type="submit"
-              className="w-full bg-gradient-to-r from-green-500 to-emerald-500 hover:from-emerald-500 hover:to-green-500 text-white font-semibold py-2.5 rounded-xl shadow-lg transition-all"
+              className="w-full bg-linear-to-r from-green-500 to-emerald-500 hover:from-emerald-500 hover:to-green-500 text-white font-semibold py-2.5 rounded-xl shadow-lg transition-all"
             >
               Verify Email
             </button>

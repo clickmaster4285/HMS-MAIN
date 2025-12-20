@@ -2,7 +2,6 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_REACT_APP_API_URL;
-// console.log("API URL:", API_URL);
 // 🔐 Get headers with token for auth
 const getAuthHeaders = () => {
   const jwtLoginToken = localStorage.getItem('jwtLoginToken');
@@ -17,13 +16,11 @@ export const SubmitPatientTest = createAsyncThunk(
   'patientTest/SubmitPatientTest',
   async (patientData, { rejectWithValue }) => {
     try {
-      console.log('patient data from frontent', patientData);
       const response = await axios.post(
         `${API_URL}/patientTest/patient-test`,
         patientData,
         { headers: getAuthHeaders() }
       );
-      console.log('✅ Server Response:', response?.data?.data);
       return response.data.data;
     } catch (error) {
       const message =
@@ -43,13 +40,10 @@ export const fetchPatientByMRNo = createAsyncThunk(
   'patientTest/fetchPatientByMRNo',
   async (mrNo, { rejectWithValue }) => {
     try {
-      console.log('Fetching patient with MR No:', mrNo);
-
       const response = await axios.get(`${API_URL}/patientTest/mrno/${mrNo}`, {
         headers: getAuthHeaders(),
       });
 
-      // console.log("the mr number ", response);
       return response.data.data;
     } catch (error) {
       const message =
@@ -68,7 +62,6 @@ export const fetchPatientTestAll = createAsyncThunk(
       const response = await axios.get(`${API_URL}/patientTest`, {
         headers: getAuthHeaders(),
       });
-      // console.log('📄 All Patient Tests hellom    jkbb fetched:', response.data?.data);
       return response.data.data.patientTests;
     } catch (error) {
       const message =
@@ -84,12 +77,9 @@ export const fetchPatientTestById = createAsyncThunk(
   'patientTest/fetchPatientTestById',
   async (id, { rejectWithValue }) => {
     try {
-      console.log('Fetching patient test with ID:', id);
-  
       const response = await axios.get(`${API_URL}/patientTest/${id}`, {
         headers: getAuthHeaders(),
       });
-      console.log('📄 Patient Test by ID fetched:', response.data?.data);
       return response.data.data;
     } catch (error) {
       const message =

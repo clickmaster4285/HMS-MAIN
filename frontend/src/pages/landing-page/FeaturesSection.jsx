@@ -61,7 +61,7 @@ const FeaturesSection = () => {
   ];
 
   return (
-    <section id="features" className="py-20 bg-gradient-to-b from-white to-sky-50">
+    <section id="features" className="py-20 bg-linear-to-b from-white to-sky-50">
       <div className="container mx-auto px-4">
         <div className="text-center max-w-4xl mx-auto mb-16">
           <span className="inline-block px-8 py-3 text-sm font-medium text-sky-600 bg-sky-100 rounded-full mb-4">
@@ -91,7 +91,7 @@ const FeaturesSection = () => {
         </div>
 
         <div className="mt-16 text-center">
-          <button className="px-8 py-3.5 bg-gradient-to-r from-sky-600 to-teal-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all duration-300 hover:from-sky-700 hover:to-teal-700 flex items-center mx-auto">
+          <button className="px-8 py-3.5 bg-linear-to-r from-sky-600 to-teal-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all duration-300 hover:from-sky-700 hover:to-teal-700 flex items-center mx-auto">
             Request Demo
             <ArrowRight size={18} className="ml-2" />
           </button>

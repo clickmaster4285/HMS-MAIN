@@ -177,7 +177,7 @@ const AllAddedTests = () => {
             </div>
             <div className="bg-white rounded-2xl shadow-2xl border border-primary-100 overflow-x-auto w-full">
               <table className="min-w-[900px] w-full">
-                <thead className="bg-gradient-to-r from-primary-600 to-teal-600 text-white rounded-t-2xl">
+                <thead className="bg-linear-to-r from-primary-600 to-teal-600 text-white rounded-t-2xl">
                   <tr>
                     <th className="py-4 px-2 sm:px-4 text-left font-semibold text-xs sm:text-sm">Test Name</th>
                     <th className="py-4 px-2 sm:px-4 text-left font-semibold text-xs sm:text-sm">Code</th>
@@ -193,12 +193,12 @@ const AllAddedTests = () => {
                   {filteredTests.map((test, index) => (
                     <tr
                       key={test._id}
-                      className="hover:bg-gradient-to-r hover:from-primary-50 hover:to-teal-50 transition-all duration-200 cursor-pointer group"
+                      className="hover:bg-linear-to-r hover:from-primary-50 hover:to-teal-50 transition-all duration-200 cursor-pointer group"
                       onClick={() => navigate(`/lab/test/${test._id}`)}
                     >
                       <td className="py-4 px-2 sm:px-4">
                         <div className="flex items-center space-x-3">
-                          <div className="w-10 h-10 bg-gradient-to-br from-primary-500 to-teal-600 rounded-lg flex items-center justify-center text-white font-semibold text-sm shadow">
+                          <div className="w-10 h-10 bg-linear-to-br from-primary-500 to-teal-600 rounded-lg flex items-center justify-center text-white font-semibold text-sm shadow">
                             {test.testName?.charAt(0)?.toUpperCase() || 'T'}
                           </div>
                           <div>

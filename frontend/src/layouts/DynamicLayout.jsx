@@ -20,7 +20,6 @@ const DynamicLayout = () => {
     localStorage.removeItem('user');
     navigate('/login');
   };
-  // console.log("The users are in her in layout: ", user)
 
   return (
     <div className="flex h-screen bg-primary-50">

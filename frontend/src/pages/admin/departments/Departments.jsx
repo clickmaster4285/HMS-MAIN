@@ -5,9 +5,7 @@ import { createDepartment, getallDepartments, updatedepartmentbyid } from '../..
 const DepartmentManagement = () => {
   const dispatch = useDispatch();
   const departments = useSelector(state => state.department.departments) || [];
-
-  // console.log("departments from Redux:", departments);
-
+  
   const [formData, setFormData] = useState({
     name: '',
     description: '',

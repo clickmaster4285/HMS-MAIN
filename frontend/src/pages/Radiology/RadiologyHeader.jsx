@@ -3,7 +3,7 @@ import { formatDate } from './utils'; // Utility function for formatting dates
 
 const RadiologyHeader = ({ currentReport, selectedReport }) => {
   return (
-    <div className="bg-gradient-to-r from-teal-600 to-teal-800 text-white p-8 relative">
+    <div className="bg-linear-to-r from-teal-600 to-teal-800 text-white p-8 relative">
       <div className="absolute top-4 right-4 flex space-x-2">
         <span className="bg-teal-800 text-xs px-2 py-1 rounded-full">
           ID: {currentReport?._id?.slice(-6) || 'N/A'}

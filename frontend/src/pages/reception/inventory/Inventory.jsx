@@ -943,7 +943,7 @@ const Inventory = () => {
         {viewForm && (
           <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex justify-center items-center z-50">
             <div className="bg-white rounded-xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_10px_10px_-5px_rgba(0,0,0,0.04)] max-w-4xl w-full mx-4 border border-gray-200 overflow-hidden transform transition-all duration-200 scale-[0.98] animate-[scaleIn_0.2s_ease-out_forwards]">
-              <div className="flex justify-between items-center border-b border-gray-200 px-6 py-4 bg-gradient-to-r from-primary-50 to-primary-100">
+              <div className="flex justify-between items-center border-b border-gray-200 px-6 py-4 bg-linear-to-r from-primary-50 to-primary-100">
                 <h2 className="text-2xl font-bold text-primary-700 flex items-center gap-2">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
@@ -1101,7 +1101,7 @@ const Inventory = () => {
                 })()}
               </div>
 
-              <div className="px-6 py-4 bg-gradient-to-r from-primary-50 to-primary-100 border-t border-gray-200 flex justify-end space-x-3">
+              <div className="px-6 py-4 bg-linear-to-r from-primary-50 to-primary-100 border-t border-gray-200 flex justify-end space-x-3">
                 <button
                   onClick={closeModal}
                   className="px-6 py-2 bg-primary-600 hover:bg-primary-700 text-white font-medium rounded-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 shadow-sm hover:shadow-md"

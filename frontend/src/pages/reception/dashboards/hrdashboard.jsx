@@ -28,7 +28,7 @@ const HRDashboard = () => {
 
   return (
     <motion.div
-      className="min-h-screen p-8 bg-gradient-to-br from-white via-cyan-50 to-cyan-100 text-gray-800"
+      className="min-h-screen p-8 bg-linear-to-br from-white via-cyan-50 to-cyan-100 text-gray-800"
       animate={{ opacity: trigger ? 1 : 0.95 }}
       transition={{ duration: 0.5 }}
     >

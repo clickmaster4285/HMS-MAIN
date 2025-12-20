@@ -308,7 +308,6 @@ const getAllAdmittedPatients = async (req, res) => {
 const getByMRNumber = async (req, res) => {
   try {
     const { mrNo } = req.params;
-    // console.log("Searching for MR:", mrNo);
 
     // First find the patient by MR number
     const patient = await hospitalModel.Patient.findOne({
@@ -340,9 +339,6 @@ const getByMRNumber = async (req, res) => {
         information: { patient: null },
       });
     }
-
-    // console.log("Found admission:", admission._id);
-    // console.log("Ward ID:", admission.ward_Information?.ward_Id);
 
     // Rest of your code for ward details, bed details, etc...
     let wardDetails = null;
@@ -398,9 +394,6 @@ const updateAdmission = async (req, res) => {
     const { mrNo } = req.params; // Changed from id to mrNo
     const updateData = req.body;
 
-    console.log('Update request for patient MR:', mrNo);
-    console.log('Update data:', updateData);
-
     // First find the patient by MR number
     const patient = await hospitalModel.Patient.findOne({
       patient_MRNo: mrNo,
@@ -430,7 +423,6 @@ const updateAdmission = async (req, res) => {
 
     // ✅ HANDLE DISCHARGE - Free up the bed when discharging
     if (updateData.status === "Discharged" && currentAdmission.status === "Admitted") {
-      console.log('Discharging patient and freeing up bed');
 
       // Free up the current bed
       const currentWard = await hospitalModel.ward.findById(currentAdmission.ward_Information.ward_Id);
@@ -457,7 +449,6 @@ const updateAdmission = async (req, res) => {
             }
           }
           await currentWard.save();
-          console.log(`Bed ${currentBed.bedNumber} freed up for patient discharge`);
         }
       }
 
@@ -474,22 +465,12 @@ const updateAdmission = async (req, res) => {
     if (updateData.ward_Information &&
       (updateData.ward_Information.ward_Id !== currentAdmission.ward_Information.ward_Id.toString() ||
         updateData.ward_Information.bed_No !== currentAdmission.ward_Information.bed_No)) {
-
-      console.log('Bed change detected - updating bed occupancy');
-
       // Declare variables at the function scope level
       let oldWard = null;
       let newWard = null;
 
       // Free up the old bed
       oldWard = await hospitalModel.ward.findById(currentAdmission.ward_Information.ward_Id);
-
-      // ✅ MOVE DEBUG LOGS INSIDE THE BLOCK
-      console.log('Old ward beds:', oldWard?.beds?.map(b => ({
-        bedNumber: b.bedNumber,
-        hasBedNumber: !!b.bedNumber
-      })));
-      console.log('Current admission bed No:', currentAdmission.ward_Information.bed_No);
 
       if (oldWard && oldWard.beds) {
         const oldBed = oldWard.beds.find(b => {

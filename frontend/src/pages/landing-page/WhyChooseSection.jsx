@@ -238,7 +238,7 @@ const CombinedFeaturesSection = () => {
           transition={{ delay: 0.6 }}
         >
           <motion.button 
-            className="px-8 py-3.5 bg-gradient-to-r from-sky-600 to-teal-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all duration-300 hover:from-sky-700 hover:to-teal-700 inline-flex items-center"
+            className="px-8 py-3.5 bg-linear-to-r from-sky-600 to-teal-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all duration-300 hover:from-sky-700 hover:to-teal-700 inline-flex items-center"
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
           >

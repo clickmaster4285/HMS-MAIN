@@ -5,7 +5,6 @@ const API_URL = import.meta.env.VITE_REACT_APP_API_URL;
 
 const getAuthHeaders = () => {
   const jwtLoginToken = localStorage.getItem("jwtLoginToken");
-  // console.log("THe login token is: ", jwtLoginToken);
   return {
     "Content-Type": "application/json",
     Authorization: `Bearer ${jwtLoginToken}`,
@@ -17,14 +16,6 @@ export const updatePatientTestResults = createAsyncThunk(
   async ({ patientTestId, testId, updateData }, { rejectWithValue }) => {
     try {
       const formattedTestId = Array.isArray(testId) ? testId.join(",") : testId;
-
-      console.log(
-        "🧪 Updating test results:",
-        patientTestId,
-        formattedTestId,
-        updateData,
-        getAuthHeaders()
-      );
       // testId = formattedTestId
       const response = await axios.patch(
         `${API_URL}/testResult/${patientTestId}/tests/${formattedTestId}/results`,
@@ -32,7 +23,6 @@ export const updatePatientTestResults = createAsyncThunk(
         { headers: getAuthHeaders() }
       );
 
-      console.log("✅ Test results updated:", response);
       return response.data.data;
     } catch (error) {
       const message =
@@ -50,7 +40,6 @@ export const updatePatientTestResults = createAsyncThunk(
 export const getSummaryByDate = createAsyncThunk(
   "patientTest/getSummaryByDate",
   async (dateRange, { rejectWithValue }) => {
-    // console.log("The dateRange", dateRange)
     try {
       const startDate = dateRange.startDate || dateRange.date?.startDate;
       let endDate = dateRange.endDate || dateRange.date?.endDate;

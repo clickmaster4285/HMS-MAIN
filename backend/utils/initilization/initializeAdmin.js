@@ -26,9 +26,7 @@ const initializeAdmin = async () => {
       };
 
       await User.create(adminData);
-      // console.log("✅ Default Admin initialized successfully");
     } else {
-      // console.log("ℹ️ Admin already exists in the database");
     }
   } catch (error) {
     console.error("❌ Error initializing Admin:", error.message);

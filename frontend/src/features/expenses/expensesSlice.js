@@ -34,7 +34,6 @@ export const createExpense = createAsyncThunk(
 export const getExpenses = createAsyncThunk(
   'expenses/get-expenses',
   async (params = {}, { rejectWithValue }) => {
-    console.log("Fetching expenses with params:", params);
     try {
       const { page = 1, limit = 10, doctor } = params;
       const response = await axios.get(`${API_URL}/expense/get-expenses`, {

@@ -46,7 +46,6 @@ ClickMasters Support Team`;
       html,
     });
 
-    console.log("✅ Email sent to:", email, " | Message ID:", info.messageId);
     return { success: true };
   } catch (error) {
     console.error("❌ Failed to send email:", error.message);

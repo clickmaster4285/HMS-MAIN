@@ -61,7 +61,7 @@ const DashboardShowcaseSection = () => {
   };
 
   return (
-    <section className="py-20 bg-gradient-to-b from-white to-gray-50">
+    <section className="py-20 bg-linear-to-b from-white to-gray-50">
       <div className="container mx-auto px-4">
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
@@ -141,7 +141,7 @@ const DashboardShowcaseSection = () => {
                     <div className="space-y-3 mb-8">
                       {dashboard.features.map((feature, i) => (
                         <div key={i} className="flex items-start">
-                          <div className={`mt-1 mr-3 flex-shrink-0 ${colorMap[dashboard.color].text}`}>
+                          <div className={`mt-1 mr-3 shrink-0 ${colorMap[dashboard.color].text}`}>
                             <CheckCircle size={18} />
                           </div>
                           <span className="text-gray-700">{feature}</span>

@@ -5,7 +5,6 @@ import PrintA4 from "../pages/reception/opd/prints/PrintA4";
 import PrintPdf from "../pages/reception/opd/prints/PrintPdf";
 
 export const printThermal = (formData) => {
-   console.log("Printing thermal with data:", formData); // Debug log
    const printWindow = window.open('', '_blank',);
    const htmlContent = `
     <!DOCTYPE html>
@@ -52,9 +51,6 @@ export const printPdf = (formData) => {
 
 // In your printUtils.js, make sure handlePrint accepts both parameters
 export const handlePrint = (formData, printOption) => {
-   console.log("Printing with data:", formData);
-   console.log("Token value:", formData?.visitData?.token);
-
    if (!printOption) {
       throw new Error('Please select a print option');
    }

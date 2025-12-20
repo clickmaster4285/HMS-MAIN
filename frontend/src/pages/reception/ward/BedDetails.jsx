@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
-import { 
+import {
   getPatientByBedId,
   getBedHistory,
   clearWardState,
@@ -13,8 +13,8 @@ const BedDetails = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const [showHistory, setShowHistory] = useState(false);
-  
-  const { 
+
+  const {
     currentBed,
     currentBedPatient,
     currentBedHistory,
@@ -61,7 +61,7 @@ const BedDetails = () => {
                 Ward {currentBed.ward.wardNumber} • {currentBed.ward.department}
               </p>
             </div>
-            <button 
+            <button
               onClick={() => navigate(-1)}
               className="text-white hover:text-gray-200"
             >
@@ -83,7 +83,7 @@ const BedDetails = () => {
               {showHistory ? 'Hide History' : 'View History'}
             </button>
           </div>
-          
+
           <div className={`p-4 rounded-lg ${currentBed.status === 'Occupied' ? 'bg-red-50 border-l-4 border-red-500' : 'bg-green-50 border-l-4 border-green-500'}`}>
             <div className="flex items-center">
               <div className={`w-3 h-3 rounded-full mr-3 ${currentBed.status === 'Occupied' ? 'bg-red-500' : 'bg-green-500'}`}></div>
@@ -91,7 +91,7 @@ const BedDetails = () => {
                 {currentBed.status}
               </span>
             </div>
-            
+
             {currentBed.status === 'Occupied' && currentBedPatient && (
               <div className="mt-3 pl-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -158,7 +158,7 @@ const BedDetails = () => {
                     {currentBedHistory.map((record, index) => {
                       const admissionDate = new Date(record.admissionDate);
                       const dischargeDate = record.dischargeDate ? new Date(record.dischargeDate) : null;
-                      const duration = dischargeDate 
+                      const duration = dischargeDate
                         ? Math.ceil((dischargeDate - admissionDate) / (1000 * 60 * 60 * 24))
                         : Math.ceil((new Date() - admissionDate) / (1000 * 60 * 60 * 24));
 
@@ -201,23 +201,11 @@ const BedDetails = () => {
           {currentBed.status === 'Occupied' ? (
             <button
               className="bg-red-600 hover:bg-red-700 text-white py-2 px-6 rounded-md"
-              onClick={() => {
-                // Implement discharge functionality
-                console.log('Discharge patient from bed');
-              }}
-            >
-              Discharge Patient
-            </button>
+              onClick={() => { }} >   Discharge Patient </button>
           ) : (
             <button
               className="bg-primary-600 hover:bg-primary-700 text-white py-2 px-6 rounded-md"
-              onClick={() => {
-                // Implement assign patient functionality
-                console.log('Assign patient to bed');
-              }}
-            >
-              Assign Patient
-            </button>
+              onClick={() => { }} >Assign Patient</button>
           )}
         </div>
       </div>

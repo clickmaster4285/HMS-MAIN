@@ -40,9 +40,6 @@ const PrintOptionsModal = ({ patient, onClose }) => {
 
             printOption: printOption
          };
-
-         console.log('Printing patient data:', formData);
-
          // Use the existing print utility
          handlePrint(formData, printOption);
 
@@ -125,7 +122,7 @@ const PrintOptionsModal = ({ patient, onClose }) => {
                            onClick={() => setPrintOption(option.value)}
                         >
                            <div className="flex items-start">
-                              <div className={`flex-shrink-0 h-5 w-5 rounded-full border-2 flex items-center justify-center mr-3 mt-0.5 ${printOption === option.value
+                              <div className={`shrink-0 h-5 w-5 rounded-full border-2 flex items-center justify-center mr-3 mt-0.5 ${printOption === option.value
                                     ? 'border-primary-500 bg-primary-500'
                                     : 'border-gray-300'
                                  }`}>

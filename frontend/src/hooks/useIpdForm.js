@@ -41,7 +41,6 @@ export const useIpdForm = (mode = "create") => {
 
   const currentAdmission = useSelector((state) => state.ipdPatient.currentPatient);
   const getAdmissionStatus = useSelector((state) => state.ipdPatient.status.search);
-  console.log("the status is ", getAdmissionStatus)
   // State
   const [mrNo, setMrNo] = useState(mode === "edit" ? mrNoFromParams : "");
   const [isSearching, setIsSearching] = useState(false);
@@ -115,10 +114,6 @@ export const useIpdForm = (mode = "create") => {
     const patient = admission.patient;
     const wardInfo = admission.ward_Information || {};
 
-    console.log("Populating form from admission:", admission);
-    console.log("Ward info:", wardInfo);
-    console.log("Available departments:", departments);
-
     // FIXED: Better department matching
     const department = departments.find(dept => {
       // Try multiple matching strategies
@@ -130,9 +125,6 @@ export const useIpdForm = (mode = "create") => {
         wardType?.includes(deptName) ||
         dept.name === wardInfo.ward_Type;
     });
-
-    console.log("Found department:", department);
-
     const formDataUpdate = {
       patientId: patient?._id || '',
       mrNumber: patient?.patient_MRNo || "",
@@ -170,13 +162,10 @@ export const useIpdForm = (mode = "create") => {
       totalFee: admission.financials?.total_Charges || 0,
       paymentStatus: admission.financials?.payment_Status || "Unpaid",
     };
-
-    console.log("Setting form data:", formDataUpdate);
     setFormData(prev => ({ ...prev, ...formDataUpdate }));
 
     // Load wards for the department if department is found
     if (department?._id) {
-      console.log("Dispatching getwardsbydepartmentId for department:", department._id);
       dispatch(getwardsbydepartmentId(department._id));
     } else {
       console.warn("No department found for ward type:", wardInfo.ward_Type);
@@ -423,15 +412,12 @@ export const useIpdForm = (mode = "create") => {
 
   useEffect(() => {
     if (mode === "edit" && mrNoFromParams) {
-      console.log("Dispatching getIpdPatientByMrno with MR:", mrNoFromParams);
       dispatch(getIpdPatientByMrno(mrNoFromParams));
     }
   }, [mode, mrNoFromParams, dispatch]);
 
   useEffect(() => {
-    console.log("Current admission changed:", currentAdmission);
-    if (mode === "edit" && currentAdmission && !hasPopulatedForm) {
-      console.log("Populating form with admission data");
+    if (mode === "edit" && currentAdmission && !hasPopulatedForm) {   
       populateFormFromAdmission(currentAdmission);
       setHasPopulatedForm(true);
     }
@@ -469,7 +455,6 @@ export const useIpdForm = (mode = "create") => {
 
     try {
       const payload = preparePayload();
-      console.log("Submitting payload:", payload);
 
       if (mode === "create") {
         const result = await dispatch(admitPatient(payload));
@@ -482,7 +467,6 @@ export const useIpdForm = (mode = "create") => {
           mrNo: formData.mrNumber,
           admissionData: payload
         };
-        console.log("Update payload:", updatePayload);
 
         const result = await dispatch(updatePatientAdmission(updatePayload));
         if (updatePatientAdmission.rejected.match(result)) {
