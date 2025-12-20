@@ -223,15 +223,11 @@ const PatientTestsTable = () => {
   // Local, sorted copy for optimistic UX
   const sortByRecent = useCallback((list) => {
     return [...list].sort((a, b) => {
-      const ad = new Date(
-        a._norm.updatedAt || a._norm.createdAt || 0
-      ).getTime();
-      const bd = new Date(
-        b._norm.updatedAt || b._norm.createdAt || 0
-      ).getTime();
-      return bd - ad; // newest first
-    });
-  }, []);
+    const aDate = new Date(a._norm.createdAt || 0).getTime();
+    const bDate = new Date(b._norm.createdAt || 0).getTime();
+    return bDate - aDate; // newest first
+  });
+}, []);
 
   const [rows, setRows] = useState([]);
 
@@ -241,15 +237,6 @@ const PatientTestsTable = () => {
   }, [safeTests, sortByRecent]);
 
   const handleEdit = (id) => {
-    setRows((cur) => {
-      const idx = cur.findIndex((x) => x._id === id);
-      if (idx === -1) return cur;
-      const copy = [...cur];
-      const [item] = copy.splice(idx, 1);
-      item._norm.updatedAt = new Date().toISOString();
-      copy.unshift(item);
-      return copy;
-    });
     navigate(`/lab/patient-tests/edit/${id}`);
   };
 
