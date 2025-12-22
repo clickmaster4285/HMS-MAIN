@@ -289,8 +289,6 @@ emitGlobalEvent(req, EVENTS.PATIENT_TEST, "create", {
   }
 };
 
-
-
 const getAllPatientTests = async (req, res) => {
   try {
     const { page = 1, limit = 100000, search } = req.query;
@@ -396,6 +394,7 @@ const getAllPatientTests = async (req, res) => {
     });
   }
 };
+
 
 const getPatientTestById = async (req, res) => {
   try {
