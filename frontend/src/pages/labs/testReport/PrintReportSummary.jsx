@@ -72,12 +72,12 @@ const PrintReportSummary = ({ reports, dateRange }) => {
           {`
             @page {
               size: A4;
-              margin: 5mm 10mm;
+              margin: 2mm 4mm;
             }
               
             body {
               margin: 0;
-              padding: 5mm;
+              padding: 2mm;
               color: #333;
               width: 210mm;
               height: 297mm;
@@ -151,7 +151,7 @@ const PrintReportSummary = ({ reports, dateRange }) => {
             { label: "Total Amount", value: totals.totalAmount },
             { label: "Total Paid", value: totals.totalPaid },
             { label: "Total Discount", value: totals.totalDiscount },
-            { label: "Total Balance", value: totals.totalBalance },
+            { label: "Total Remaining Amount ", value: totals.totalBalance },
           ].map((item, index) => (
             <div key={index} className="border p-3 rounded shadow-sm">
               <h3 className="text-xs font-medium text-gray-500">
@@ -210,7 +210,7 @@ const PrintReportSummary = ({ reports, dateRange }) => {
                     Discount
                   </th>
                   <th className="p-2 border border-gray-200 text-right">
-                    Balance
+                    Remaining Amount
                   </th>
                 </tr>
               </thead>
