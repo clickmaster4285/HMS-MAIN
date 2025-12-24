@@ -291,7 +291,7 @@ emitGlobalEvent(req, EVENTS.PATIENT_TEST, "create", {
 
 const getAllPatientTests = async (req, res) => {
   try {
-    const { page = 1, limit = 100000, search } = req.query;
+    const { page = 1, limit = 20, search } = req.query;
     const skip = (page - 1) * limit;
 
     let query = { isDeleted: false };
