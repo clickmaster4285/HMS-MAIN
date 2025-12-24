@@ -1,20 +1,25 @@
 @echo off
-title HMS App - Development Mode
+title HMS App - Production Mode (Separate)
 echo ======================================
-echo Starting HMS App (Backend + Frontend)
+echo Starting HMS Backend + Frontend Separately
 echo ======================================
 
 :: Go to project root
 cd /d "C:\Users\PC\Desktop\hms-11n0v"
 
-:: Run development command (both backend & frontend)
-echo.
-echo Running: npm run dev
-echo --------------------------------------
-call npm run dev
+:: Start backend in production mode
+start cmd /k "cd /d "C:\Users\PC\Desktop\hms-11n0v\backend" && set NODE_ENV=production && node server.js"
 
-:: Keep window open
+:: Build and serve frontend
+call npm run build --workspace=frontend
+start cmd /k "cd /d "C:\Users\PC\Desktop\hms-11n0v\frontend" && npm run preview"
+
+:: Wait and show URLs
+timeout /t 5
 echo.
-echo --------------------------------------
-echo HMS App is running (Press Ctrl + C to stop)
+echo ======================================
+echo HMS App Running:
+echo Backend:  http://192.168.10.253:5002
+echo Frontend: http://192.168.10.253:4173 (or 5173)
+echo ======================================
 pause

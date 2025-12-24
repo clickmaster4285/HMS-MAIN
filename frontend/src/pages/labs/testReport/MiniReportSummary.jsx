@@ -125,7 +125,7 @@ const MiniReportSummary = ({ reports, dateRange }) => {
             <p className="text-lg font-semibold">PKR {formatCurrency(totals.totalPaid)}</p>
           </div>
           <div className="border p-3 rounded shadow-sm bg-red-50">
-            <h3 className="text-xs font-medium text-gray-500">Total Balance</h3>
+            <h3 className="text-xs font-medium text-gray-500">Total Discount</h3>
             <p className="text-lg font-semibold">PKR {formatCurrency(totals.totalBalance)}</p>
           </div>
         </div>
