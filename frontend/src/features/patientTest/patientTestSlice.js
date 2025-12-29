@@ -57,12 +57,15 @@ export const fetchPatientByMRNo = createAsyncThunk(
 
 export const fetchPatientTestAll = createAsyncThunk(
   'patientTest/fetchPatientTestAll',
-  async (_, { rejectWithValue }) => {
+  async (params = {}, { rejectWithValue }) => {
     try {
+      const { page = 1, limit = 20, search = '' } = params;
       const response = await axios.get(`${API_URL}/patientTest`, {
         headers: getAuthHeaders(),
+        params: { page, limit, search } 
       });
-      return response.data.data.patientTests;
+      console.log('Fetched patient tests response:', response.data.data);
+      return response.data.data; 
     } catch (error) {
       const message =
         error.response?.data?.message ||
@@ -219,10 +222,17 @@ export const deletepatientTest = createAsyncThunk(
 
 const initialState = {
   patient: null,
-  allPatientTests: [],
+  allPatientTests: [], // This should hold only current page data
   allPatients: [],
   tests: [],
   testHistory: [],
+  // Add pagination info:
+  pagination: {
+    currentPage: 1,
+    totalPages: 1,
+    totalItems: 0,
+    itemsPerPage: 20,
+  },
   stats: {
     totalTests: 0,
     completedTests: 0,
@@ -248,6 +258,7 @@ const initialState = {
   isLoading: false,
   isError: false,
 };
+
 
 // 🧠 Slice
 const patienttestSlice = createSlice({
@@ -330,11 +341,17 @@ const patienttestSlice = createSlice({
         state.isError = false;
         state.error = null;
       })
-      .addCase(fetchPatientTestAll.fulfilled, (state, action) => {
-        state.status.fetchAll = 'succeeded';
-        state.isLoading = false;
-        state.allPatientTests = action.payload;
-      })
+.addCase(fetchPatientTestAll.fulfilled, (state, action) => {
+  state.status.fetchAll = 'succeeded';
+  state.isLoading = false;
+  state.allPatientTests = action.payload.patientTests;
+  state.pagination = {
+    currentPage: action.payload.pagination?.page || 1,
+    totalPages: action.payload.pagination?.totalPages || 1,
+    totalItems: action.payload.pagination?.total || 0,
+    itemsPerPage: action.payload.pagination?.limit || 20,
+  };
+})
       .addCase(fetchPatientTestAll.rejected, (state, action) => {
         state.status.fetchAll = 'failed';
         state.isLoading = false;

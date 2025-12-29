@@ -48,7 +48,7 @@ const patientTestSchema = new mongoose.Schema(
         test: {
           type: mongoose.Schema.Types.ObjectId,
           ref: "TestManagment",
-          index: true, // ✅ join performance
+          index: true,
         },
 
         testStatus: {

@@ -35,6 +35,8 @@ connectDB()
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/', indexRouter);
 
+
+
 const PORT = process.env.PORT || 5000;
 const HOST = process.env.HOST || '0.0.0.0';
 const MODE = process.env.NODE_ENV || 'development';

@@ -14,6 +14,8 @@ import {
   FiPrinter,
   FiEdit,
   FiTrash2,
+  FiChevronLeft,
+  FiChevronRight,
 } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
 import PrintA4 from './PrintPatientTest';
@@ -184,7 +186,7 @@ const PatientTestsTable = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  const { allPatientTests, status, error } = useSelector(
+  const { allPatientTests, status, error, pagination } = useSelector(
     (state) => state.patientTest
   );
 
@@ -196,6 +198,11 @@ const PatientTestsTable = () => {
     gender: '',
     contact: '',
   });
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(20);
+  const [localSearchTerm, setLocalSearchTerm] = useState('');
 
   const [isOpen, setIsOpen] = useState(false);
   const [selectedTest, setSelectedTest] = useState(null);
@@ -210,9 +217,44 @@ const PatientTestsTable = () => {
     setSelectedTest(null);
   };
 
+  // Build query parameters for backend
+  const buildQueryParams = useCallback(() => {
+    const params = {
+      page: currentPage,
+      limit: itemsPerPage,
+    };
+
+    // Add search term if exists
+    if (localSearchTerm) {
+      params.search = localSearchTerm;
+    }
+
+    // Add filters to search
+    let filterSearch = '';
+    if (filters.status) {
+      filterSearch += `status:${filters.status} `;
+    }
+    if (filters.gender) {
+      filterSearch += `gender:${filters.gender} `;
+    }
+    if (filters.contact) {
+      filterSearch += `contact:${filters.contact} `;
+    }
+
+    if (filterSearch) {
+      params.search = params.search 
+        ? `${params.search} ${filterSearch}` 
+        : filterSearch;
+    }
+
+    return params;
+  }, [currentPage, itemsPerPage, localSearchTerm, filters]);
+
+  // Fetch data with pagination and filters
   useEffect(() => {
-    dispatch(fetchPatientTestAll());
-  }, [dispatch]);
+    const queryParams = buildQueryParams();
+    dispatch(fetchPatientTestAll(queryParams));
+  }, [dispatch, buildQueryParams]);
 
   // Build a normalized list once per store update
   const safeTests = useMemo(
@@ -223,11 +265,11 @@ const PatientTestsTable = () => {
   // Local, sorted copy for optimistic UX
   const sortByRecent = useCallback((list) => {
     return [...list].sort((a, b) => {
-    const aDate = new Date(a._norm.createdAt || 0).getTime();
-    const bDate = new Date(b._norm.createdAt || 0).getTime();
-    return bDate - aDate; // newest first
-  });
-}, []);
+      const aDate = new Date(a._norm.createdAt || 0).getTime();
+      const bDate = new Date(b._norm.createdAt || 0).getTime();
+      return bDate - aDate; // newest first
+    });
+  }, []);
 
   const [rows, setRows] = useState([]);
 
@@ -235,6 +277,16 @@ const PatientTestsTable = () => {
   useEffect(() => {
     setRows(sortByRecent(safeTests));
   }, [safeTests, sortByRecent]);
+
+  // Handle search with debounce
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setLocalSearchTerm(searchTerm);
+      setCurrentPage(1); // Reset to page 1 when searching
+    }, 500); // 500ms debounce
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
   const handleEdit = (id) => {
     navigate(`/lab/patient-tests/edit/${id}`);
@@ -252,7 +304,8 @@ const PatientTestsTable = () => {
       try {
         await dispatch(deletepatientTest(id)).unwrap();
         // background refresh to stay in sync
-        dispatch(fetchPatientTestAll());
+        const queryParams = buildQueryParams();
+        dispatch(fetchPatientTestAll(queryParams));
         toast.success('Record deleted successfully');
       } catch (e) {
         // revert on error
@@ -340,67 +393,53 @@ const PatientTestsTable = () => {
     w.document.close();
   };
 
-  // Optional date-range filter helper
-  const inDateRange = (createdAt, range) => {
-    if (!range) return true;
-    if (!createdAt) return false;
-    const d = new Date(createdAt);
-    const now = new Date();
-    if (range === 'today') return isSameDay(d, now);
-    if (range === 'week') return isSameWeek(d, now, { weekStartsOn: 1 });
-    if (range === 'month') return isSameMonth(d, now);
-    return true;
+  // Handle page change
+  const handlePageChange = (newPage) => {
+    if (newPage >= 1 && newPage <= (pagination?.totalPages || 1)) {
+      setCurrentPage(newPage);
+    }
   };
 
-  const filteredTests = useMemo(() => {
-    const term = (searchTerm || '').toLowerCase();
-    const contactFilter = (filters.contact || '').toLowerCase();
-
-    return rows.filter((test) => {
-      const t = test._norm;
-      const mr = t.patient.MRNo?.toString().toLowerCase() || '';
-      const name = t.patient.Name?.toLowerCase() || '';
-      const token = t.tokenNumber?.toString() || '';
-      const contact = (
-        t.patient.Contact ||
-        t.patient.ContactNo ||
-        ''
-      ).toLowerCase();
-
-      const matchesSearch =
-        mr.includes(term) ||
-        name.includes(term) ||
-        token.includes(term) ||
-        contact.includes(term);
-
-      const matchesContact = contactFilter
-        ? contact.includes(contactFilter)
-        : true;
-
-      const matchesStatus =
-        !filters.status || t.paymentStatus === filters.status;
-      const matchesGender =
-        !filters.gender || t.patient.Gender === filters.gender;
-      const matchesDate = inDateRange(t.createdAt, filters.dateRange);
-
-      return (
-        matchesSearch &&
-        matchesContact &&
-        matchesStatus &&
-        matchesGender &&
-        matchesDate
-      );
-    });
-  }, [rows, searchTerm, filters]);
+  const handleItemsPerPageChange = (e) => {
+    const newItemsPerPage = parseInt(e.target.value);
+    setItemsPerPage(newItemsPerPage);
+    setCurrentPage(1); // Reset to first page when changing items per page
+  };
 
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
     setFilters((prev) => ({ ...prev, [name]: value }));
+    setCurrentPage(1); // Reset to page 1 when filters change
   };
 
   const resetFilters = () => {
     setFilters({ status: '', dateRange: '', gender: '', contact: '' });
     setSearchTerm('');
+    setCurrentPage(1);
+  };
+
+  // Generate page numbers for pagination
+  const generatePageNumbers = () => {
+    const totalPages = pagination?.totalPages || 1;
+    const pages = [];
+    
+    if (totalPages <= 5) {
+      // Show all pages if 5 or less
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      // Show first, last, and pages around current
+      if (currentPage <= 3) {
+        pages.push(1, 2, 3, 4, '...', totalPages);
+      } else if (currentPage >= totalPages - 2) {
+        pages.push(1, '...', totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
+      } else {
+        pages.push(1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages);
+      }
+    }
+    
+    return pages;
   };
 
   if (status.fetchAll === 'loading') {
@@ -542,8 +581,27 @@ const PatientTestsTable = () => {
           )}
         </div>
 
-        <div className="mb-4 text-sm text-gray-600">
-          Showing {filteredTests.length} of {rows.length} records
+        <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 text-sm text-gray-600">
+          <div>
+            Showing {((currentPage - 1) * itemsPerPage) + 1} to{' '}
+            {Math.min(currentPage * itemsPerPage, pagination?.totalItems || 0)} of{' '}
+            {pagination?.totalItems || 0} records
+          </div>
+          <div className="flex items-center space-x-4 mt-2 md:mt-0">
+            <div className="flex items-center">
+              <label className="mr-2 text-sm">Rows per page:</label>
+              <select
+                value={itemsPerPage}
+                onChange={handleItemsPerPageChange}
+                className="border border-gray-300 rounded px-2 py-1 text-sm"
+              >
+                <option value={10}>10</option>
+                <option value={20}>20</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+              </select>
+            </div>
+          </div>
         </div>
 
         <div className="overflow-x-auto rounded-lg border border-gray-200">
@@ -587,8 +645,8 @@ const PatientTestsTable = () => {
             </thead>
 
             <tbody className="bg-white divide-y divide-gray-200">
-              {filteredTests.length > 0 ? (
-                filteredTests.map((test) => {
+              {rows.length > 0 ? (
+                rows.map((test) => {
                   const t = test._norm;
                   return (
                     <tr
@@ -716,6 +774,83 @@ const PatientTestsTable = () => {
             </tbody>
           </table>
         </div>
+
+        {/* Pagination Controls */}
+        {(pagination?.totalPages || 0) > 1 && (
+          <div className="flex flex-col md:flex-row items-center justify-between mt-6 px-4 py-3 bg-white border-t border-gray-200">
+            <div className="text-sm text-gray-700 mb-4 md:mb-0">
+              Page {currentPage} of {pagination?.totalPages || 1}
+            </div>
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => handlePageChange(1)}
+                disabled={currentPage === 1}
+                className={`px-3 py-1 rounded border ${
+                  currentPage === 1
+                    ? 'text-gray-400 cursor-not-allowed'
+                    : 'text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                First
+              </button>
+              <button
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+                className={`px-3 py-1 rounded border flex items-center ${
+                  currentPage === 1
+                    ? 'text-gray-400 cursor-not-allowed'
+                    : 'text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                <FiChevronLeft className="mr-1" /> Previous
+              </button>
+              
+              {/* Page numbers */}
+              <div className="flex space-x-1">
+                {generatePageNumbers().map((pageNum, index) => (
+                  pageNum === '...' ? (
+                    <span key={`ellipsis-${index}`} className="px-3 py-1">...</span>
+                  ) : (
+                    <button
+                      key={pageNum}
+                      onClick={() => handlePageChange(pageNum)}
+                      className={`px-3 py-1 rounded border ${
+                        currentPage === pageNum
+                          ? 'bg-primary-600 text-white border-primary-600'
+                          : 'text-gray-700 hover:bg-gray-50'
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  )
+                ))}
+              </div>
+
+              <button
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === (pagination?.totalPages || 1)}
+                className={`px-3 py-1 rounded border flex items-center ${
+                  currentPage === (pagination?.totalPages || 1)
+                    ? 'text-gray-400 cursor-not-allowed'
+                    : 'text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                Next <FiChevronRight className="ml-1" />
+              </button>
+              <button
+                onClick={() => handlePageChange(pagination?.totalPages || 1)}
+                disabled={currentPage === (pagination?.totalPages || 1)}
+                className={`px-3 py-1 rounded border ${
+                  currentPage === (pagination?.totalPages || 1)
+                    ? 'text-gray-400 cursor-not-allowed'
+                    : 'text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                Last
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Modal */}
         {isOpen && selectedTest && (
