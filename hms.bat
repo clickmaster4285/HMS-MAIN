@@ -1,20 +1,27 @@
 @echo off
-title HMS App - Development Mode
+title HMS App - Production Mode
+
 echo ======================================
-echo Starting HMS App (Backend + Frontend)
+echo Starting HMS App (SPA - Production)
+echo Frontend (Build) + Backend
 echo ======================================
 
-:: Go to project root
-cd /d "C:\Users\PC\Desktop\hms-11n0v"
+cd /d "D:\HMS" || (
+  echo ❌ Project path not found!
+  pause
+  exit /b
+)
 
-:: Run development command (both backend & frontend)
-echo.
-echo Running: npm run dev
-echo --------------------------------------
-call npm run dev
-
-:: Keep window open
 echo.
 echo --------------------------------------
-echo HMS App is running (Press Ctrl + C to stop)
+echo Building frontend (Vite)
+echo --------------------------------------
+call npm run build --workspace=frontend
+
+echo.
+echo --------------------------------------
+echo Starting backend (serving SPA)
+echo --------------------------------------
+call npm run start --workspace=backend
+
 pause

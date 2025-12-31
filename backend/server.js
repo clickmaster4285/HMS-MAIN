@@ -6,7 +6,7 @@ const cors = require('cors');
 const path = require('path');
 const initializeAdmin = require('./utils/initilization/initializeAdmin');
 const http = require('http');
-
+const compress = require('compression');
 const { initSocket } = require("./socket/index");
 
 const app = express();
@@ -20,7 +20,7 @@ app.use(
 );
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-
+app.use(compress());
 // Connect to MongoDB
 connectDB()
   .then(() => {
@@ -35,6 +35,15 @@ connectDB()
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/', indexRouter);
 
+// 🌐 Serve frontend build
+app.use(express.static(path.join(__dirname, "../frontend/dist")));
+
+// 🔁 SPA fallback (FIXED)
+app.use((req, res) => {
+  res.sendFile(
+    path.join(__dirname, "../frontend/dist/index.html")
+  );
+});
 
 
 const PORT = process.env.PORT || 5000;
@@ -54,3 +63,4 @@ server.listen(PORT, HOST, (err) => {
   const shownHost = HOST === '0.0.0.0' ? 'localhost' : HOST;
   console.log(`Server running in ${MODE} mode on http://${shownHost}:${PORT}`);
 });
+

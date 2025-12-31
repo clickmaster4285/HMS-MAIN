@@ -1,14 +1,22 @@
+/**
+ * Lab Patients Seeder Script
+ * Inserts 10,000 patients safely using batch inserts
+ */
+
 const mongoose = require("mongoose");
 require("dotenv").config();
 
-// 🔁 IMPORT YOUR MODEL
-const LabPatient = require("./models/patientTest.model"); 
-// ⚠️ Adjust path & model name if different
+// 🔁 IMPORT MODEL (adjust path if needed)
+const LabPatient = require("./models/patientTest.model");
 
-// 🔌 DB CONNECTION
-mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log("MongoDB connected"))
-  .catch(err => console.error(err));
+// 🔌 MONGODB CONNECTION
+mongoose
+  .connect(process.env.MONGO_URI)
+  .then(() => console.log("✅ MongoDB connected"))
+  .catch((err) => {
+    console.error("❌ MongoDB connection failed:", err);
+    process.exit(1);
+  });
 
 // 🧠 HELPERS
 const randomFromArray = (arr) =>
@@ -19,6 +27,7 @@ const randomNumber = (len = 4) =>
 
 const names = ["Ali", "Ahmed", "Usman", "Bilal", "Hassan", "Hamza"];
 const doctors = ["Dr. Noor", "Dr. Hira", "Dr. Khan", "Dr. Aslam"];
+
 const tests = [
   { name: "TFT", code: "TFT", price: 4600 },
   { name: "CBC", code: "CBC", price: 1800 },
@@ -33,6 +42,7 @@ const generatePatient = () => {
   return {
     isExternalPatient: true,
     tokenNumber: randomNumber(3),
+
     patient_Detail: {
       patient_MRNo: `2025${randomNumber(6)}`,
       patient_Guardian: randomFromArray(names),
@@ -43,6 +53,7 @@ const generatePatient = () => {
       patient_Age: `${Math.floor(Math.random() * 80) + 1} years`,
       referredBy: randomFromArray(doctors),
     },
+
     selectedTests: [
       {
         testStatus: "registered",
@@ -66,6 +77,7 @@ const generatePatient = () => {
         ],
       },
     ],
+
     totalAmount: test.price,
     advanceAmount: test.price,
     discountAmount: 0,
@@ -76,6 +88,7 @@ const generatePatient = () => {
     paymentStatus: "paid",
     paidAfterReport: 0,
     totalPaid: test.price,
+
     labNotes: "",
     history: [
       {
@@ -84,22 +97,35 @@ const generatePatient = () => {
         createdAt: new Date(),
       },
     ],
+
     performedBy: "Seeder Script",
     isDeleted: false,
   };
 };
 
-// 🚀 INSERT 2000 PATIENTS
+// 🚀 SEED 10,000 PATIENTS (BATCH INSERT)
 const seedPatients = async () => {
   try {
-    const patients = Array.from({ length: 100000 }, generatePatient);
-    await LabPatient.insertMany(patients);
-    console.log("✅ 2000 random patients inserted");
-    process.exit();
+    const TOTAL = 10000;
+    const BATCH_SIZE = 1000;
+
+    for (let i = 0; i < TOTAL; i += BATCH_SIZE) {
+      const batch = Array.from(
+        { length: BATCH_SIZE },
+        generatePatient
+      );
+
+      await LabPatient.insertMany(batch, { ordered: false });
+      console.log(`✅ Inserted ${i + BATCH_SIZE} / ${TOTAL}`);
+    }
+
+    console.log("🎉 Successfully inserted 10,000 patients");
+    process.exit(0);
   } catch (err) {
-    console.error(err);
+    console.error("❌ Seeding error:", err);
     process.exit(1);
   }
 };
 
+// ▶️ RUN SCRIPT
 seedPatients();
