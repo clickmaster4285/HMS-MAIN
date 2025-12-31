@@ -15,11 +15,11 @@ const DoctorFinancialSummary = () => {
     doctorRevenue: 0,
     totalRefunds: 0
   });
-
+const API_URL = import.meta.env.VITE_REACT_APP_API_URL;
   const fetchSummary = async () => {
     try {
       setLoading(true);
-      const response = await axios.get('http://localhost:5000/summary/summary');
+      const response = await axios.get(`${API_URL}/summary/summary`);
       setSummaryData(response.data.data);
       setLoading(false);
     } catch (err) {
