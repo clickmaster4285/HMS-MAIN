@@ -1,71 +1,69 @@
-// utils/generateOPDToken.js
 const hospitalModel = require("../models/index.model");
+const { extractPurposeDetails } = require("./departmentFromPurpose");
 
-// Generate department-specific token for OPD visits - FIXED VERSION
-const generateOPDToken = async (doctorId, visitDate) => {
-  try {
-    // Get doctor details to find department
-    const doctor = await hospitalModel.Doctor.findById(doctorId)
-      .populate('doctor_Department', 'name');
+// Helper function to get department prefix from doctor
+const getDoctorDepartmentPrefix = (doctor, purposeDetails) => {
+  if (!doctor?.doctor_Department || purposeDetails.isCustom) {
+    return purposeDetails.prefix;
+  }
 
-    if (!doctor) {
-      throw new Error('Doctor not found');
-    }
+  const cleanDeptName = doctor.doctor_Department.replace(/[^a-zA-Z]/g, '');
+  const prefix = cleanDeptName.substring(0, 2).toUpperCase();
+  return prefix.length >= 2 ? prefix : 'GE';
+};
 
-    // Get department name or use 'General' as fallback
-    const departmentName = doctor.doctor_Department || 'General';
+// Helper function to get day boundaries
+const getDayBoundaries = (date) => {
+  const dateObj = date ? new Date(date) : new Date();
+  const start = new Date(dateObj.toISOString().split('T')[0]);
+  const end = new Date(start.getTime() + 24 * 60 * 60 * 1000);
+  return { start, end };
+};
 
-    // Get first two letters, uppercase, remove spaces/special chars
-    const cleanDeptName = departmentName.replace(/[^a-zA-Z]/g, '');
-    const prefix = cleanDeptName.substring(0, 2).toUpperCase();
-    const finalPrefix = prefix.length >= 2 ? prefix : 'GE';
+// Helper function to extract token number from string
+const extractTokenNumber = (tokenStr, prefix) => {
+  const pattern = new RegExp(`^${prefix}-(\\d+)$`);
+  const match = tokenStr.match(pattern);
+  return match ? parseInt(match[1], 10) : 0;
+};
 
-    const dateObj = visitDate ? new Date(visitDate) : new Date();
-    const dateString = dateObj.toISOString().split('T')[0];
+// Helper function to find maximum token number
+const findMaxTokenNumber = (patients, prefix, start, end) => {
+  let max = 0;
 
-    // Find all patients with visits for this doctor today
-    const patients = await hospitalModel.Patient.find({
-      'visits.visitDate': {
-        $gte: new Date(dateString),
-        $lt: new Date(new Date(dateString).getTime() + 24 * 60 * 60 * 1000)
-      },
-      'visits.doctor': doctorId,
-      deleted: false
-    });
+  patients.forEach(patient => {
+    patient.visits?.forEach(visit => {
+      if (visit.visitDate >= start && visit.visitDate < end && visit.token) {
+        const tokenStr = Array.isArray(visit.token) ? visit.token[0] : visit.token.toString();
+        const tokenNum = extractTokenNumber(tokenStr, prefix);
 
-    // Extract all tokens for this doctor today from VISITS only
-    let maxTokenNumber = 0;
-    patients.forEach(patient => {
-      patient.visits.forEach(visit => {
-        if (visit.doctor?.toString() === doctorId.toString() &&
-          visit.visitDate >= new Date(dateString) &&
-          visit.visitDate < new Date(new Date(dateString).getTime() + 24 * 60 * 60 * 1000) &&
-          visit.token) {
-
-          let tokenNum = 0;
-
-          // Handle both string tokens (like "GE-1") and number tokens
-          if (typeof visit.token === 'string') {
-            // Extract number from token (e.g., "DE-1" → 1)
-            const tokenMatch = visit.token.match(/-(\d+)$/);
-            if (tokenMatch) {
-              tokenNum = parseInt(tokenMatch[1]);
-            } else {
-              // If it's a string but doesn't match pattern, try to parse as number
-              tokenNum = parseInt(visit.token) || 0;
-            }
-          } else if (typeof visit.token === 'number') {
-            // Direct number token
-            tokenNum = visit.token;
-          }
-
-          if (tokenNum > maxTokenNumber) {
-            maxTokenNumber = tokenNum;
-          }
+        if (tokenNum > max) {
+          max = tokenNum;
         }
-      });
+      }
     });
+  });
 
+  return max;
+};
+
+// Main function
+const generateOPDToken = async (doctorId = null, visitDate = null, purpose = "Consultation") => {
+  try {
+    const purposeDetails = extractPurposeDetails(purpose);
+    const doctor = doctorId ? await hospitalModel.Doctor.findById(doctorId) : null;
+
+    const finalPrefix = getDoctorDepartmentPrefix(doctor, purposeDetails);
+    const finalDeptName = doctor?.doctor_Department || purposeDetails.departmentName;
+
+    const { start, end } = getDayBoundaries(visitDate);
+
+    const patients = await hospitalModel.Patient.find({
+      'visits.visitDate': { $gte: start, $lt: end },
+      deleted: false
+    }).lean();
+
+    const maxTokenNumber = findMaxTokenNumber(patients, finalPrefix, start, end);
     const nextTokenNumber = maxTokenNumber + 1;
     const token = `${finalPrefix}-${nextTokenNumber}`;
 
@@ -73,19 +71,30 @@ const generateOPDToken = async (doctorId, visitDate) => {
       token,
       tokenNumber: nextTokenNumber,
       departmentPrefix: finalPrefix,
-      departmentName: departmentName
+      departmentName: finalDeptName,
+      purposeCategory: purposeDetails.category,
+      specificType: purposeDetails.specificType,
+      doctor: doctor ? { id: doctor._id, name: doctor.user?.user_Name } : null,
+      purposeBased: purposeDetails.isCustom || !doctor,
+      originalPurpose: purpose
     };
 
   } catch (error) {
-    console.error('Error generating OPD token:', error);
-    // Fallback: return a basic token with timestamp to ensure uniqueness
-    const fallbackToken = `GE-${Date.now()}`;
+    console.error('Token generation error:', error);
+
+    const fallbackDetails = extractPurposeDetails(purpose || "Consultation");
 
     return {
-      token: fallbackToken,
+      token: `${fallbackDetails.prefix}-${Date.now().toString().slice(-4)}`,
       tokenNumber: 1,
-      departmentPrefix: 'GE',
-      departmentName: 'General'
+      departmentPrefix: fallbackDetails.prefix,
+      departmentName: fallbackDetails.departmentName,
+      purposeCategory: fallbackDetails.category,
+      specificType: fallbackDetails.specificType,
+      doctor: null,
+      purposeBased: true,
+      originalPurpose: purpose,
+      isFallback: true
     };
   }
 };

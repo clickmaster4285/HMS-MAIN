@@ -67,7 +67,7 @@ const populatePatient = async (patientId) => {
 const createPatient = async (req, res) => {
   try {
     const {
-      patient_MRNo, // Optional: if provided, means existing patient
+      patient_MRNo,
       patient_Name,
       patient_ContactNo,
       patient_Guardian,
@@ -84,33 +84,54 @@ const createPatient = async (req, res) => {
     let doctor = null;
     let doctorFee = 0;
 
-    // Only check doctor if provided and valid
+    // FIXED: Handle doctor and doctorFee properly
     if (visitData?.doctor && visitData.doctor.trim() !== '') {
+      // Doctor is selected
       doctor = await hospitalModel.Doctor.findById(visitData.doctor);
-      if (!doctor) {
-        return res.status(404).json({
-          success: false,
-          message: "Doctor not found",
-        });
+      if (doctor) {
+        doctorFee = doctor.doctor_Fee || 0;
       }
-      doctorFee = doctor.doctor_Fee || 0;
+    } else {
+      // No doctor selected - use doctorFee from visitData (manual consultation fee)
+      doctorFee = parseFloat(visitData?.doctorFee) || 0;
     }
 
     const currentDate = new Date();
-    const tokenData = await utils.generateOPDToken(visitData.doctor, currentDate);
+
+    // Get purpose from visitData or default
+    const purpose = visitData?.purpose || "Consultation";
+
+    // Generate token based on purpose (doctor may or may not be provided)
+    const tokenData = await utils.generateOPDToken(
+      doctor?._id,
+      currentDate,
+      purpose
+    );
+
+    // FIXED: Get purpose details from tokenData
+    const purposeDetails = {
+      prefix: tokenData.departmentPrefix,
+      name: tokenData.departmentName,
+      category: tokenData.purposeCategory,
+      specificType: tokenData.specificType,
+      isCustom: tokenData.purposeBased
+    };
 
     // Calculate visit details
-    const discount = visitData?.discount || 0;
+    const discount = parseFloat(visitData?.discount) || 0;
     const totalFee = Math.max(0, doctorFee - discount);
     const amountPaid = parseFloat(visitData?.amountPaid) || 0;
 
-    // Create visit object
+    // Create visit object - FIXED: use purposeDetails from tokenData
     const newVisit = {
       visitDate: currentDate,
-      doctor: visitData.doctor || null,
-      purpose: visitData.purpose || "Consultation",
-      disease: visitData.disease || "",
-      doctorFee: doctorFee,
+      doctor: doctor?._id || null,
+      purpose: purpose,
+      purposeDetails: purposeDetails,
+      purposeCategory: tokenData.purposeCategory,
+      specificType: tokenData.specificType,
+      disease: visitData?.disease || "",
+      doctorFee: doctorFee, // This will be either doctor's fee or manual consultation fee
       discount: discount,
       totalFee: totalFee,
 
@@ -127,8 +148,12 @@ const createPatient = async (req, res) => {
       verbalConsentObtained: visitData?.verbalConsentObtained || false,
 
       token: tokenData.token,
+      departmentPrefix: tokenData.departmentPrefix,
+      departmentName: tokenData.departmentName,
       referredBy: visitData?.referredBy || "",
-      notes: visitData?.notes || ""
+      notes: visitData?.notes || "",
+      isPurposeBased: tokenData.purposeBased,
+      purposeHash: purpose.toLowerCase().replace(/\s+/g, '-')
     };
 
     let patient;
@@ -375,20 +400,36 @@ const updatePatient = async (req, res) => {
           visit.verbalConsentObtained = visitUpdateData.verbalConsentObtained;
         }
 
-        // Handle doctor change
-        if (visitUpdateData.doctor && visitUpdateData.doctor !== visit.doctor?.toString()) {
-          const newDoctor = await hospitalModel.Doctor.findById(visitUpdateData.doctor);
-          if (!newDoctor) {
-            return res.status(404).json({
-              success: false,
-              message: "Doctor not found",
-            });
+        // Handle doctor change - FIXED LOGIC
+        if (visitUpdateData.doctor !== undefined) {
+          if (visitUpdateData.doctor) {
+            // Doctor is selected
+            const newDoctor = await hospitalModel.Doctor.findById(visitUpdateData.doctor);
+            if (!newDoctor) {
+              return res.status(404).json({
+                success: false,
+                message: "Doctor not found",
+              });
+            }
+
+            visit.doctor = visitUpdateData.doctor;
+            visit.doctorFee = newDoctor.doctor_Fee || 0;
+          } else {
+            // Doctor is cleared (no doctor selected)
+            visit.doctor = null;
+            // Use doctorFee from visitUpdateData (manual consultation fee)
+            visit.doctorFee = parseFloat(visitUpdateData.doctorFee) || 0;
           }
 
-          visit.doctor = visitUpdateData.doctor;
-          visit.doctorFee = newDoctor.doctor_Fee || 0;
+          // Recalculate fees
+          const discount = visit.discount || 0;
+          visit.totalFee = Math.max(0, visit.doctorFee - discount);
+          visit.amountDue = Math.max(0, visit.totalFee - (visit.amountPaid || 0));
+        }
 
-          // Recalculate fees with existing discount
+        // Handle direct doctorFee update (for manual consultation fee when no doctor)
+        if (visitUpdateData.doctorFee !== undefined && !visit.doctor) {
+          visit.doctorFee = parseFloat(visitUpdateData.doctorFee) || 0;
           const discount = visit.discount || 0;
           visit.totalFee = Math.max(0, visit.doctorFee - discount);
           visit.amountDue = Math.max(0, visit.totalFee - (visit.amountPaid || 0));
@@ -426,34 +467,41 @@ const updatePatient = async (req, res) => {
         }
 
       } else {
-        // ADD NEW VISIT
-        if (!visitUpdateData.doctor) {
-          return res.status(400).json({
-            success: false,
-            message: "Doctor is required for new visit",
-          });
-        }
-
-        const doctor = await hospitalModel.Doctor.findById(visitUpdateData.doctor);
-        if (!doctor) {
-          return res.status(404).json({
-            success: false,
-            message: "Doctor not found",
-          });
-        }
-
+        // ADD NEW VISIT - FIXED LOGIC
         const currentDate = new Date();
-        const tokenData = await utils.generateOPDToken(visitUpdateData.doctor, currentDate);
 
-        const doctorFee = doctor.doctor_Fee || 0;
+        // Get purpose from visitData
+        const purpose = visitUpdateData.purpose || "Consultation";
+
+        let tokenData;
+        let doctorFee = 0;
+        let doctor = null;
+
+        if (visitUpdateData.doctor) {
+          // Doctor is selected
+          doctor = await hospitalModel.Doctor.findById(visitUpdateData.doctor);
+          if (!doctor) {
+            return res.status(404).json({
+              success: false,
+              message: "Doctor not found",
+            });
+          }
+          doctorFee = doctor.doctor_Fee || 0;
+          tokenData = await utils.generateOPDToken(visitUpdateData.doctor, currentDate, purpose);
+        } else {
+          // No doctor selected - use doctorFee from visitUpdateData
+          doctorFee = parseFloat(visitUpdateData.doctorFee) || 0;
+          tokenData = await utils.generateOPDToken(null, currentDate, purpose);
+        }
+
         const discount = parseFloat(visitUpdateData?.discount) || 0;
         const totalFee = Math.max(0, doctorFee - discount);
         const amountPaid = parseFloat(visitUpdateData?.amountPaid) || 0;
 
         const newVisit = {
           visitDate: currentDate,
-          doctor: visitUpdateData.doctor,
-          purpose: visitUpdateData.purpose || "Consultation",
+          doctor: doctor?._id || null,
+          purpose: purpose,
           disease: visitUpdateData.disease || "",
           doctorFee: doctorFee,
           discount: discount,
@@ -467,8 +515,11 @@ const updatePatient = async (req, res) => {
           paymentNotes: visitUpdateData.paymentNotes || "",
           verbalConsentObtained: visitUpdateData.verbalConsentObtained || false,
           token: tokenData.token,
+          departmentPrefix: tokenData.departmentPrefix,
+          departmentName: tokenData.departmentName,
           referredBy: visitUpdateData.referredBy || "",
-          notes: visitUpdateData.notes || ""
+          notes: visitUpdateData.notes || "",
+          isPurposeBased: tokenData.purposeBased
         };
 
         patient.visits.push(newVisit);
@@ -528,6 +579,7 @@ const getAllPatients = async (req, res) => {
     const maritalStatus = req.query.maritalStatus;
     const fromDate = req.query.fromDate;
     const toDate = req.query.toDate;
+    const purpose = req.query.purpose;
 
     // Sorting
     const sortBy = req.query.sortBy || 'lastVisit';
@@ -605,7 +657,6 @@ const getAllPatients = async (req, res) => {
   }
 };
 
-// Keep other functions the same (getPatientByMRNo, deletePatient, getPatientWithRefundHistory)
 const getPatientByMRNo = async (req, res) => {
   try {
     const { patient_MRNo } = req.params;

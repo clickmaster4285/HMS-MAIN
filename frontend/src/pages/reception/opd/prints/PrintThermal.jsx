@@ -6,8 +6,8 @@ const PrintThermal = ({ formData }) => {
   const patientMRNo = formData?.patient_MRNo || formData?.patientMRNo || 'N/A';
   const patientName = formData?.patient_Name || formData?.patientName || 'N/A';
   const doctorName = formData?.visitData?.doctor?.user?.user_Name || formData?.doctorName || 'N/A';
-  const doctorDepartment = formData?.visitData?.doctor?.doctor_Department || formData?.doctorDepartment || 'N/A';
-  const doctorFee = formData?.visitData?.doctor?.doctor_Fee || formData?.doctorFee || 0;
+  const patientpurpose = formData?.visitData?.purpose ;
+  const doctorFee = formData?.visitData?.doctor?.doctor_Fee || formData?.doctorFee || formData?.doctorDetails?.fee || formData?.visitData?.consultationFee || 0;
   const discount = formData?.visitData?.discount || formData?.discount || 0;
   const totalFee = doctorFee - discount;
   const amountPaid = formData?.visitData?.amountPaid || formData?.amountPaid || 0;
@@ -39,7 +39,7 @@ const PrintThermal = ({ formData }) => {
             }
             .hospital-name { 
               font-weight: bold; 
-              font-size: 14px; 
+              font-size: 1rem; 
               text-transform: uppercase;
             }
             .info-item { 
@@ -48,11 +48,13 @@ const PrintThermal = ({ formData }) => {
               justify-content: space-between;
             }
             .label { 
-              font-weight: bold; 
+              font-weight: 800;
+              font-size:1.2rem; 
               min-width: 40%;
             }
             .value {
               text-align: right;
+              font-size: 1.2rem;
               flex: 1;
             }
             .divider { 
@@ -60,7 +62,7 @@ const PrintThermal = ({ formData }) => {
               margin: 5px 0; 
             }
             .footer { 
-              font-size: 10px; 
+              font-size: 0.9rem; 
               text-align: center; 
               margin-top: 8px;
               padding-top: 3px;
@@ -107,8 +109,8 @@ const PrintThermal = ({ formData }) => {
           <span className="value">Dr. {doctorName}</span>
         </div>
         <div className="info-item">
-          <span className="label">Department:</span>
-          <span className="value">{doctorDepartment}</span>
+          <span className="label">Purpose:</span>
+          <span className="value">{patientpurpose}</span>
         </div>
 
         <div className="divider"></div>

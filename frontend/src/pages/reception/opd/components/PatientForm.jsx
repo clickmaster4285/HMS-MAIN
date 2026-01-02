@@ -29,26 +29,6 @@ const PatientForm = ({ formData, handleChange, mode, validGenders, validBloodTyp
             />
 
             <InputField
-               name="patient_Guardian.guardian_Name"
-               label="Guardian Name"
-               icon="team"
-               value={formData.patient_Guardian.guardian_Name}
-               onChange={handleChange}
-               placeholder="Enter Guardian Name"
-            />
-
-            <InputField
-               name="patient_Guardian.guardian_Relation"
-               label="Guardian Relation"
-               icon="team"
-               type="select"
-               value={formData.patient_Guardian.guardian_Relation}
-               onChange={handleChange}
-               options={guardianRelations}
-               placeholder="Select Relation"
-            />
-
-            <InputField
                name="patient_DateOfBirth"
                label="Date of Birth"
                icon="calendar"
@@ -56,15 +36,6 @@ const PatientForm = ({ formData, handleChange, mode, validGenders, validBloodTyp
                value={formData.patient_DateOfBirth}
                max={new Date().toISOString().split('T')[0]}
                onChange={handleChange}
-            />
-
-            <InputField
-               name="patient_CNIC"
-               label="CNIC Number"
-               icon="idCard"
-               value={formData.patient_CNIC}
-               onChange={handleChange}
-               placeholder="XXXXX-XXXXXXX-X"
             />
 
             <InputField
@@ -89,6 +60,35 @@ const PatientForm = ({ formData, handleChange, mode, validGenders, validBloodTyp
             />
 
             <InputField
+               name="patient_Guardian.guardian_Name"
+               label="Guardian Name"
+               icon="team"
+               value={formData.patient_Guardian.guardian_Name}
+               onChange={handleChange}
+               placeholder="Enter Guardian Name"
+            />
+
+            <InputField
+               name="patient_Guardian.guardian_Relation"
+               label="Guardian Relation"
+               icon="team"
+               type="select"
+               value={formData.patient_Guardian.guardian_Relation}
+               onChange={handleChange}
+               options={guardianRelations}
+               placeholder="Select Relation"
+            />
+
+            <InputField
+               name="patient_CNIC"
+               label="CNIC Number"
+               icon="idCard"
+               value={formData.patient_CNIC}
+               onChange={handleChange}
+               placeholder="XXXXX-XXXXXXX-X"
+            />
+
+            <InputField
                name="patient_Guardian.guardian_Contact"
                label="Guardian Contact"
                icon="number"
@@ -96,16 +96,6 @@ const PatientForm = ({ formData, handleChange, mode, validGenders, validBloodTyp
                value={formData.patient_Guardian.guardian_Contact}
                onChange={handleChange}
                placeholder="03XX-XXXXXXX"
-            />
-
-            <InputField
-               name="patient_Address"
-               label="Address"
-               icon="home"
-               value={formData.patient_Address}
-               onChange={handleChange}
-               placeholder="Enter Full Address"
-               fullWidth
             />
 
             <InputField
@@ -117,6 +107,16 @@ const PatientForm = ({ formData, handleChange, mode, validGenders, validBloodTyp
                onChange={handleChange}
                options={validGenders}
                placeholder="Select Gender"
+            />
+
+            <InputField
+               name="patient_Address"
+               label="Address"
+               icon="home"
+               value={formData.patient_Address}
+               onChange={handleChange}
+               placeholder="Enter Full Address"
+               fullWidth
             />
 
             <InputField

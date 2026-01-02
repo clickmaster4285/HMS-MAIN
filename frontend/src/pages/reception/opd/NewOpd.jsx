@@ -264,4 +264,4 @@ const NewOpd = ({ mode = "create" }) => {
   );
 };
 
-export default NewOpd;
+export default NewOpd; 

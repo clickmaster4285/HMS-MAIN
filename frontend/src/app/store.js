@@ -21,7 +21,7 @@ import RadiologySlice from "../features/Radiology/RadiologySlice";
 import criticalResultReducer from "../features/critcalResult/criticalSlice";
 import refundOpdReducer from "../features/refund/refundopdSlice";
 import expensesReducer from "../features/expenses/expensesSlice";
-
+import summaryReducer from '../features/summary/summarySlice';
 /* 🔹 SOCKET MIDDLEWARE */
 import socketMiddleware from "../middleware/socketMiddleware";
 
@@ -47,6 +47,7 @@ const store = configureStore({
     criticalResult: criticalResultReducer,
     refund: refundOpdReducer,
     expenses: expensesReducer,
+    summary: summaryReducer,
   },
 
   middleware: (getDefaultMiddleware) =>

@@ -183,7 +183,11 @@ const Dashboard = () => {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Doctors Table */}
-            <DoctorsTable doctors={doctors} />
+            <DoctorsTable
+              doctors={doctors}
+              opdPatients={opdPatients}
+              admittedPatients={admittedPatients}
+            />
 
             {/* Patients Overview */}
             <PatientsOverview

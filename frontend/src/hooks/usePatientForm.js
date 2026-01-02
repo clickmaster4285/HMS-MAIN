@@ -52,7 +52,9 @@ export const usePatientForm = (mode = "create") => {
          doctor: null,
          purpose: "",
          disease: "",
+         doctorFee: 0, // ADD THIS LINE
          discount: 0,
+         totalFee: 0, // ADD THIS LINE
          referredBy: "",
          amountPaid: 0,
          paymentMethod: "cash",
@@ -136,11 +138,13 @@ export const usePatientForm = (mode = "create") => {
          patient_MaritalStatus: patientData.patient_MaritalStatus || "",
 
          visitData: {
-            visitId: targetVisit._id || "", // Store the visit ID for updates
-            doctor: targetVisit.doctor?._id || "", // CORRECT: use 'doctor' not 'doctorId'
+            visitId: targetVisit._id || "",
+            doctor: targetVisit.doctor?._id || "",
             purpose: targetVisit.purpose || "",
             disease: targetVisit.disease || "",
             discount: targetVisit.discount || 0,
+            doctorFee: targetVisit.doctorFee || 0, // Load doctorFee from DB
+            totalFee: targetVisit.totalFee || 0,
             referredBy: targetVisit.referredBy || "",
             amountPaid: targetVisit.amountPaid || 0,
             paymentMethod: targetVisit.paymentMethod || "cash",
@@ -156,7 +160,7 @@ export const usePatientForm = (mode = "create") => {
             qualification: Array.isArray(doctor.doctor_Qualifications)
                ? doctor.doctor_Qualifications.join(", ")
                : doctor.doctor_Qualifications || "",
-            fee: doctor.doctor_Fee || 0,
+            fee: targetVisit.doctorFee || doctor.doctor_Fee || 0, // Use doctorFee from visit or doctor's fee
             specialization: doctor.doctor_Specialization || "",
             department: doctor.doctor_Department || ""
          },
@@ -216,11 +220,13 @@ export const usePatientForm = (mode = "create") => {
          ...(formData.patient_BloodType && { patient_BloodType: formData.patient_BloodType }),
          ...(formData.patient_MaritalStatus && { patient_MaritalStatus: formData.patient_MaritalStatus }),
          visitData: {
-            visitId: formData.visitData.visitId, // Include visitId for updates
+            visitId: formData.visitData.visitId,
             doctor: formData.visitData.doctor,
-            purpose: formData.visitData.purpose || "Consultation", // Default purpose
+            purpose: formData.visitData.purpose || "Consultation",
             disease: formData.visitData.disease || "",
             discount: parseFloat(formData.visitData.discount) || 0,
+            doctorFee: parseFloat(formData.visitData.doctorFee) || 0, // Save consultation fee as doctorFee
+            totalFee: parseFloat(formData.visitData.totalFee) || 0,
             referredBy: formData.visitData.referredBy || "",
             amountPaid: parseFloat(formData.visitData.amountPaid) || 0,
             paymentMethod: formData.visitData.paymentMethod || "cash",
@@ -448,6 +454,35 @@ export const usePatientForm = (mode = "create") => {
          return;
       }
 
+      if (name === 'visitData.amountPaid') {
+         const amountPaidValue = parseFloat(value) || 0;
+         let totalFee = 0;
+
+         // Calculate total fee based on whether doctor is selected
+         if (formData.visitData.doctor) {
+            const doctorFee = formData.doctorDetails.fee || 0;
+            const discount = formData.visitData.discount || 0;
+            totalFee = Math.max(0, doctorFee - discount);
+         } else {
+            totalFee = formData.visitData.totalFee || 0;
+         }
+
+         // Ensure amount paid doesn't exceed total fee
+         const safeAmountPaid = Math.min(Math.max(0, amountPaidValue), totalFee);
+
+         setFormData(prev => ({
+            ...prev,
+            visitData: {
+               ...prev.visitData,
+               [field]: safeAmountPaid,
+               amountDue: Math.max(0, totalFee - safeAmountPaid),
+               amountStatus: safeAmountPaid >= totalFee ? 'paid' :
+                  (safeAmountPaid > 0 ? 'partial' : 'pending')
+            }
+         }));
+         return;
+      }
+
       // Handle contact number formatting
       if (name === "patient_Guardian.guardian_Contact" || name === "patient_ContactNo") {
          const field = name === "patient_ContactNo" ? "patient_ContactNo" : "patient_Guardian.guardian_Contact";
@@ -537,7 +572,10 @@ export const usePatientForm = (mode = "create") => {
             ...prev,
             visitData: {
                ...prev.visitData,
-               doctor: doctorData.id
+               doctor: doctorData.id,
+               doctorFee: doctorData.fee, // Set doctorFee
+               discount: 0, // Reset discount when doctor changes
+               totalFee: doctorData.fee // Set total fee to doctor's fee
             },
             doctorDetails: {
                name: doctorData.name,
@@ -549,11 +587,15 @@ export const usePatientForm = (mode = "create") => {
             }
          }));
       } else {
+         // No doctor selected - reset to manual consultation fee entry
          setFormData(prev => ({
             ...prev,
             visitData: {
                ...prev.visitData,
-               doctor: null
+               doctor: null,
+               doctorFee: 0, // Reset doctorFee
+               discount: 0,
+               totalFee: 0
             },
             doctorDetails: {
                name: "",

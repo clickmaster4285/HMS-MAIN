@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   fetchPatients,
@@ -11,7 +11,8 @@ import {
   selectFilters,
   selectPatientsStatus,
   setFilters,
-  setPage
+  setPage,
+  clearFilters
 } from "../../../features/patient/patientSlice";
 import { AiOutlineEdit, AiOutlineDelete, AiOutlineEye, AiOutlinePrinter } from "react-icons/ai";
 import { FiSearch } from "react-icons/fi";
@@ -20,7 +21,10 @@ import DeletePatientConfirmation from './DeletePatientConfirmation';
 import { useNavigate } from 'react-router-dom';
 import PrintOptionsModal from './components/PrintOptionsModal';
 import Pagination from "./manageopd/pagination";
-import {getRoleRoute} from'../../../utils/getRoleRoute'
+import { getRoleRoute } from '../../../utils/getRoleRoute';
+import PurposeFilterDropdown from './manageopd/PurposeFilterDropdown';
+import { matchesPurposeFilter } from '../../../utils/purposeOptions';
+import useDebouncedFilterSave from '../../../hooks/useDebouncedFilterSave';
 
 const ManageOpd = () => {
   const dispatch = useDispatch();
@@ -34,56 +38,48 @@ const ManageOpd = () => {
   const selectedPatient = useSelector(selectSelectedPatient);
   const patientLoading = useSelector(selectSelectedPatientStatus);
 
+  // Local state
   const [showModal, setShowModal] = useState(false);
   const [patientToDelete, setPatientToDelete] = useState(null);
   const [patientToPrint, setPatientToPrint] = useState(null);
   const [showPrintModal, setShowPrintModal] = useState(false);
-  const [localSearch, setLocalSearch] = useState(filters.search || "");
 
-  // Default date range = today
-  const [dateRange, setDateRange] = useState(() => {
-    const today = new Date().toISOString().split('T')[0];
-    return { start: today, end: today };
+  // Initialize from filters (which now come from URL/localStorage)
+  const [localSearch, setLocalSearch] = useState(filters.search || "");
+  const [selectedPurpose, setSelectedPurpose] = useState(filters.purpose || "All");
+  const [dateRange, setDateRange] = useState({
+    start: filters.fromDate || new Date().toISOString().split('T')[0],
+    end: filters.toDate || new Date().toISOString().split('T')[0]
   });
 
-  // Initialize with today's date in filters
+  // Use the debounced filter save hook
+  useDebouncedFilterSave(filters);
+
+  // Sync local state with Redux filters on mount
   useEffect(() => {
-    if (!filters.fromDate && !filters.toDate) {
-      dispatch(setFilters({
-        fromDate: dateRange.start,
-        toDate: dateRange.end
-      }));
-    }
-  }, []);
+    setLocalSearch(filters.search || "");
+    setSelectedPurpose(filters.purpose || "All");
+    setDateRange({
+      start: filters.fromDate || new Date().toISOString().split('T')[0],
+      end: filters.toDate || new Date().toISOString().split('T')[0]
+    });
+  }, []); // Run only on mount
 
-  // Sync date range with filters when both dates are set
-  useEffect(() => {
-    if (dateRange.start && dateRange.end) {
-      const timer = setTimeout(() => {
-        dispatch(setFilters({
-          fromDate: dateRange.start,
-          toDate: dateRange.end
-        }));
-      }, 500);
-
-      return () => clearTimeout(timer);
-    }
-  }, [dateRange, dispatch]);
-
-  // Debounced search
+  // Sync all filters to Redux when they change
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (localSearch !== filters.search) {
-        dispatch(setFilters({
-          search: localSearch,
-          fromDate: dateRange.start,
-          toDate: dateRange.end
-        }));
-      }
+      const filterUpdates = {
+        search: localSearch,
+        fromDate: dateRange.start,
+        toDate: dateRange.end,
+        purpose: selectedPurpose
+      };
+
+      dispatch(setFilters(filterUpdates));
     }, 500);
 
     return () => clearTimeout(timer);
-  }, [localSearch, dateRange, dispatch, filters.search]);
+  }, [localSearch, dateRange, selectedPurpose, dispatch]);
 
   // Fetch patients when filters or page changes
   useEffect(() => {
@@ -95,6 +91,7 @@ const ManageOpd = () => {
         filters: {
           fromDate: filters.fromDate,
           toDate: filters.toDate,
+          purpose: filters.purpose,
         },
       }));
     };
@@ -138,29 +135,65 @@ const ManageOpd = () => {
     });
   };
 
-  const handleResetFilters = () => {
+  const handlePurposeSelect = useCallback((purpose) => {
+    setSelectedPurpose(purpose);
+  }, []);
+
+  const handleClearPurpose = useCallback(() => {
+    setSelectedPurpose("All");
+  }, []);
+
+  const handleResetFilters = useCallback(() => {
+    // Clear local state
     setLocalSearch("");
+    setSelectedPurpose("All");
     const today = new Date().toISOString().split('T')[0];
     setDateRange({ start: today, end: today });
-    dispatch(setFilters({
-      search: "",
-      fromDate: today,
-      toDate: today
-    }));
-  };
 
-  // helpers
+    // Clear Redux and persistence
+    dispatch(clearFilters());
+  }, [dispatch]);
+
+  // Check if filters are active
+  const areFiltersActive = useMemo(() => {
+    return (
+      selectedPurpose !== "All" ||
+      localSearch.trim() !== "" ||
+      dateRange.start !== new Date().toISOString().split('T')[0] ||
+      dateRange.end !== new Date().toISOString().split('T')[0]
+    );
+  }, [selectedPurpose, localSearch, dateRange]);
+
+  // Helper functions remain the same...
   const toTitle = (g) => g ? (g[0].toUpperCase() + g.slice(1)) : '';
-  const latestVisitOf = (p) => p?.visits?.[0] || null;
-  const doctorNameOf = (visit) => {
-    const u = visit?.doctor?.user;
-    if (u?.firstName || u?.lastName) return [u?.firstName, u?.lastName].filter(Boolean).join(' ');
-    return null;
+
+  const latestVisitOf = (p) => {
+    if (!p?.visits?.length) return null;
+    return [...p.visits].sort((a, b) => new Date(b.visitDate) - new Date(a.visitDate))[0];
   };
 
-  // Use the patients from Redux (already paginated and filtered by backend)
+  const doctorNameOf = (visit) => {
+    return visit?.doctor?.user?.user_Name || 'N/A';
+  };
+
+  // Use the patients from Redux
   const displayedPatients = patients || [];
 
+  // Filter by purpose on frontend
+  const filteredPatients = useMemo(() => {
+    if (!selectedPurpose || selectedPurpose === "All") {
+      return displayedPatients;
+    }
+
+    return displayedPatients.filter(patient => {
+      const latestVisit = latestVisitOf(patient);
+      const patientPurpose = latestVisit?.purpose;
+
+      if (!patientPurpose) return false;
+
+      return matchesPurposeFilter(patientPurpose, selectedPurpose);
+    });
+  }, [displayedPatients, selectedPurpose]);
   return (
     <div className="">
       {/* Delete Confirmation */}
@@ -201,8 +234,16 @@ const ManageOpd = () => {
               </div>
             </div>
 
-            {/* Search + Date Range */}
+            {/* Search + Filters */}
             <div className="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-4 w-full md:w-auto">
+              {/* Purpose Filter */}
+              <PurposeFilterDropdown
+                selectedPurpose={selectedPurpose}
+                onSelectPurpose={handlePurposeSelect}
+                onClear={handleClearPurpose}
+              />
+
+              {/* Search Input */}
               <div className="relative flex-1 md:w-64">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <FiSearch className="text-gray-400" />
@@ -216,6 +257,7 @@ const ManageOpd = () => {
                 />
               </div>
 
+              {/* Date Range */}
               <div className="flex flex-row gap-2 items-center">
                 <div className="flex gap-2">
                   <input
@@ -236,76 +278,135 @@ const ManageOpd = () => {
                   />
                 </div>
 
-                <div className="grid items-center grid-cols-2 gap-1">
+                {/* Quick Actions */}
+                <div className="flex items-center space-x-2">
+                  <div className="grid items-center grid-cols-2 gap-1">
+                    <button
+                      onClick={() => {
+                        const today = new Date().toISOString().split('T')[0];
+                        setDateRange({ start: today, end: today });
+                      }}
+                      className="text-xs text-primary-900 px-2 py-0.5 bg-primary-100 rounded hover:bg-primary-200"
+                    >
+                      Today
+                    </button>
+                    <button
+                      onClick={() => {
+                        const now = new Date();
+                        const weekStart = new Date(now);
+                        weekStart.setDate(now.getDate() - now.getDay());
+                        setDateRange({
+                          start: weekStart.toISOString().split('T')[0],
+                          end: new Date().toISOString().split('T')[0],
+                        });
+                      }}
+                      className="text-xs px-2 text-primary-900 py-0.5 bg-primary-100 rounded hover:bg-primary-200"
+                    >
+                      This Week
+                    </button>
+                    <button
+                      onClick={() => {
+                        const now = new Date();
+                        setDateRange({
+                          start: new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0],
+                          end: new Date().toISOString().split('T')[0],
+                        });
+                      }}
+                      className="col-span-2 text-xs px-2 text-primary-900 py-0.5 bg-primary-100 rounded hover:bg-primary-200"
+                    >
+                      This Month
+                    </button>
+                  </div>
+
                   <button
-                    onClick={() => {
-                      const today = new Date().toISOString().split('T')[0];
-                      setDateRange({ start: today, end: today });
-                    }}
-                    className="text-xs text-primary-900 px-2 py-0.5 bg-primary-100 rounded hover:bg-primary-200"
+                    onClick={handleResetFilters}
+                    className="text-xs px-2 py-0.5 bg-red-100 text-red-700 rounded hover:bg-red-200"
                   >
-                    Today
-                  </button>
-                  <button
-                    onClick={() => {
-                      const now = new Date();
-                      const weekStart = new Date(now);
-                      weekStart.setDate(now.getDate() - now.getDay());
-                      setDateRange({
-                        start: weekStart.toISOString().split('T')[0],
-                        end: new Date().toISOString().split('T')[0],
-                      });
-                    }}
-                    className="text-xs px-2 text-primary-900 py-0.5 bg-primary-100 rounded hover:bg-primary-200"
-                  >
-                    This Week
-                  </button>
-                  <button
-                    onClick={() => {
-                      const now = new Date();
-                      setDateRange({
-                        start: new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0],
-                        end: new Date().toISOString().split('T')[0],
-                      });
-                    }}
-                    className="col-span-2 text-xs px-2 text-primary-900 py-0.5 bg-primary-100 rounded hover:bg-primary-200"
-                  >
-                    This Month
+                    Reset All
                   </button>
                 </div>
-
-                <button
-                  onClick={handleResetFilters}
-                  className="text-xs px-2 py-0.5 bg-red-100 text-red-700 rounded hover:bg-red-200"
-                >
-                  Reset All
-                </button>
               </div>
             </div>
           </div>
         </div>
 
+        {/* Active Filters Display */}
+        {areFiltersActive && (
+          <div className="bg-gray-50 px-6 py-3 border-b border-gray-200">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-sm text-gray-600">Active filters:</span>
+
+              {selectedPurpose !== "All" && (
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-primary-100 text-primary-800">
+                  Purpose: {selectedPurpose}
+                  <button
+                    onClick={handleClearPurpose}
+                    className="ml-1.5 text-primary-600 hover:text-primary-800"
+                  >
+                    ×
+                  </button>
+                </span>
+              )}
+
+              {localSearch && (
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                  Search: {localSearch}
+                  <button
+                    onClick={() => setLocalSearch("")}
+                    className="ml-1.5 text-blue-600 hover:text-blue-800"
+                  >
+                    ×
+                  </button>
+                </span>
+              )}
+
+              {(dateRange.start !== new Date().toISOString().split('T')[0] ||
+                dateRange.end !== new Date().toISOString().split('T')[0]) && (
+                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                    {dateRange.start} to {dateRange.end}
+                    <button
+                      onClick={() => {
+                        const today = new Date().toISOString().split('T')[0];
+                        setDateRange({ start: today, end: today });
+                      }}
+                      className="ml-1.5 text-green-600 hover:text-green-800"
+                    >
+                      ×
+                    </button>
+                  </span>
+                )}
+
+              <button
+                onClick={handleResetFilters}
+                className="ml-auto text-xs text-gray-600 hover:text-gray-800"
+              >
+                Clear all
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Table */}
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+            <thead
+              className="bg-gray-50 [&_th]:px-6 [&_th]:py-3 [&_th]:text-left [&_th]:text-xs [&_th]font-medium [&_th]:text-gray-500 [&_th]:uppercase [&_th]:tracking-wider [&_th:hover]bg-gray-100">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Token</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">MR#</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Patient Name</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Age/Gender</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Guardian</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">CNIC</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Doctor</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Department</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                <th>Token</th>
+                <th>MR#</th>
+                <th>Patient Name</th>
+                <th>Age/Gender</th>
+                <th>Contact</th>
+                <th>Guardian</th>
+                <th>CNIC</th>
+                <th>Doctor</th>
+                <th>Purpose</th>
+                <th>Actions</th>
               </tr>
             </thead>
-
             <tbody className="bg-white divide-y divide-gray-200">
-              {displayedPatients.length > 0 ? (
-                displayedPatients.map((p) => {
+              {filteredPatients.length > 0 ? (
+                filteredPatients.map((p) => {
                   const v = latestVisitOf(p);
                   const doctorFullName = doctorNameOf(v);
                   const genderLabel = toTitle(p.patient_Gender);
@@ -358,11 +459,19 @@ const ManageOpd = () => {
                       </td>
 
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {v?.doctor?.user?.user_Name || 'N/A'}
+                        {doctorFullName}
                       </td>
 
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {v?.doctor?.doctor_Department || 'N/A'}
+                        <span className={`px-2 py-1 rounded text-xs ${v?.purpose?.includes('X-Ray') ? 'bg-blue-100 text-blue-800' :
+                          v?.purpose?.includes('ECG') ? 'bg-green-100 text-green-800' :
+                            v?.purpose?.includes('BSR') ? 'bg-yellow-100 text-yellow-800' :
+                              v?.purpose?.includes('Consultation') ? 'bg-purple-100 text-purple-800' :
+                                v?.purpose?.includes('Test') ? 'bg-indigo-100 text-indigo-800' :
+                                  'bg-gray-100 text-gray-800'
+                          }`}>
+                          {v?.purpose || 'N/A'}
+                        </span>
                       </td>
 
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -411,7 +520,7 @@ const ManageOpd = () => {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                       <p className="mt-2 font-medium text-gray-600">No patients found</p>
-                      <p className="text-sm text-gray-500">Try adjusting your search or date filter</p>
+                      <p className="text-sm text-gray-500">Try adjusting your search, purpose filter, or date filter</p>
                     </div>
                   </td>
                 </tr>
@@ -421,7 +530,7 @@ const ManageOpd = () => {
         </div>
 
         {/* Pagination */}
-        {displayedPatients.length > 0 && pagination.totalPages > 1 && (
+        {filteredPatients.length > 0 && pagination.totalPages > 1 && (
           <Pagination
             currentPage={pagination.currentPage}
             totalPages={pagination.totalPages}
@@ -433,13 +542,17 @@ const ManageOpd = () => {
 
         {/* Footer */}
         <div className="flex flex-col sm:flex-row sm:justify-between justify-center sm:items-start gap-2 px-6 py-3 bg-gray-50 border-t border-gray-200">
-          {dateRange.start && dateRange.end && (
-            <div className="text-sm px-3 py-1.5 rounded-md bg-primary-600 text-white">
-              Showing patients between <span className="font-medium">{new Date(dateRange.start).toLocaleDateString()}</span> and <span className="font-medium">{new Date(dateRange.end).toLocaleDateString()}</span>
-            </div>
-          )}
+          <div className="text-sm text-gray-600">
+            Showing <span className="font-medium">{filteredPatients.length}</span> patients
+            {selectedPurpose !== "All" && (
+              <span> with purpose: <span className="font-medium text-primary-600">{selectedPurpose}</span></span>
+            )}
+            {dateRange.start && dateRange.end && (
+              <span> between <span className="font-medium">{new Date(dateRange.start).toLocaleDateString()}</span> and <span className="font-medium">{new Date(dateRange.end).toLocaleDateString()}</span></span>
+            )}
+          </div>
 
-          {(dateRange.start || dateRange.end || localSearch) && (
+          {(selectedPurpose !== "All" || dateRange.start !== dateRange.end || localSearch) && (
             <button
               onClick={handleResetFilters}
               className="inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"

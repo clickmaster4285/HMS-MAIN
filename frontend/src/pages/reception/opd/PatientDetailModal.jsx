@@ -51,6 +51,17 @@ const PatientDetailModal = ({ patient, loading, onClose }) => {
     });
   };
 
+  // Return only the date part (YYYY-MM-DD) for ISO strings or parseable dates
+  const formatDateOnly = (dateValue) => {
+    if (!dateValue) return 'N/A';
+    if (typeof dateValue === 'string' && dateValue.includes('T')) {
+      return dateValue.split('T')[0];
+    }
+    const d = new Date(dateValue);
+    if (!isNaN(d)) return d.toISOString().split('T')[0];
+    return dateValue;
+  };
+
   const formatCurrency = (amount) => {
     return `Rs. ${amount?.toLocaleString() || '0'}`;
   };
@@ -103,7 +114,7 @@ const PatientDetailModal = ({ patient, loading, onClose }) => {
               <DetailItem label="Full Name" value={patient.patient_Name} />
               <DetailItem label="Gender" value={patient.patient_Gender} />
               <DetailItem label="Age" value={patient.patient_Age} />
-              <DetailItem label="Date of Birth" value={patient.patient_DateOfBirth} />
+              <DetailItem label="Date of Birth" value={formatDateOnly(patient.patient_DateOfBirth)} />
               <DetailItem label="CNIC" value={patient.patient_CNIC} />
               <DetailItem label="Contact" value={patient.patient_ContactNo} />
             </div>
@@ -195,7 +206,7 @@ const PatientDetailModal = ({ patient, loading, onClose }) => {
                         <div className="p-4 bg-white border-t">
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <DetailItem label="Doctor" value={visit.doctor?.user?.user_Name} />
-                            <DetailItem label="Department" value={visit.doctor?.doctor_Department} />
+                            <DetailItem label="Purpose" value={visit?.purpose} />
                             <DetailItem label="Purpose" value={visit.purpose} />
                             <DetailItem label="Disease" value={visit.disease || 'Not specified'} />
                             <DetailItem label="Token #" value={visit.token} />
