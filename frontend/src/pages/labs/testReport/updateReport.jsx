@@ -799,14 +799,22 @@ const UpdateReport = () => {
           />
         </div>
 
-        {/* Bottom Action Bar */}
-        <div className="flex justify-end mt-6">
+{/* Bottom Action Bar */}
+        <div className="flex justify-between items-center mt-6 pt-6 border-t border-gray-200">
+          <button
+            onClick={() => navigate(-1)}
+            className="flex items-center space-x-2 px-6 py-3 bg-white text-gray-700 rounded-lg border border-gray-300 hover:bg-gray-50 hover:border-gray-400 transition-all duration-200 shadow-sm hover:shadow-md group"
+          >
+            <FiChevronLeft className="group-hover:-translate-x-1 transition-transform" size={20} />
+            <span className="font-medium">Back to Reports</span>
+          </button>
+
           <button
             onClick={handlePrint}
-            className="flex items-center space-x-3 px-8 py-4 bg-linear-to-r from-green-600 to-green-700 text-white rounded-xl hover:from-green-700 hover:to-green-800 transition-all duration-200 shadow-xl hover:shadow-2xl transform hover:scale-105"
+            className="flex items-center space-x-2 px-8 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:from-green-700 hover:to-green-800 transition-all duration-200 shadow-md hover:shadow-lg font-medium"
           >
-            <FiPrinter size={22} />
-            <span className="font-semibold text-lg">Save & Print Report</span>
+            <FiPrinter size={20} />
+            <span>Save & Print Report</span>
           </button>
         </div>
       </div>

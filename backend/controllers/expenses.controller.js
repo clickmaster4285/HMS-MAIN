@@ -1,6 +1,62 @@
 const Expense = require('../models/expenses.model');
 const emitGlobalEvent = require("../utils/emitGlobalEvent");
 const EVENTS = require("../utils/socketEvents");
+
+// Helper function for date range parsing (similar to patient tests)
+function parseDateRange(dateRange, startDate, endDate) {
+  if (startDate && endDate) {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    end.setHours(23, 59, 59, 999);
+    return { $gte: start, $lte: end };
+  }
+
+  if (dateRange) {
+    const now = new Date();
+    switch (dateRange.toLowerCase()) {
+      case 'today':
+        const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+        return { $gte: todayStart, $lte: todayEnd };
+      
+      case 'yesterday':
+        const yesterday = new Date(now);
+        yesterday.setDate(now.getDate() - 1);
+        const yesterdayStart = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate());
+        const yesterdayEnd = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate(), 23, 59, 59, 999);
+        return { $gte: yesterdayStart, $lte: yesterdayEnd };
+      
+      case 'thisweek':
+        const weekStart = new Date(now);
+        weekStart.setDate(now.getDate() - now.getDay());
+        weekStart.setHours(0, 0, 0, 0);
+        const weekEnd = new Date(weekStart);
+        weekEnd.setDate(weekStart.getDate() + 6);
+        weekEnd.setHours(23, 59, 59, 999);
+        return { $gte: weekStart, $lte: weekEnd };
+      
+      case 'thismonth':
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+        return { $gte: monthStart, $lte: monthEnd };
+      
+      case 'lastmonth':
+        const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
+        return { $gte: lastMonthStart, $lte: lastMonthEnd };
+      
+      case 'thisyear':
+        const yearStart = new Date(now.getFullYear(), 0, 1);
+        const yearEnd = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999);
+        return { $gte: yearStart, $lte: yearEnd };
+    }
+  }
+
+  return null;
+}
+
+
+
 exports.createExpense = async (req, res) => {
   try {
     const { expenseType, doctor, doctorWelfare, otExpenses, otherExpenses, description, date } = req.body;
@@ -70,58 +126,254 @@ exports.createExpense = async (req, res) => {
 // @access  Private
 exports.getExpenses = async (req, res) => {
   try {
-    // query params
-    const page = Math.max(parseInt(req.query.page) || 1, 1);
-    const limit = Math.min(Math.max(parseInt(req.query.limit) || 10, 1), 100);
-    const { doctor } = req.query;
-
-    // soft-delete toggles
-    const includeDeleted = String(req.query.includeDeleted || "").toLowerCase() === "true";
-    const onlyDeleted = String(req.query.onlyDeleted || "").toLowerCase() === "true";
+    // Query parameters with defaults
+    const {
+      page = 1,
+      limit = 20,
+      search,
+      expenseType,
+      doctor,
+      dateRange,
+      startDate,
+      endDate,
+      minAmount,
+      maxAmount,
+      status, // For deleted status
+      sortBy = 'date',
+      sortOrder = 'desc',
+    } = req.query;
 
     const skip = (page - 1) * limit;
+    const query = { deleted: false }; // Default: show non-deleted
+    const andConditions = [query];
 
-    // Build filter
-    const filter = {};
-    if (doctor) filter.doctor = { $regex: doctor, $options: "i" };
+    // Helper to push conditions safely
+    const addCondition = (condition) => {
+      if (condition) andConditions.push(condition);
+    };
 
-    // Soft delete handling
-    if (onlyDeleted) {
-      filter.deleted = true;
-    } else if (!includeDeleted) {
-      // default: exclude deleted
-      filter.deleted = { $ne: true };
+    // 1. Text Search (doctor name, description)
+    if (search && search.trim()) {
+      const searchParts = search.trim().split(/\s+/);
+      const textSearch = [];
+      let parsedExpenseType = null;
+      let parsedDoctor = null;
+      let parsedMinAmount = null;
+      let parsedMaxAmount = null;
+      let parsedStatus = null;
+
+      // Parse search parts for specific filters
+      searchParts.forEach((part) => {
+        if (part.startsWith('type:')) {
+          parsedExpenseType = part.slice(5).trim();
+        } else if (part.startsWith('doctor:')) {
+          parsedDoctor = part.slice(7).trim();
+        } else if (part.startsWith('minAmount:')) {
+          const amount = parseFloat(part.slice(10).trim());
+          if (!isNaN(amount)) parsedMinAmount = amount;
+        } else if (part.startsWith('maxAmount:')) {
+          const amount = parseFloat(part.slice(10).trim());
+          if (!isNaN(amount)) parsedMaxAmount = amount;
+        } else if (part.startsWith('status:')) {
+          parsedStatus = part.slice(7).trim().toLowerCase();
+        } else {
+          textSearch.push(part);
+        }
+      });
+
+      // Free text search (doctor name or description)
+      if (textSearch.length > 0) {
+        const searchRegex = textSearch.join(' ');
+        const orConditions = [
+          { doctor: { $regex: searchRegex, $options: 'i' } },
+          { description: { $regex: searchRegex, $options: 'i' } },
+        ];
+        
+        // Also search by expense type
+        const expenseTypes = ['doctor', 'hospital'];
+        const matchedType = expenseTypes.find(type => 
+          type.toLowerCase().includes(searchRegex.toLowerCase())
+        );
+        if (matchedType) {
+          orConditions.push({ expenseType: matchedType });
+        }
+
+        addCondition({ $or: orConditions });
+      }
+
+      // Apply parsed filters from search string
+      if (parsedExpenseType && ['doctor', 'hospital'].includes(parsedExpenseType.toLowerCase())) {
+        addCondition({ expenseType: parsedExpenseType.toLowerCase() });
+      }
+      
+      if (parsedDoctor) {
+        addCondition({ doctor: { $regex: parsedDoctor, $options: 'i' } });
+      }
+      
+      if (parsedMinAmount !== null) {
+        addCondition({ total: { $gte: parsedMinAmount } });
+      }
+      
+      if (parsedMaxAmount !== null) {
+        addCondition({ total: { $lte: parsedMaxAmount } });
+      }
+      
+      if (parsedStatus === 'deleted') {
+        // Override default deleted filter
+        const index = andConditions.findIndex(cond => cond.deleted === false);
+        if (index > -1) {
+          andConditions[index] = { deleted: true };
+        }
+      } else if (parsedStatus === 'all') {
+        // Remove deleted filter to show all
+        const index = andConditions.findIndex(cond => cond.hasOwnProperty('deleted'));
+        if (index > -1) {
+          andConditions.splice(index, 1);
+        }
+      }
     }
-    // if includeDeleted === true, we don't add deleted filter (show all)
 
+    // 2. Direct filters (only if not already in search string)
+    if (expenseType && expenseType.trim() && !search?.includes('type:')) {
+      const type = expenseType.trim().toLowerCase();
+      if (['doctor', 'hospital'].includes(type)) {
+        addCondition({ expenseType: type });
+      }
+    }
+
+    if (doctor && doctor.trim() && !search?.includes('doctor:')) {
+      addCondition({ doctor: { $regex: doctor.trim(), $options: 'i' } });
+    }
+
+    // 3. Amount range filters (direct params)
+    if (minAmount && !search?.includes('minAmount:')) {
+      const amount = parseFloat(minAmount);
+      if (!isNaN(amount)) {
+        addCondition({ total: { $gte: amount } });
+      }
+    }
+    
+    if (maxAmount && !search?.includes('maxAmount:')) {
+      const amount = parseFloat(maxAmount);
+      if (!isNaN(amount)) {
+        addCondition({ total: { $lte: amount } });
+      }
+    }
+
+    // 4. Date Range Filter
+    const dateFilter = parseDateRange(dateRange, startDate, endDate);
+    if (dateFilter) {
+      addCondition({ date: dateFilter });
+    }
+
+    // 5. Status filter (for deleted records)
+    if (status && status.trim() && !search?.includes('status:')) {
+      const statusValue = status.trim().toLowerCase();
+      if (statusValue === 'deleted') {
+        // Override default deleted filter
+        const index = andConditions.findIndex(cond => cond.deleted === false);
+        if (index > -1) {
+          andConditions[index] = { deleted: true };
+        }
+      } else if (statusValue === 'all') {
+        // Remove deleted filter to show all
+        const index = andConditions.findIndex(cond => cond.hasOwnProperty('deleted'));
+        if (index > -1) {
+          andConditions.splice(index, 1);
+        }
+      }
+      // If status is 'active', keep the default deleted: false
+    }
+
+    // 6. Build final query
+    const finalQuery = andConditions.length > 1 ? { $and: andConditions } : query;
+
+
+    // 7. Build sort object
+    const sort = {};
+    switch (sortBy) {
+      case 'date':
+        sort.date = sortOrder === 'asc' ? 1 : -1;
+        break;
+      case 'total':
+        sort.total = sortOrder === 'asc' ? 1 : -1;
+        break;
+      case 'doctor':
+        sort.doctor = sortOrder === 'asc' ? 1 : -1;
+        break;
+      case 'createdAt':
+        sort.createdAt = sortOrder === 'asc' ? 1 : -1;
+        break;
+      default:
+        sort.date = -1; // Default sort by date descending
+    }
+
+    // Execute queries in parallel
     const [expenses, total] = await Promise.all([
-      Expense.find(filter)
-        .sort({ date: -1, createdAt: -1 })
+      Expense.find(finalQuery)
+        .sort(sort)
         .skip(skip)
-        .limit(limit)
+        .limit(parseInt(limit))
         .lean(),
-      Expense.countDocuments(filter),
+
+      Expense.countDocuments(finalQuery),
     ]);
 
-    res.json({
+    // 8. Calculate totals for current filtered results
+    const totals = await Expense.aggregate([
+      { $match: finalQuery },
+      {
+        $group: {
+          _id: null,
+          totalDoctorWelfare: { $sum: "$doctorWelfare" },
+          totalOTExpenses: { $sum: "$otExpenses" },
+          totalOtherExpenses: { $sum: "$otherExpenses" },
+          grandTotal: { $sum: "$total" },
+          count: { $sum: 1 }
+        }
+      },
+      {
+        $project: {
+          _id: 0,
+          totalDoctorWelfare: 1,
+          totalOTExpenses: 1,
+          totalOtherExpenses: 1,
+          grandTotal: 1,
+          count: 1
+        }
+      }
+    ]);
+
+    return res.status(200).json({
       success: true,
-      data: expenses,
-      pagination: {
-        page,
-        limit,
-        total,
-        pages: Math.ceil(total / limit) || 1,
+      data: {
+        expenses,
+        summary: totals[0] || {
+          totalDoctorWelfare: 0,
+          totalOTExpenses: 0,
+          totalOtherExpenses: 0,
+          grandTotal: 0,
+          count: 0
+        },
+        pagination: {
+          total,
+          page: parseInt(page),
+          limit: parseInt(limit),
+          totalPages: Math.ceil(total / limit),
+        },
       },
     });
   } catch (error) {
-    console.error("Get expenses error:", error);
-    res.status(500).json({
+    console.error('Error fetching expenses:', error);
+    return res.status(500).json({
       success: false,
-      message: "Server error while fetching expenses",
+      message: 'Internal server error while fetching expenses',
       error: error.message,
     });
   }
 };
+
+
 
 
 // @desc    Get expense by ID

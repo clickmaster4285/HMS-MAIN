@@ -18,9 +18,9 @@ const patientTestSchema = new mongoose.Schema(
     isExternalPatient: { type: Boolean, default: false },
 
     tokenNumber: {
-      type: Number,
+      type: String,
       required: true,
-      index: true, // ✅ fast token lookup
+      index: true, 
     },
 
     patient_Detail: {
@@ -40,6 +40,7 @@ const patientTestSchema = new mongoose.Schema(
       patient_ContactNo: String,
       patient_Gender: String,
       patient_Age: String,
+      patient_DOB: Date,
       referredBy: String,
     },
 

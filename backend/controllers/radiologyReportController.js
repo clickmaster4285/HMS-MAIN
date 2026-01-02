@@ -238,17 +238,216 @@ const getAvailableTemplates = async (req, res) => {
 };
 // GET controller: hide deleted reports + hide deleted studies
 // GET: hide deleted reports and any studies with _delete/_deleted set to true or "true"
+
 const getReport = async (req, res) => {
   try {
-    const [reportsRaw, patients] = await Promise.all([
-      hospitalModel.RadiologyReport.find({ deleted: { $ne: true } })
+    const {
+      page = 1,
+      limit = 20,
+      search,
+      status,
+      paymentStatus,
+      gender,
+      contact,
+      dateRange,
+      startDate,
+      endDate,
+      doctor,
+      testName,
+      minAmount,
+      maxAmount,
+    } = req.query;
+
+    const skip = (page - 1) * limit;
+    const query = { deleted: { $ne: true } };
+    const andConditions = [query];
+
+    // Helper to push conditions safely
+    const addCondition = (condition) => {
+      if (condition) andConditions.push(condition);
+    };
+
+    // 1. Text Search (patient name, MRNo, contact)
+    if (search && search.trim()) {
+      const searchParts = search.trim().split(/\s+/);
+      const textSearch = [];
+      let parsedStatus = null;
+      let parsedPaymentStatus = null;
+      let parsedGender = null;
+      let parsedContact = null;
+      let parsedDoctor = null;
+      let parsedTestName = null;
+
+      searchParts.forEach((part) => {
+        if (part.startsWith('status:')) {
+          parsedStatus = part.slice(7).trim();
+        } else if (part.startsWith('paymentStatus:')) {
+          parsedPaymentStatus = part.slice(14).trim();
+        } else if (part.startsWith('gender:')) {
+          parsedGender = part.slice(7).trim();
+        } else if (part.startsWith('contact:')) {
+          parsedContact = part.slice(8).trim();
+        } else if (part.startsWith('doctor:')) {
+          parsedDoctor = part.slice(7).trim();
+        } else if (part.startsWith('testName:')) {
+          parsedTestName = part.slice(9).trim();
+        } else {
+          textSearch.push(part);
+        }
+      });
+
+      // Free text search
+      if (textSearch.length > 0) {
+        const searchRegex = textSearch.join(' ');
+        const orConditions = [
+          { patientMRNO: { $regex: searchRegex, $options: 'i' } },
+          { patientName: { $regex: searchRegex, $options: 'i' } },
+          { referBy: { $regex: searchRegex, $options: 'i' } },
+          { 'performedBy.name': { $regex: searchRegex, $options: 'i' } },
+        ];
+
+        addCondition({ $or: orConditions });
+      }
+
+      // Parsed filters from search string
+      if (parsedStatus) addCondition({ aggPaymentStatus: parsedStatus });
+      if (parsedPaymentStatus) addCondition({ aggPaymentStatus: parsedPaymentStatus });
+      if (parsedGender) addCondition({ sex: parsedGender });
+      if (parsedContact) {
+        addCondition({
+          patient_ContactNo: { $regex: parsedContact, $options: 'i' },
+        });
+      }
+      if (parsedDoctor) {
+        addCondition({
+          referBy: { $regex: parsedDoctor, $options: 'i' },
+        });
+      }
+      if (parsedTestName) {
+        addCondition({
+          'studies.templateName': { $regex: parsedTestName, $options: 'i' },
+        });
+      }
+    }
+
+    // 2. Direct filters (only if not already in search string)
+    if (paymentStatus && paymentStatus.trim() && !search?.includes('paymentStatus:')) {
+      addCondition({ aggPaymentStatus: paymentStatus.trim() });
+    }
+
+    if (status && status.trim() && !search?.includes('status:')) {
+      addCondition({ aggPaymentStatus: status.trim() });
+    }
+
+    if (gender && gender.trim() && !search?.includes('gender:')) {
+      addCondition({ sex: gender.trim() });
+    }
+
+    if (contact && contact.trim() && !search?.includes('contact:')) {
+      addCondition({
+        patient_ContactNo: { $regex: contact.trim(), $options: 'i' },
+      });
+    }
+
+    if (doctor && doctor.trim() && !search?.includes('doctor:')) {
+      addCondition({
+        referBy: { $regex: doctor.trim(), $options: 'i' },
+      });
+    }
+
+    if (testName && testName.trim() && !search?.includes('testName:')) {
+      addCondition({
+        'studies.templateName': { $regex: testName.trim(), $options: 'i' },
+      });
+    }
+
+    // 3. Amount Range Filter
+    if (minAmount || maxAmount) {
+      const amountQuery = {};
+      if (minAmount) {
+        amountQuery.$gte = parseFloat(minAmount);
+      }
+      if (maxAmount) {
+        amountQuery.$lte = parseFloat(maxAmount);
+      }
+      if (Object.keys(amountQuery).length > 0) {
+        addCondition({ aggTotalAmount: amountQuery });
+      }
+    }
+
+    // 4. Date Range Filter (using the date field from schema)
+    const dateFilter = parseDateRange(dateRange, startDate, endDate);
+    if (dateFilter) {
+      // Use the 'date' field from RadiologyReport schema
+      addCondition({ date: dateFilter });
+    }
+
+    // Helper function to parse date ranges
+    function parseDateRange(dateRange, startDate, endDate) {
+      if (startDate && endDate) {
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        return { $gte: start, $lte: end };
+      }
+
+      if (dateRange) {
+        const now = new Date();
+        let start = new Date();
+        
+        switch (dateRange) {
+          case 'today':
+            start.setHours(0, 0, 0, 0);
+            return { $gte: start, $lte: now };
+          case 'yesterday':
+            start.setDate(now.getDate() - 1);
+            start.setHours(0, 0, 0, 0);
+            const endYesterday = new Date(start);
+            endYesterday.setHours(23, 59, 59, 999);
+            return { $gte: start, $lte: endYesterday };
+          case 'last7days':
+            start.setDate(now.getDate() - 7);
+            return { $gte: start, $lte: now };
+          case 'last30days':
+            start.setDate(now.getDate() - 30);
+            return { $gte: start, $lte: now };
+          case 'thisMonth':
+            start.setDate(1);
+            start.setHours(0, 0, 0, 0);
+            return { $gte: start, $lte: now };
+          case 'lastMonth':
+            start.setMonth(now.getMonth() - 1);
+            start.setDate(1);
+            start.setHours(0, 0, 0, 0);
+            const endLastMonth = new Date(start);
+            endLastMonth.setMonth(endLastMonth.getMonth() + 1);
+            endLastMonth.setDate(0);
+            endLastMonth.setHours(23, 59, 59, 999);
+            return { $gte: start, $lte: endLastMonth };
+          default:
+            return null;
+        }
+      }
+      
+      return null;
+    }
+
+    // Final query
+    const finalQuery = andConditions.length > 1 ? { $and: andConditions } : query;
+
+
+    // Execute queries in parallel
+    const [reportsRaw, total] = await Promise.all([
+      hospitalModel.RadiologyReport.find(finalQuery)
         .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(parseInt(limit))
         .lean(),
-      hospitalModel.Patient.find({ deleted: false })
-        .sort({ createdAt: -1 })
-        .lean(),
+
+      hospitalModel.RadiologyReport.countDocuments(finalQuery),
     ]);
 
+    // Filter out deleted studies and clean up data
     const reports = reportsRaw.map((r) => {
       const studies = (r.studies || [])
         .filter((s) => {
@@ -268,16 +467,29 @@ const getReport = async (req, res) => {
       return { ...r, studies };
     });
 
+    // Get total patients count (optional)
+    const totalPatients = await hospitalModel.Patient.countDocuments({ deleted: false });
+
     res.status(200).json({
       success: true,
-      count: reports.length,
-      data: { reports, totalPatients: patients },
+      data: {
+        reports,
+        totalPatients,
+        pagination: {
+          total,
+          page: parseInt(page),
+          limit: parseInt(limit),
+          totalPages: Math.ceil(total / limit),
+        },
+      },
     });
   } catch (error) {
-    console.error('Error fetching reports:', error);
-    res
-      .status(500)
-      .json({ success: false, message: 'Failed to fetch reports.' });
+    console.error('Error fetching radiology reports:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch radiology reports.',
+      error: error.message,
+    });
   }
 };
 

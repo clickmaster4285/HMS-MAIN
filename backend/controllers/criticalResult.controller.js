@@ -16,8 +16,65 @@ const createCriticalResult = async (req, res) => {
 // ✅ Get all Critical Results
 const getAllCriticalResults = async (req, res) => {
   try {
-    const results = await CriticalResult.find().sort({ createdAt: -1 });
-    res.status(200).json({ success: true, data: results });
+    const {
+      page = 1,
+      limit = 20,
+      search = '',
+      startDate,
+      endDate,
+      sortBy = 'createdAt',
+      sortOrder = 'desc'
+    } = req.query;
+
+    // Build query
+    let query = {};
+
+    // Search filter
+    if (search) {
+      query.$or = [
+        { mrNo: { $regex: search, $options: 'i' } },
+        { patientName: { $regex: search, $options: 'i' } },
+        { contactNo: { $regex: search, $options: 'i' } }
+      ];
+    }
+
+    // Date range filter
+    if (startDate || endDate) {
+      query.date = {};
+      if (startDate) {
+        query.date.$gte = new Date(startDate);
+      }
+      if (endDate) {
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        query.date.$lte = end;
+      }
+    }
+
+    // Sort configuration
+    const sort = {};
+    sort[sortBy] = sortOrder === 'desc' ? -1 : 1;
+
+    // Execute query with pagination
+    const skip = (page - 1) * limit;
+    
+    const results = await CriticalResult.find(query)
+      .sort(sort)
+      .skip(skip)
+      .limit(parseInt(limit));
+
+    const total = await CriticalResult.countDocuments(query);
+
+    res.status(200).json({
+      success: true,
+      data: results,
+      pagination: {
+        currentPage: parseInt(page),
+        totalPages: Math.ceil(total / limit),
+        totalItems: total,
+        itemsPerPage: parseInt(limit)
+      }
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

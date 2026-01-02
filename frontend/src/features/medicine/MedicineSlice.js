@@ -43,7 +43,6 @@ import axios from "axios";
     "medicine/update-medicine-by-id",
   async({id , medicineData} , {rejectWithValue})=>{
       try{
-        console.log(medicineData);
           const response = await axios.put(`${API_URL}/medicine/update-medicine-by-id/${id}` , medicineData);
 
           return response.data;

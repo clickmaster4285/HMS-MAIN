@@ -36,12 +36,46 @@ export const createRadiologyReport = createAsyncThunk(
   }
 );
 
+// Updated with pagination and filters
 export const fetchAllRadiologyReports = createAsyncThunk(
   'radiology/fetchAllReports',
-  async (_, { rejectWithValue }) => {
+  async (params = {}, { rejectWithValue }) => {
     try {
+      const {
+        page = 1,
+        limit = 20,
+        search = '',
+        status = '',
+        paymentStatus = '',
+        gender = '',
+        contact = '',
+        dateRange = '',
+        startDate = '',
+        endDate = '',
+        doctor = '',
+        testName = '',
+        minAmount = '',
+        maxAmount = ''
+      } = params;
+
       const response = await axios.get(`${API_URL}/radiology/get-reports`, {
         headers: getAuthHeaders(),
+        params: {
+          page,
+          limit,
+          search,
+          status,
+          paymentStatus,
+          gender,
+          contact,
+          dateRange,
+          startDate,
+          endDate,
+          doctor,
+          testName,
+          minAmount,
+          maxAmount
+        }
       });
       return response.data.data;
     } catch (error) {
@@ -198,18 +232,71 @@ export const updatefinalContent = createAsyncThunk(
   }
 );
 
+// Reducers for pagination and filters
+export const setPage = createAsyncThunk(
+  'radiology/setPage',
+  async (page) => {
+    return page;
+  }
+);
+
+export const setLimit = createAsyncThunk(
+  'radiology/setLimit',
+  async (limit) => {
+    return limit;
+  }
+);
+
+export const setFilters = createAsyncThunk(
+  'radiology/setFilters',
+  async (filters) => {
+    return filters;
+  }
+);
+
+export const clearFilters = createAsyncThunk(
+  'radiology/clearFilters',
+  async () => {
+    return null;
+  }
+);
+
 // ─── Initial State ─────────────────────────────────────────────────────────
 
 const initialState = {
   reports: [],
-  totalPatients: [],
-  filteredReports: [],
+  totalPatients: 0,
   currentReport: null,
   templates: [],
+  
+  // Pagination state
+  pagination: {
+    page: 1,
+    limit: 20,
+    total: 0,
+    totalPages: 0,
+  },
+  
+  // Filters state
+  filters: {
+    search: '',
+    status: '',
+    paymentStatus: '',
+    gender: '',
+    contact: '',
+    dateRange: '',
+    startDate: '',
+    endDate: '',
+    doctor: '',
+    testName: '',
+    minAmount: '',
+    maxAmount: '',
+  },
+  
   status: {
-    create: 'idle',
     fetchAll: 'idle',
     fetchById: 'idle',
+    create: 'idle',
     update: 'idle',
     fetchTemplates: 'idle',
     fetchByDate: 'idle',
@@ -233,10 +320,6 @@ const radiologySlice = createSlice({
 
     clearCurrentReport: (state) => {
       state.currentReport = null;
-    },
-
-    clearFilteredReports: (state) => {
-      state.filteredReports = [];
     },
   },
 
@@ -271,7 +354,10 @@ const radiologySlice = createSlice({
       .addCase(fetchAllRadiologyReports.fulfilled, (state, action) => {
         state.status.fetchAll = "succeeded";
         state.isLoading = false;
-        state.reports = action.payload;
+        state.reports = action.payload.reports || [];
+        state.totalPatients = action.payload.totalPatients || 0;
+        state.pagination.total = action.payload.pagination?.total || 0;
+        state.pagination.totalPages = action.payload.pagination?.totalPages || 0;
       })
       .addCase(fetchAllRadiologyReports.rejected, (state, action) => {
         state.status.fetchAll = "failed";
@@ -365,7 +451,7 @@ const radiologySlice = createSlice({
       .addCase(fetchRadiologyReportsByDate.fulfilled, (state, action) => {
         state.status.fetchByDate = "succeeded";
         state.isLoading = false;
-        state.filteredReports = action.payload;
+        // Store filtered reports separately if needed
       })
       .addCase(fetchRadiologyReportsByDate.rejected, (state, action) => {
         state.status.fetchByDate = "failed";
@@ -409,6 +495,23 @@ const radiologySlice = createSlice({
         state.isError = true;
         state.error =
           action.payload?.message || "Failed to soft delete study";
+      })
+
+      /* ================= PAGINATION & FILTERS ================= */
+      .addCase(setPage.fulfilled, (state, action) => {
+        state.pagination.page = action.payload;
+      })
+      .addCase(setLimit.fulfilled, (state, action) => {
+        state.pagination.limit = action.payload;
+        state.pagination.page = 1; // Reset to first page when limit changes
+      })
+      .addCase(setFilters.fulfilled, (state, action) => {
+        state.filters = { ...state.filters, ...action.payload };
+        state.pagination.page = 1; // Reset to first page when filters change
+      })
+      .addCase(clearFilters.fulfilled, (state) => {
+        state.filters = { ...initialState.filters };
+        state.pagination.page = 1;
       });
   },
 });
@@ -418,7 +521,6 @@ const radiologySlice = createSlice({
 export const {
   resetRadiologyStatus,
   clearCurrentReport,
-  clearFilteredReports,
 } = radiologySlice.actions;
 
 export default radiologySlice.reducer;

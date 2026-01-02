@@ -5,7 +5,7 @@ import {
   fetchPatientTestAll,
   deletepatientTest,
 } from '../../../features/patientTest/patientTestSlice';
-import { format, isSameDay, isSameWeek, isSameMonth } from 'date-fns';
+import { format, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfDay, endOfDay } from 'date-fns';
 import {
   FiSearch,
   FiFilter,
@@ -16,39 +16,24 @@ import {
   FiTrash2,
   FiChevronLeft,
   FiChevronRight,
+  FiCalendar,
 } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
 import PrintA4 from './PrintPatientTest';
 import ReactDOMServer from 'react-dom/server';
 import { toast } from 'react-toastify';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
 
 // ------------- Normalizer -------------
 const normalizeRecord = (rec) => {
-  // patient snapshot can be in patient_Detail or a flat patient object
   const patient = rec?.patient_Detail || rec?.patient || {};
 
-  // Format age from "20 years 0 months 0 days" to "20/0/0"
-  const formatAge = (ageStr) => {
-    if (!ageStr || typeof ageStr !== 'string') return ageStr;
-    
-    try {
-      // Extract numbers using regex
-      const yearsMatch = ageStr.match(/(\d+)\s*years?/);
-      const monthsMatch = ageStr.match(/(\d+)\s*months?/);
-      const daysMatch = ageStr.match(/(\d+)\s*days?/);
-      
-      const years = yearsMatch ? yearsMatch[1] : '0';
-      const months = monthsMatch ? monthsMatch[1] : '0';
-      const days = daysMatch ? daysMatch[1] : '0';
-      
-      return `${years}/${months}/${days}`;
-    } catch (error) {
-      console.warn('Error parsing age:', ageStr, error);
-      return ageStr; // Return original if parsing fails
-    }
+  const getAge = (ageStr) => {
+    if (!ageStr) return '';
+    return ageStr;
   };
 
-  // Support both old (selectedTests) and new (tests) shapes
   const rawTests =
     Array.isArray(rec?.tests) && rec.tests.length
       ? rec.tests
@@ -57,7 +42,6 @@ const normalizeRecord = (rec) => {
       : [];
 
   const normalizedTests = rawTests.map((st) => {
-    // New shape: { testId, testName, price, discount, paid, remaining }
     if (st?.testName || st?.price !== undefined) {
       const price = Number(st?.price ?? 0);
       const discount = Math.max(0, Number(st?.discount ?? 0));
@@ -79,7 +63,6 @@ const normalizeRecord = (rec) => {
       };
     }
 
-    // Old shape: selectedTests[i] may have testDetails populated or just test id
     const d = st?.testDetails || st?.test || {};
     const testName = d?.testName || st?.testName || 'Unknown Test';
     const testCode = d?.testCode || st?.testCode || '';
@@ -104,7 +87,6 @@ const normalizeRecord = (rec) => {
     };
   });
 
-  // Totals: prefer new financialSummary if present, else fall back
   const fin = rec?.financialSummary || {};
   const computedFinal = normalizedTests.reduce(
     (s, t) => s + t._norm.finalAmount,
@@ -153,7 +135,7 @@ const normalizeRecord = (rec) => {
           '',
         Gender:
           patient?.patient_Gender || patient?.Gender || patient?.gender || '',
-        Age: formatAge(patient?.patient_Age || patient?.Age || patient?.age || ''),
+        Age: getAge(patient?.patient_Age || patient?.Age || patient?.age || ''),
         Guardian:
           patient?.patient_Guardian ||
           patient?.Guardian ||
@@ -195,11 +177,12 @@ const PatientTestsTable = () => {
   const [filters, setFilters] = useState({
     status: '',
     dateRange: '',
+    customStartDate: null,
+    customEndDate: null,
     gender: '',
     contact: '',
   });
 
-  // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(20);
   const [localSearchTerm, setLocalSearchTerm] = useState('');
@@ -217,7 +200,16 @@ const PatientTestsTable = () => {
     setSelectedTest(null);
   };
 
-  // Build query parameters for backend
+  // Handle custom date change
+  const handleCustomDateChange = (name, date) => {
+    setFilters(prev => ({
+      ...prev,
+      [name]: date,
+    }));
+    setCurrentPage(1);
+  };
+
+  // Build query parameters for backend - UPDATED
   const buildQueryParams = useCallback(() => {
     const params = {
       page: currentPage,
@@ -225,26 +217,45 @@ const PatientTestsTable = () => {
     };
 
     // Add search term if exists
-    if (localSearchTerm) {
-      params.search = localSearchTerm;
+    if (localSearchTerm.trim()) {
+      params.search = localSearchTerm.trim();
     }
 
-    // Add filters to search
-    let filterSearch = '';
+    // Add individual filter parameters
     if (filters.status) {
-      filterSearch += `status:${filters.status} `;
+      params.status = filters.status;
     }
     if (filters.gender) {
-      filterSearch += `gender:${filters.gender} `;
+      params.gender = filters.gender;
     }
     if (filters.contact) {
-      filterSearch += `contact:${filters.contact} `;
+      params.contact = filters.contact;
     }
 
-    if (filterSearch) {
-      params.search = params.search 
-        ? `${params.search} ${filterSearch}` 
-        : filterSearch;
+    // Handle date range filters
+    const now = new Date();
+    
+    if (filters.dateRange === 'today') {
+      const today = new Date();
+      params.startDate = format(today, 'yyyy-MM-dd');
+      params.endDate = format(today, 'yyyy-MM-dd');
+    } else if (filters.dateRange === 'week') {
+      const weekStart = startOfWeek(now, { weekStartsOn: 1 }); // Monday start
+      const weekEnd = endOfWeek(now, { weekStartsOn: 1 });
+      params.startDate = format(weekStart, 'yyyy-MM-dd');
+      params.endDate = format(weekEnd, 'yyyy-MM-dd');
+    } else if (filters.dateRange === 'month') {
+      const monthStart = startOfMonth(now);
+      const monthEnd = endOfMonth(now);
+      params.startDate = format(monthStart, 'yyyy-MM-dd');
+      params.endDate = format(monthEnd, 'yyyy-MM-dd');
+    } else if (filters.dateRange === 'custom' && filters.customStartDate && filters.customEndDate) {
+      // Use custom dates
+      params.startDate = format(filters.customStartDate, 'yyyy-MM-dd');
+      params.endDate = format(filters.customEndDate, 'yyyy-MM-dd');
+    } else if (filters.dateRange) {
+      // For other predefined ranges
+      params.dateRange = filters.dateRange;
     }
 
     return params;
@@ -267,7 +278,7 @@ const PatientTestsTable = () => {
     return [...list].sort((a, b) => {
       const aDate = new Date(a._norm.createdAt || 0).getTime();
       const bDate = new Date(b._norm.createdAt || 0).getTime();
-      return bDate - aDate; // newest first
+      return bDate - aDate;
     });
   }, []);
 
@@ -282,8 +293,8 @@ const PatientTestsTable = () => {
   useEffect(() => {
     const timer = setTimeout(() => {
       setLocalSearchTerm(searchTerm);
-      setCurrentPage(1); // Reset to page 1 when searching
-    }, 500); // 500ms debounce
+      setCurrentPage(1);
+    }, 500);
 
     return () => clearTimeout(timer);
   }, [searchTerm]);
@@ -298,17 +309,14 @@ const PatientTestsTable = () => {
         'Are you sure you want to delete this patient test record?'
       )
     ) {
-      // optimistic remove
       const prevRows = rows;
       setRows((r) => r.filter((x) => x._id !== id));
       try {
         await dispatch(deletepatientTest(id)).unwrap();
-        // background refresh to stay in sync
         const queryParams = buildQueryParams();
         dispatch(fetchPatientTestAll(queryParams));
         toast.success('Record deleted successfully');
       } catch (e) {
-        // revert on error
         setRows(prevRows);
         console.error('Delete failed:', e);
         toast.error(`Delete failed: ${e?.message || 'Unknown error'}`);
@@ -393,7 +401,6 @@ const PatientTestsTable = () => {
     w.document.close();
   };
 
-  // Handle page change
   const handlePageChange = (newPage) => {
     if (newPage >= 1 && newPage <= (pagination?.totalPages || 1)) {
       setCurrentPage(newPage);
@@ -403,33 +410,48 @@ const PatientTestsTable = () => {
   const handleItemsPerPageChange = (e) => {
     const newItemsPerPage = parseInt(e.target.value);
     setItemsPerPage(newItemsPerPage);
-    setCurrentPage(1); // Reset to first page when changing items per page
+    setCurrentPage(1);
   };
 
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
-    setFilters((prev) => ({ ...prev, [name]: value }));
-    setCurrentPage(1); // Reset to page 1 when filters change
+    
+    if (name === 'dateRange' && value !== 'custom') {
+      // Reset custom dates when switching to non-custom range
+      setFilters(prev => ({
+        ...prev,
+        [name]: value,
+        customStartDate: null,
+        customEndDate: null,
+      }));
+    } else {
+      setFilters(prev => ({ ...prev, [name]: value }));
+    }
+    setCurrentPage(1);
   };
 
   const resetFilters = () => {
-    setFilters({ status: '', dateRange: '', gender: '', contact: '' });
+    setFilters({ 
+      status: '', 
+      dateRange: '', 
+      customStartDate: null, 
+      customEndDate: null, 
+      gender: '', 
+      contact: '' 
+    });
     setSearchTerm('');
     setCurrentPage(1);
   };
 
-  // Generate page numbers for pagination
   const generatePageNumbers = () => {
     const totalPages = pagination?.totalPages || 1;
     const pages = [];
     
     if (totalPages <= 5) {
-      // Show all pages if 5 or less
       for (let i = 1; i <= totalPages; i++) {
         pages.push(i);
       }
     } else {
-      // Show first, last, and pages around current
       if (currentPage <= 3) {
         pages.push(1, 2, 3, 4, '...', totalPages);
       } else if (currentPage >= totalPages - 2) {
@@ -537,22 +559,95 @@ const PatientTestsTable = () => {
                   </select>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Date Range
-                  </label>
-                  <select
-                    name="dateRange"
-                    value={filters.dateRange}
-                    onChange={handleFilterChange}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  >
-                    <option value="">All Dates</option>
-                    <option value="today">Today</option>
-                    <option value="week">This Week</option>
-                    <option value="month">This Month</option>
-                  </select>
-                </div>
+    <div>
+  <label className="block text-sm font-medium text-gray-700 mb-2">
+    Date Range
+  </label>
+  
+  <div className="space-y-3">
+    <div className="flex gap-3">
+      <select
+        name="dateRange"
+        value={filters.dateRange}
+        onChange={handleFilterChange}
+        className="flex-1 border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200"
+      >
+        <option value="">All Dates</option>
+        <option value="today">Today</option>
+        <option value="week">This Week</option>
+        <option value="month">This Month</option>
+        <option value="custom">Custom...</option>
+      </select>
+    </div>
+
+    {/* Custom Date Range - Side by Side */}
+    {filters.dateRange === 'custom' && (
+      <div className="space-y-3">
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <div className="relative">
+              <DatePicker
+                selected={filters.customStartDate}
+                onChange={(date) => handleCustomDateChange('customStartDate', date)}
+                selectsStart
+                startDate={filters.customStartDate}
+                endDate={filters.customEndDate}
+                maxDate={new Date()}
+                className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                placeholderText="From"
+                dateFormat="dd/MM/yy"
+                isClearable
+              />
+              <FiCalendar className="absolute right-3 top-3 text-gray-400" />
+            </div>
+          </div>
+          
+          <div>
+            <div className="relative">
+              <DatePicker
+                selected={filters.customEndDate}
+                onChange={(date) => handleCustomDateChange('customEndDate', date)}
+                selectsEnd
+                startDate={filters.customStartDate}
+                endDate={filters.customEndDate}
+                minDate={filters.customStartDate}
+                maxDate={new Date()}
+                className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                placeholderText="To"
+                dateFormat="dd/MM/yy"
+                isClearable
+              />
+              <FiCalendar className="absolute right-3 top-3 text-gray-400" />
+            </div>
+          </div>
+        </div>
+
+        {filters.customStartDate && filters.customEndDate && (
+          <div className="px-3 py-2 bg-blue-50 border border-blue-100 rounded-lg">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-blue-700">
+                {format(filters.customStartDate, 'dd MMM')} - {format(filters.customEndDate, 'dd MMM yyyy')}
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  setFilters(prev => ({
+                    ...prev,
+                    customStartDate: null,
+                    customEndDate: null
+                  }));
+                }}
+                className="text-xs text-blue-600 hover:text-blue-800"
+              >
+                × Clear
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    )}
+  </div>
+</div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -568,12 +663,18 @@ const PatientTestsTable = () => {
                   />
                 </div>
 
-                <div className="flex items-end">
+                <div className="flex items-end space-x-2">
                   <button
                     onClick={resetFilters}
-                    className="px-4 py-2 text-sm text-gray-700 hover:text-gray-900"
+                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
                   >
                     Reset Filters
+                  </button>
+                  <button
+                    onClick={() => setShowFilters(false)}
+                    className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700"
+                  >
+                    Apply Filters
                   </button>
                 </div>
               </div>
@@ -775,7 +876,6 @@ const PatientTestsTable = () => {
           </table>
         </div>
 
-        {/* Pagination Controls */}
         {(pagination?.totalPages || 0) > 1 && (
           <div className="flex flex-col md:flex-row items-center justify-between mt-6 px-4 py-3 bg-white border-t border-gray-200">
             <div className="text-sm text-gray-700 mb-4 md:mb-0">
@@ -805,7 +905,6 @@ const PatientTestsTable = () => {
                 <FiChevronLeft className="mr-1" /> Previous
               </button>
               
-              {/* Page numbers */}
               <div className="flex space-x-1">
                 {generatePageNumbers().map((pageNum, index) => (
                   pageNum === '...' ? (
@@ -852,7 +951,6 @@ const PatientTestsTable = () => {
           </div>
         )}
 
-        {/* Modal */}
         {isOpen && selectedTest && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg p-6 max-w-md w-full h-[80vh] overflow-y-auto">

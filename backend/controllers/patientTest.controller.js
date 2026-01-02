@@ -291,87 +291,122 @@ emitGlobalEvent(req, EVENTS.PATIENT_TEST, "create", {
 
 const getAllPatientTests = async (req, res) => {
   try {
-    const { page = 1, limit = 20, search } = req.query;
+    const {
+      page = 1,
+      limit = 20,
+      search,
+      status,
+      testName,
+      gender,
+      contact,
+      dateRange,
+      startDate,
+      endDate,
+    } = req.query;
+
     const skip = (page - 1) * limit;
+    const query = { isDeleted: false };
+    const andConditions = [query];
 
-    let query = { isDeleted: false };
+    // Helper to push conditions safely
+    const addCondition = (condition) => {
+      if (condition) andConditions.push(condition);
+    };
 
-    if (search) {
-      query.$or = [
-        { 'patient_Detail.patient_MRNo': { $regex: search, $options: 'i' } },
-        { 'patient_Detail.patient_Name': { $regex: search, $options: 'i' } },
-        { 'patient_Detail.patient_CNIC': { $regex: search, $options: 'i' } },
-      ];
-    }
+    // 1. Text Search (patient name, MRNo, CNIC, contact, token)
+    if (search && search.trim()) {
+      const searchParts = search.trim().split(/\s+/);
+      const textSearch = [];
+      let parsedStatus = null;
+      let parsedTestName = null;
+      let parsedGender = null;
+      let parsedContact = null;
 
-    const patientTests = await hospitalModel.PatientTest.find(query)
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(parseInt(limit))
-      .lean();
+      searchParts.forEach((part) => {
+        if (part.startsWith('status:')) {
+          parsedStatus = part.slice(7).trim();
+        } else if (part.startsWith('testName:')) {
+          parsedTestName = part.slice(9).trim();
+        } else if (part.startsWith('gender:')) {
+          parsedGender = part.slice(7).trim();
+        } else if (part.startsWith('contact:')) {
+          parsedContact = part.slice(8).trim();
+        } else {
+          textSearch.push(part);
+        }
+      });
 
-    const total = await hospitalModel.PatientTest.countDocuments(query);
+      // Free text search
+      if (textSearch.length > 0) {
+        const searchRegex = textSearch.join(' ');
+        const orConditions = [
+          { 'patient_Detail.patient_MRNo': { $regex: searchRegex, $options: 'i' } },
+          { 'patient_Detail.patient_Name': { $regex: searchRegex, $options: 'i' } },
+          { 'patient_Detail.patient_CNIC': { $regex: searchRegex, $options: 'i' } },
+          { 'patient_Detail.patient_ContactNo': { $regex: searchRegex, $options: 'i' } },
+        ];
 
-    // Map over each patientTest and attach their own testDefinitions
-    const patientTestsWithDefinitions = await Promise.all(
-      patientTests.map(async (pt) => {
-        const testCodes =
-          pt.selectedTests
-            ?.map((t) => t.testDetails?.testCode)
-            .filter(Boolean) || [];
-
-        const testDefinitions = await hospitalModel.TestManagment.find({
-          testCode: { $in: testCodes },
-        }).lean();
-
-        const testResultIds = testDefinitions.map((test) =>
-          test._id.toString()
-        );
-
-        const testResults = await hospitalModel.TestResult.find({
-          testId: { $in: testResultIds },
-        }).lean();
-
-        // Create result lookup: testId -> fieldName -> result
-        const resultLookup = {};
-        for (const result of testResults) {
-          const testId = result.testId.toString();
-          if (!resultLookup[testId]) resultLookup[testId] = {};
-
-          for (const res of result.results || []) {
-            resultLookup[testId][res.fieldName] = {
-              value: res.value || null,
-              note: res.notes || null,
-            };
-          }
+        const tokenNum = parseInt(searchRegex);
+        if (!isNaN(tokenNum)) {
+          orConditions.push({ tokenNumber: tokenNum });
         }
 
-        // Enrich each testDefinition
-        const enrichedTestDefinitions = testDefinitions.map((td) => {
-          const testId = td._id.toString();
-          const resultsForThisTest = resultLookup[testId] || {};
+        addCondition({ $or: orConditions });
+      }
 
-          const enrichedFields = (td.fields || []).map((field) => {
-            const matchedResult = resultsForThisTest[field.name] || {};
-            return {
-              ...field,
-              value: matchedResult.value ?? null,
-              note: matchedResult.note ?? null,
-            };
-          });
-
-          return {
-            ...td,
-            fields: enrichedFields,
-          };
+      // Parsed filters from search string
+      if (parsedStatus) addCondition(getStatusCondition(parsedStatus));
+      if (parsedTestName) addCondition(getTestNameCondition(parsedTestName));
+      if (parsedGender) addCondition({ 'patient_Detail.patient_Gender': parsedGender });
+      if (parsedContact) {
+        addCondition({
+          'patient_Detail.patient_ContactNo': { $regex: parsedContact, $options: 'i' },
         });
+      }
+    }
 
-        return {
-          ...pt,
-          testDefinitions: enrichedTestDefinitions,
-        };
-      })
-    );
+    // 2. Direct filters (only if not already in search string)
+    if (testName && testName.trim() && !search?.includes('testName:')) {
+      addCondition(getTestNameCondition(testName.trim()));
+    }
+
+    if (status && status.trim() && !search?.includes('status:')) {
+      addCondition(getStatusCondition(status.trim()));
+    }
+
+    if (gender && gender.trim() && !search?.includes('gender:')) {
+      addCondition({ 'patient_Detail.patient_Gender': gender.trim() });
+    }
+
+    if (contact && contact.trim() && !search?.includes('contact:')) {
+      addCondition({
+        'patient_Detail.patient_ContactNo': { $regex: contact.trim(), $options: 'i' },
+      });
+    }
+
+    // 3. Date Range Filter
+    const dateFilter = parseDateRange(dateRange, startDate, endDate);
+    if (dateFilter) {
+      addCondition({ createdAt: dateFilter });
+    }
+
+    // Final query
+    const finalQuery = andConditions.length > 1 ? { $and: andConditions } : query;
+
+
+    // Execute queries in parallel where possible
+    const [patientTests, total] = await Promise.all([
+      hospitalModel.PatientTest.find(finalQuery)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(parseInt(limit))
+        .lean(),
+
+      hospitalModel.PatientTest.countDocuments(finalQuery),
+    ]);
+
+    // Enrich with test definitions and results
+    const patientTestsWithDefinitions = await enrichWithTestResults(patientTests);
 
     return res.status(200).json({
       success: true,
@@ -394,6 +429,154 @@ const getAllPatientTests = async (req, res) => {
     });
   }
 };
+
+// Helper: Status condition (payment or test status)
+function getStatusCondition(statusValue) {
+  const paymentStatuses = ['paid', 'pending', 'partial', 'refunded'];
+  const testStatusMap = {
+    not_started: 'registered',
+    pending: 'registered',
+  };
+
+  const normalized = testStatusMap[statusValue] || statusValue;
+
+  if (paymentStatuses.includes(normalized)) {
+    return {
+      $or: [
+        { paymentStatus: normalized },
+        { 'financialSummary.paymentStatus': normalized },
+      ],
+    };
+  }
+
+  // Assume it's a test status
+  return {
+    selectedTests: {
+      $elemMatch: { testStatus: normalized },
+    },
+  };
+}
+
+// Helper: Test name condition
+function getTestNameCondition(testNameValue) {
+  return {
+    selectedTests: {
+      $elemMatch: {
+        'testDetails.testName': { $regex: testNameValue, $options: 'i' },
+      },
+    },
+  };
+}
+
+// Helper: Parse date range
+function parseDateRange(dateRange, startDate, endDate) {
+  if (dateRange && dateRange.includes('_')) {
+    const [startStr, endStr] = dateRange.split('_');
+    return {
+      $gte: new Date(startStr + 'T00:00:00.000Z'),
+      $lte: new Date(endStr + 'T23:59:59.999Z'),
+    };
+  }
+
+  if (dateRange && /^\d{4}-\d{2}-\d{2}$/.test(dateRange)) {
+    const date = new Date(dateRange);
+    return {
+      $gte: new Date(date.setHours(0, 0, 0, 0)),
+      $lte: new Date(date.setHours(23, 59, 59, 999)),
+    };
+  }
+
+  if (startDate || endDate) {
+    const start = startDate ? new Date(startDate + 'T00:00:00.000Z') : null;
+    const end = endDate ? new Date(endDate + 'T23:59:59.999Z') : null;
+
+    return {
+      ...(start && { $gte: start }),
+      ...(end && { $lte: end }),
+    };
+  }
+
+  return null;
+}
+
+// Extracted: Enrich patient tests with definitions + results
+async function enrichWithTestResults(patientTests) {
+  if (patientTests.length === 0) return [];
+
+  // Collect all test codes
+  const allTestCodes = new Set();
+  patientTests.forEach((pt) =>
+    pt.selectedTests?.forEach((t) => {
+      if (t.testDetails?.testCode) allTestCodes.add(t.testDetails.testCode);
+    })
+  );
+
+  if (allTestCodes.size === 0) {
+    return patientTests.map((pt) => ({ ...pt, testDefinitions: [] }));
+  }
+
+  // Fetch test definitions
+  const testDefinitions = await hospitalModel.TestManagment.find({
+    testCode: { $in: Array.from(allTestCodes) },
+  }).lean();
+
+  const testIdToDef = new Map();
+  testDefinitions.forEach((def) => testIdToDef.set(def._id.toString(), def));
+
+  const testResultIds = testDefinitions.map((t) => t._id.toString());
+
+  // Fetch test results
+  const testResults = await hospitalModel.TestResult.find({
+    testId: { $in: testResultIds },
+  }).lean();
+
+  // Build lookup: testId → fieldName → { value, note }
+  const resultLookup = {};
+  testResults.forEach((result) => {
+    const testId = result.testId.toString();
+    if (!resultLookup[testId]) resultLookup[testId] = {};
+
+    (result.results || []).forEach((res) => {
+      resultLookup[testId][res.fieldName] = {
+        value: res.value || null,
+        note: res.notes || null,
+      };
+    });
+  });
+
+  // Enrich each patient test
+  return patientTests.map((pt) => {
+    const enrichedDefs = (pt.selectedTests || [])
+      .map((selected) => {
+        const testCode = selected.testDetails?.testCode;
+        const definition = testDefinitions.find((td) => td.testCode === testCode);
+        if (!definition) return null;
+
+        const testId = definition._id.toString();
+        const resultsForTest = resultLookup[testId] || {};
+
+        const enrichedFields = (definition.fields || []).map((field) => {
+          const result = resultsForTest[field.name] || {};
+          return {
+            ...field,
+            value: result.value ?? null,
+            note: result.note ?? null,
+          };
+        });
+
+        return {
+          ...definition,
+          fields: enrichedFields,
+        };
+      })
+      .filter(Boolean);
+
+    return {
+      ...pt,
+      testDefinitions: enrichedDefs,
+    };
+  });
+}
 
 
 const getPatientTestById = async (req, res) => {
@@ -991,7 +1174,6 @@ const updatePatientTest = async (req, res) => {
     const { id } = req.params;
     const body = req.body;
 
-    console.log("Update Patient Test Payload:", body);
     
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res
@@ -1042,6 +1224,9 @@ const updatePatientTest = async (req, res) => {
         patient_Age:
           body.patient_Detail?.patient_Age ??
           existing.patient_Detail.patient_Age,
+        patient_DOB:
+          body.patient_Detail?.patient_DOB ??
+          existing.patient_Detail.patient_DOB,
         referredBy:
           body.patient_Detail?.referredBy ?? existing.patient_Detail.referredBy,
       },

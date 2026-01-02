@@ -37,12 +37,34 @@ export const createCriticalResult = createAsyncThunk(
   }
 );
 
+// Updated fetchCriticalResults with pagination and filters
 export const fetchCriticalResults = createAsyncThunk(
   'criticalResult/fetchCriticalResults',
-  async (_, { rejectWithValue }) => {
+  async (params = {}, { rejectWithValue }) => {
     try {
+      const {
+        page = 1,
+        limit = 20,
+        search = '',
+        startDate,
+        endDate,
+        sortBy = 'createdAt',
+        sortOrder = 'desc'
+      } = params;
+      
+      const queryParams = new URLSearchParams({
+        page: page.toString(),
+        limit: limit.toString(),
+        sortBy,
+        sortOrder
+      });
+      
+      if (search) queryParams.append('search', search);
+      if (startDate) queryParams.append('startDate', startDate);
+      if (endDate) queryParams.append('endDate', endDate);
+      
       const response = await axios.get(
-        `${API_URL}/criticalResult/getAll-Critical-result`,
+        `${API_URL}/criticalResult/getAll-Critical-result?${queryParams.toString()}`,
         { headers: getAuthHeaders() }
       );
       return response.data;
@@ -122,9 +144,7 @@ export const getSummaryByDate = createAsyncThunk(
         `${API_URL}/criticalResult/get-critical-summery-by-date?${qs}`,
         { headers: getAuthHeaders() }
       );
-
-
-      return response.data; // array
+      return response.data;
     } catch (err) {
       const message =
         err.response?.response?.message ||
@@ -143,6 +163,19 @@ const criticalResultSlice = createSlice({
     loading: false,
     error: null,
     success: false,
+    pagination: {
+      currentPage: 1,
+      totalPages: 1,
+      totalItems: 0,
+      itemsPerPage: 20
+    },
+    filters: {
+      search: '',
+      startDate: null,
+      endDate: null,
+      sortBy: 'createdAt',
+      sortOrder: 'desc'
+    },
     status: { summary: 'idle' },
     summaryState: { summary: [], loading: false, error: null },
   },
@@ -156,10 +189,31 @@ const criticalResultSlice = createSlice({
     setCurrentCriticalResult: (state, action) => {
       state.currentCriticalResult = action.payload;
     },
+    setFilters: (state, action) => {
+      state.filters = { ...state.filters, ...action.payload };
+    },
+    clearFilters: (state) => {
+      state.filters = {
+        search: '',
+        startDate: null,
+        endDate: null,
+        sortBy: 'createdAt',
+        sortOrder: 'desc'
+      };
+      // Reset to first page when clearing filters
+      state.pagination.currentPage = 1;
+    },
+    setPage: (state, action) => {
+      state.pagination.currentPage = action.payload;
+    },
+    // ADD THIS REDUCER
+    setItemsPerPage: (state, action) => {
+      state.pagination.itemsPerPage = action.payload;
+      state.pagination.currentPage = 1; // Reset to first page when changing items per page
+    },
   },
   extraReducers: (builder) => {
     builder
-
       // ================= CREATE =================
       .addCase(createCriticalResult.pending, (state) => {
         state.loading = true;
@@ -175,7 +229,7 @@ const criticalResultSlice = createSlice({
         state.error = action.payload;
       })
 
-      // ================= FETCH ALL =================
+      // ================= FETCH ALL (UPDATED) =================
       .addCase(fetchCriticalResults.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -183,6 +237,13 @@ const criticalResultSlice = createSlice({
       .addCase(fetchCriticalResults.fulfilled, (state, action) => {
         state.loading = false;
         state.criticalResults = action.payload.data;
+        // Update pagination from response
+        if (action.payload.pagination) {
+          state.pagination = {
+            ...state.pagination,
+            ...action.payload.pagination
+          };
+        }
       })
       .addCase(fetchCriticalResults.rejected, (state, action) => {
         state.loading = false;
@@ -232,7 +293,7 @@ const criticalResultSlice = createSlice({
         state.error = action.payload;
       })
 
-      // ================= SUMMARY (UNCHANGED) =================
+      // ================= SUMMARY =================
       .addCase(getSummaryByDate.pending, (state) => {
         state.status.summary = 'pending';
         state.summaryState.loading = true;
@@ -252,8 +313,14 @@ const criticalResultSlice = createSlice({
   },
 });
 
-
-export const { clearError, clearSuccess, setCurrentCriticalResult } =
-  criticalResultSlice.actions;
+export const { 
+  clearError, 
+  clearSuccess, 
+  setCurrentCriticalResult,
+  setFilters,
+  clearFilters,
+  setPage,
+  setItemsPerPage // ADD THIS TO EXPORTS
+} = criticalResultSlice.actions;
 
 export default criticalResultSlice.reducer;

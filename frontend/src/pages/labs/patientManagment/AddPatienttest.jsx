@@ -56,6 +56,11 @@ const AddlabPatient = () => {
     return Number.isNaN(n) ? 0 : Math.max(0, n);
   };
 
+  const toFloat = (v) => {
+    const n = parseFloat(v);
+    return Number.isNaN(n) ? 0 : Math.max(0, n);
+  };
+
   const normalizeRows = (rows) =>
     rows.map((r) => {
       const amount = toInt(r.amount);
@@ -103,28 +108,70 @@ const AddlabPatient = () => {
     setFormKey((prev) => prev + 1); // This will force re-render child components
   };
 
-  const calculateAge = (birthDate) => {
-    if (!birthDate) return '';
-    const today = new Date();
-    const d = new Date(birthDate);
-    let years = today.getFullYear() - d.getFullYear();
-    let months = today.getMonth() - d.getMonth();
-    let days = today.getDate() - d.getDate();
+  // Calculate DOB from age (decimal)
+  const calculateDobFromAge = (ageString) => {
+    if (!ageString) return null;
 
+    const today = new Date();
+    const ageNum = parseFloat(ageString);
+    
+    if (isNaN(ageNum)) return null;
+
+    const calculatedDob = new Date(today);
+    
+    if (ageNum < 1) {
+      // If less than 1 year, treat as months
+      const months = Math.round(ageNum * 12);
+      calculatedDob.setMonth(today.getMonth() - months);
+    } else {
+      // If 1 or more years, split into years and months
+      const years = Math.floor(ageNum);
+      const fractionalPart = ageNum - years;
+      const months = Math.round(fractionalPart * 12);
+      
+      calculatedDob.setFullYear(today.getFullYear() - years);
+      calculatedDob.setMonth(today.getMonth() - months);
+    }
+
+    return calculatedDob;
+  };
+
+  // Calculate age from DOB (returns decimal)
+  const calculateAgeFromDob = (dobDate) => {
+    if (!dobDate) return '';
+    
+    const today = new Date();
+    const birthDate = new Date(dobDate);
+    
+    if (isNaN(birthDate.getTime())) return '';
+    
+    let years = today.getFullYear() - birthDate.getFullYear();
+    let months = today.getMonth() - birthDate.getMonth();
+    let days = today.getDate() - birthDate.getDate();
+    
+    // Adjust for negative days
     if (days < 0) {
       months--;
       days += new Date(today.getFullYear(), today.getMonth(), 0).getDate();
     }
+    
+    // Adjust for negative months
     if (months < 0) {
       years--;
       months += 12;
     }
-    return `${years} years ${months} months ${days} days`;
+    
+    // Calculate decimal age (years + months/12)
+    const decimalAge = years + (months / 12);
+    
+    // Format to 2 decimal places if needed
+    return decimalAge.toFixed(2);
   };
 
   const handleDobChange = (date) => {
     setDob(date);
-    setPatient((prev) => ({ ...prev, Age: calculateAge(date) }));
+    const calculatedAge = calculateAgeFromDob(date);
+    setPatient((prev) => ({ ...prev, Age: calculatedAge }));
   };
 
   const handlePatientChange = (e) => {
@@ -155,16 +202,43 @@ const AddlabPatient = () => {
         setUseDefaultContact(true);
       }
 
+      // Parse age from backend - could be decimal or text
+      let ageValue = '';
+      if (patientData.age) {
+        // Try to extract number from age string
+        const ageMatch = patientData.age.toString().match(/\d+(\.\d+)?/);
+        ageValue = ageMatch ? ageMatch[0] : '';
+      }
+      
+      // If no age from backend but has DOB, calculate age from DOB
+      if (!ageValue && patientData.DateOfBirth) {
+        ageValue = calculateAgeFromDob(patientData.DateOfBirth);
+      }
+
       setPatient({
         MRNo: patientData.mrno || '',
         CNIC: patientData.cnic || '',
         Name: patientData.name || '',
         ContactNo: patientData.contactNo || '',
         Gender: patientData.gender || '',
-        Age: patientData.age || calculateAge(patientData.DateOfBirth) || '',
+        Age: ageValue || '',
         ReferredBy: patientData.referredBy || '',
         Guardian: patientData.gaurdian || '',
       });
+
+      // Set DOB if available
+      if (patientData.DateOfBirth) {
+        const dobDate = new Date(patientData.DateOfBirth);
+        if (!isNaN(dobDate.getTime())) {
+          setDob(dobDate);
+        }
+      } else if (ageValue) {
+        // Calculate DOB from age
+        const calculatedDob = calculateDobFromAge(ageValue);
+        if (calculatedDob) {
+          setDob(calculatedDob);
+        }
+      }
     } catch (err) {
       console.error('❌ Patient not found:', err);
       alert(err.payload?.message || 'Patient not found. Please check MR No.');
@@ -361,7 +435,8 @@ const AddlabPatient = () => {
       patient_Guardian: patient.Guardian,
       patient_ContactNo: patient.ContactNo,
       patient_Gender: patient.Gender,
-      patient_Age: patient.Age,
+      patient_Age: patient.Age, // This will be decimal (e.g., "0.5", "1.5", "20.25")
+      patient_DOB: dob ? dob.toISOString() : null, // Include DOB in payload
       referredBy: patient.ReferredBy,
       isExternalPatient: mode === 'new',
       selectedTests: normalizedRows.map((row) => ({

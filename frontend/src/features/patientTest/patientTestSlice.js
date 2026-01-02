@@ -59,12 +59,34 @@ export const fetchPatientTestAll = createAsyncThunk(
   'patientTest/fetchPatientTestAll',
   async (params = {}, { rejectWithValue }) => {
     try {
-      const { page = 1, limit = 20, search = '' } = params;
+      const { 
+        page = 1, 
+        limit = 20, 
+        search = '',
+        status = '',
+        gender = '',
+        contact = '',
+        testName = '',
+        dateRange = '',
+        startDate = '',
+        endDate = ''
+      } = params;
+      
       const response = await axios.get(`${API_URL}/patientTest`, {
         headers: getAuthHeaders(),
-        params: { page, limit, search } 
+        params: { 
+          page, 
+          limit, 
+          search,
+          status,
+          testName,
+          gender,
+          contact,
+          dateRange,
+          startDate,
+          endDate
+        } 
       });
-      console.log('Fetched patient tests response:', response.data.data);
       return response.data.data; 
     } catch (error) {
       const message =

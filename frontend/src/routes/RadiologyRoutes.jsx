@@ -36,11 +36,11 @@ const RadiologyRoutes = () => {
             <Route index element={<Navigate to="dashboard" replace />} />
 
             <Route path="dashboard" element={<RDashboard />} />
-            <Route path="panel" element={<RadiologyPennal />} />
-            <Route path="create-report" element={<CreateRadiologyReport />} />
-            <Route path="form/:id" element={<RadiologyForm />} />
-            <Route path="patient/:id" element={<RediologyPatientDetail />} />
-            <Route path="summary/:date" element={<RadiologySummer />} />
+            <Route path="RadiologyPennal" element={<RadiologyPennal />} />
+            {/* <Route path="create-report" element={<CreateRadiologyReport />} />
+            <Route path="form/:id" element={<RadiologyForm />} /> */}
+            <Route path="RediologyPatientDetail/:id" element={<RediologyPatientDetail />} />
+            <Route path="radiology-summer/:date" element={<RadiologySummer />} />
 
           </Route>
         </Route>

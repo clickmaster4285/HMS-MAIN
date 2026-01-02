@@ -3,32 +3,113 @@ const mongoose = require('mongoose');
 const utils = require('../utils/utilsIndex');
 const emitGlobalEvent = require("../utils/emitGlobalEvent");
 const EVENTS = require("../utils/socketEvents");
+
 const getAllTestBills = async (req, res) => {
   try {
     const {
       page = 1,
-      limit = 10,
+      limit = 20,
       status,
       patientId,
       fromDate,
       toDate,
+      search,
+      patientName,
+      patientMRNo,
+      patientContact,
+      gender,
+      paymentStatus,
+      testName,
+      minAmount,
+      maxAmount,
+      dateRange,
+      startDate,
+      endDate,
     } = req.query;
+
     const skip = (page - 1) * limit;
 
     // Build match query
     const matchQuery = { isDeleted: false };
 
-    if (status) matchQuery.status = status;
+    // Status filter
+    if (status) {
+      matchQuery.status = status;
+    }
+
+    // Patient ID filter
     if (patientId && mongoose.isValidObjectId(patientId)) {
       matchQuery.patientTestId = new mongoose.Types.ObjectId(patientId);
     }
+
+    // Date range filters
+    let dateFilter = {};
+    
+    // Handle fromDate/toDate
     if (fromDate || toDate) {
-      matchQuery.createdAt = {};
-      if (fromDate) matchQuery.createdAt.$gte = new Date(fromDate);
-      if (toDate) matchQuery.createdAt.$lte = new Date(toDate);
+      dateFilter = {};
+      if (fromDate) dateFilter.$gte = new Date(fromDate);
+      if (toDate) dateFilter.$lte = new Date(toDate);
+      matchQuery.createdAt = dateFilter;
+    }
+    
+    // Handle dateRange parameter (today, yesterday, last7days, last30days, thisMonth, lastMonth)
+    else if (dateRange) {
+      const now = new Date();
+      let start, end;
+      
+      switch(dateRange) {
+        case 'today':
+          start = new Date(now.setHours(0, 0, 0, 0));
+          end = new Date(now.setHours(23, 59, 59, 999));
+          break;
+        case 'yesterday':
+          start = new Date(now);
+          start.setDate(start.getDate() - 1);
+          start.setHours(0, 0, 0, 0);
+          end = new Date(now);
+          end.setDate(end.getDate() - 1);
+          end.setHours(23, 59, 59, 999);
+          break;
+        case 'last7days':
+          start = new Date(now);
+          start.setDate(start.getDate() - 7);
+          start.setHours(0, 0, 0, 0);
+          end = new Date(now);
+          end.setHours(23, 59, 59, 999);
+          break;
+        case 'last30days':
+          start = new Date(now);
+          start.setDate(start.getDate() - 30);
+          start.setHours(0, 0, 0, 0);
+          end = new Date(now);
+          end.setHours(23, 59, 59, 999);
+          break;
+        case 'thisMonth':
+          start = new Date(now.getFullYear(), now.getMonth(), 1);
+          end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+          break;
+        case 'lastMonth':
+          start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+          end = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
+          break;
+      }
+      
+      if (start && end) {
+        matchQuery.createdAt = { $gte: start, $lte: end };
+      }
+    }
+    
+    // Handle custom startDate/endDate
+    else if (startDate || endDate) {
+      dateFilter = {};
+      if (startDate) dateFilter.$gte = new Date(startDate);
+      if (endDate) dateFilter.$lte = new Date(endDate);
+      matchQuery.createdAt = dateFilter;
     }
 
-    const groupedResults = await hospitalModel.TestResult.aggregate([
+    // Execute aggregation with initial match
+    const aggregationPipeline = [
       { $match: matchQuery },
 
       // Lookup patient test info
@@ -52,7 +133,84 @@ const getAllTestBills = async (req, res) => {
         },
       },
       { $unwind: '$testInfo' },
+    ];
 
+    // Add patient detail filters before grouping
+    const patientFilters = [];
+    
+    // Search filter (general search across multiple fields)
+    if (search && search.trim()) {
+      const searchRegex = new RegExp(search.trim(), 'i');
+      patientFilters.push({
+        $or: [
+          { 'patientTestInfo.patient_Detail.patient_Name': { $regex: searchRegex } },
+          { 'patientTestInfo.patient_Detail.patient_MRNo': { $regex: searchRegex } },
+          { 'patientTestInfo.patient_Detail.patient_ContactNo': { $regex: searchRegex } },
+          { 'patientTestInfo.patient_Detail.patient_CNIC': { $regex: searchRegex } },
+          { 'testInfo.testName': { $regex: searchRegex } },
+          { 'testInfo.testCode': { $regex: searchRegex } },
+        ]
+      });
+      
+      // Check if search is a token number
+      const tokenNum = parseInt(search.trim());
+      if (!isNaN(tokenNum)) {
+        patientFilters.push({ 'patientTestInfo.tokenNumber': tokenNum });
+      }
+    }
+
+    // Individual patient field filters
+    if (patientName && patientName.trim()) {
+      patientFilters.push({
+        'patientTestInfo.patient_Detail.patient_Name': { 
+          $regex: patientName.trim(), 
+          $options: 'i' 
+        }
+      });
+    }
+
+    if (patientMRNo && patientMRNo.trim()) {
+      patientFilters.push({
+        'patientTestInfo.patient_Detail.patient_MRNo': { 
+          $regex: patientMRNo.trim(), 
+          $options: 'i' 
+        }
+      });
+    }
+
+    if (patientContact && patientContact.trim()) {
+      patientFilters.push({
+        'patientTestInfo.patient_Detail.patient_ContactNo': { 
+          $regex: patientContact.trim(), 
+          $options: 'i' 
+        }
+      });
+    }
+
+    if (gender && gender.trim()) {
+      patientFilters.push({
+        'patientTestInfo.patient_Detail.patient_Gender': gender.trim()
+      });
+    }
+
+    if (testName && testName.trim()) {
+      patientFilters.push({
+        'testInfo.testName': { 
+          $regex: testName.trim(), 
+          $options: 'i' 
+        }
+      });
+    }
+
+    // Apply patient filters if any exist
+    if (patientFilters.length > 0) {
+      aggregationPipeline.push({
+        $match: patientFilters.length === 1 ? patientFilters[0] : { $and: patientFilters }
+      });
+    }
+
+    // Continue with grouping
+    aggregationPipeline.push(
       // Group by patientTestId
       {
         $group: {
@@ -120,13 +278,54 @@ const getAllTestBills = async (req, res) => {
             },
           },
         },
-      },
+      }
+    );
 
-      // Pagination
+    // Add payment status filter after grouping
+    if (paymentStatus && paymentStatus.trim()) {
+      aggregationPipeline.push({
+        $match: {
+          'billingInfo.paymentStatus': paymentStatus.trim()
+        }
+      });
+    }
+
+    // Add amount range filters
+    const amountFilters = [];
+    if (minAmount && !isNaN(minAmount)) {
+      amountFilters.push({
+        $or: [
+          { 'billingInfo.totalAmount': { $gte: parseFloat(minAmount) } },
+          { 'billingInfo.advanceAmount': { $gte: parseFloat(minAmount) } },
+          { 'billingInfo.remainingAmount': { $gte: parseFloat(minAmount) } }
+        ]
+      });
+    }
+
+    if (maxAmount && !isNaN(maxAmount)) {
+      amountFilters.push({
+        $or: [
+          { 'billingInfo.totalAmount': { $lte: parseFloat(maxAmount) } },
+          { 'billingInfo.advanceAmount': { $lte: parseFloat(maxAmount) } },
+          { 'billingInfo.remainingAmount': { $lte: parseFloat(maxAmount) } }
+        ]
+      });
+    }
+
+    if (amountFilters.length > 0) {
+      aggregationPipeline.push({
+        $match: amountFilters.length === 1 ? amountFilters[0] : { $and: amountFilters }
+      });
+    }
+
+    // Add pagination stages
+    aggregationPipeline.push(
       { $sort: { createdAt: -1 } },
       { $skip: skip },
-      { $limit: parseInt(limit) },
-    ]);
+      { $limit: parseInt(limit) }
+    );
+
+    const groupedResults = await hospitalModel.TestResult.aggregate(aggregationPipeline);
 
     const formattedResults = groupedResults.map((entry) => {
       const p = entry.billingInfo;
@@ -153,29 +352,84 @@ const getAllTestBills = async (req, res) => {
           patient_Name: p.patient_Detail?.patient_Name || 'Unknown Patient',
           patient_ContactNo: p.patient_Detail?.patient_ContactNo || '',
           patient_Gender: p.patient_Detail?.patient_Gender || '',
+          patient_CNIC: p.patient_Detail?.patient_CNIC || '',
         },
       };
     });
 
-    // Get total unique patients
-    const totalPatients = await hospitalModel.TestResult.distinct(
-      'patientTestId',
-      matchQuery
-    );
-    const totalPages = Math.ceil(totalPatients.length / limit);
+    // Get total count with same filters (excluding pagination)
+    const countPipeline = [
+      { $match: matchQuery },
+      {
+        $lookup: {
+          from: 'patienttests',
+          localField: 'patientTestId',
+          foreignField: '_id',
+          as: 'patientTestInfo',
+        },
+      },
+      { $unwind: '$patientTestInfo' },
+      {
+        $lookup: {
+          from: 'testmanagements',
+          localField: 'testId',
+          foreignField: '_id',
+          as: 'testInfo',
+        },
+      },
+      { $unwind: '$testInfo' },
+    ];
+
+    // Apply same patient filters to count
+    if (patientFilters.length > 0) {
+      countPipeline.push({
+        $match: patientFilters.length === 1 ? patientFilters[0] : { $and: patientFilters }
+      });
+    }
+
+    countPipeline.push({
+      $group: {
+        _id: '$patientTestId',
+        billingInfo: { $first: '$patientTestInfo' },
+      }
+    });
+
+    // Apply payment status filter to count
+    if (paymentStatus && paymentStatus.trim()) {
+      countPipeline.push({
+        $match: {
+          'billingInfo.paymentStatus': paymentStatus.trim()
+        }
+      });
+    }
+
+    // Apply amount filters to count
+    if (amountFilters.length > 0) {
+      countPipeline.push({
+        $match: amountFilters.length === 1 ? amountFilters[0] : { $and: amountFilters }
+      });
+    }
+
+    countPipeline.push({
+      $count: 'total'
+    });
+
+    const countResult = await hospitalModel.TestResult.aggregate(countPipeline);
+    const total = countResult.length > 0 ? countResult[0].total : 0;
+    const totalPages = Math.ceil(total / limit);
 
     return res.status(200).json({
       success: true,
       data: {
         results: formattedResults,
         pagination: {
-          total: totalPatients.length,
+          total: total,
           page: parseInt(page),
           limit: parseInt(limit),
           totalPages,
         },
         summary: {
-          totalPatients: totalPatients.length,
+          totalPatients: total,
           totalTests: formattedResults.reduce(
             (sum, r) => sum + r.tests.length,
             0
@@ -188,6 +442,18 @@ const getAllTestBills = async (req, res) => {
           pendingTests: formattedResults.reduce(
             (sum, r) =>
               sum + r.tests.filter((t) => t.status !== 'completed').length,
+            0
+          ),
+          totalRevenue: formattedResults.reduce(
+            (sum, r) => sum + (r.billingInfo.totalAmount || 0),
+            0
+          ),
+          totalPaid: formattedResults.reduce(
+            (sum, r) => sum + (r.billingInfo.totalPaid || 0),
+            0
+          ),
+          totalPending: formattedResults.reduce(
+            (sum, r) => sum + (r.billingInfo.remainingAmount || 0),
             0
           ),
         },

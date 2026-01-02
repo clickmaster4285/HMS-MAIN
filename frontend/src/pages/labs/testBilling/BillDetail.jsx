@@ -29,7 +29,7 @@ const BillDetail = () => {
     error,
   } = useSelector((state) => state.labBill.currentBill);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
-  const [billType, setBillType] = useState(null); // To detect 'lab' or 'radiology'
+  const [billType, setBillType] = useState(null); 
 
 
   useEffect(() => {

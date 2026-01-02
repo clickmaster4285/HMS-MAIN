@@ -1,5 +1,6 @@
 // TestResultsForm.js
 import React, { useEffect, useRef } from 'react';
+import { useSelector } from 'react-redux'; // Import useSelector
 import { FiClipboard } from 'react-icons/fi';
 import { FieldInputRenderer } from './components/FieldInputRenderer';
 
@@ -18,6 +19,10 @@ const TestResultsForm = ({
   saveCurrentTest,
   getCurrentStatus,
 }) => {
+  // Get current user from Redux store
+  const currentUser = useSelector((state) => state.auth.user);
+  
+
   const currentTest = selectedTests?.[activeTestIndex];
   const currentTestId = currentTest?.test;
   const resultRows = formData?.results?.[currentTestId] || [];
@@ -27,6 +32,13 @@ const TestResultsForm = ({
   const performedByRef = useRef(null);
   const statusRef = useRef(null);
   const overallReportRef = useRef(null);
+
+  // Auto-fill performedBy with logged-in user's name
+  useEffect(() => {
+    if (currentUser && currentUser.name && !formData.performedBy) {
+      handleFormDataChange('performedBy', currentUser.name);
+    }
+  }, [currentUser, formData.performedBy]);
 
   // Status color helper function
   const getStatusColor = (status) => {
@@ -156,16 +168,49 @@ const TestResultsForm = ({
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Performed By
+            {currentUser && currentUser.user_Name && (
+              <span className="ml-2 text-xs text-green-600 bg-green-100 px-2 py-0.5 rounded">
+                Auto-filled
+              </span>
+            )}
           </label>
-          <input
-            type="text"
-            value={formData.performedBy || ''}
-            onChange={(e) => handleFormDataChange('performedBy', e.target.value)}
-            ref={performedByRef}
-            onKeyDown={(e) => handleSimpleEnterNext(e, statusRef)}
-            className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200"
-            placeholder="Enter technician name"
-          />
+          <div className="relative">
+            <input
+              type="text"
+              value={formData.performedBy || ''}
+              onChange={(e) => handleFormDataChange('performedBy', e.target.value)}
+              ref={performedByRef}
+              onKeyDown={(e) => handleSimpleEnterNext(e, statusRef)}
+              className={`w-full border ${currentUser && currentUser.user_Name ? 'border-green-300 bg-green-50' : 'border-gray-300'} rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200`}
+              placeholder={currentUser?.user_Name || "Enter technician name"}
+              readOnly={!!(currentUser && currentUser.user_Name)} 
+              title={currentUser && currentUser.user_Name ? "Auto-filled from your login" : ""}
+            />
+            {currentUser && currentUser.name && (
+              <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+                <span className="text-xs text-green-700 bg-green-100 px-2 py-1 rounded">
+                  You
+                </span>
+              </div>
+            )}
+          </div>
+          {currentUser && currentUser.user_Name ? (
+            <div className="mt-2 text-xs text-gray-600">
+              <p className="flex items-center">
+                <svg className="w-4 h-4 mr-1 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+                Logged in as: {currentUser.user_Name}
+              </p>
+              {currentUser.role && (
+                <p className="ml-5 text-gray-500">Role: {currentUser.role}</p>
+              )}
+            </div>
+          ) : (
+            <p className="text-xs text-gray-500 mt-1">
+              Please enter technician name manually
+            </p>
+          )}
         </div>
 
         {/* Report Status */}

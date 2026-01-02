@@ -51,6 +51,7 @@ const EditPatientTest = () => {
     ContactNo: '',
     Gender: '',
     Age: '',
+    DOB: '',
     ReferredBy: '',
     Guardian: '',
     MaritalStatus: '',
@@ -86,96 +87,106 @@ const EditPatientTest = () => {
     dispatch(fetchAllTests());
   }, [dispatch, id]);
 
-  useEffect(() => {
-    if (!patientTestById) return;
+useEffect(() => {
+  if (!patientTestById) return;
 
-    const rec = patientTestById.patientTest || patientTestById;
-    const detail = rec.patient_Detail || {};
+  const rec = patientTestById.patientTest || patientTestById;
+  const detail = rec.patient_Detail || {};
 
-    setPatient({
-      MRNo: detail.patient_MRNo || '',
-      CNIC: detail.patient_CNIC || '',
-      Name: detail.patient_Name || '',
-      ContactNo: detail.patient_ContactNo || '',
-      Gender: detail.patient_Gender || '',
-      Age: detail.patient_Age || '',
-      ReferredBy: detail.referredBy || '',
-      Guardian: detail.patient_Guardian || '',
-      MaritalStatus: detail.maritalStatus || '',
-    });
+  setPatient({
+    MRNo: detail.patient_MRNo || '',
+    CNIC: detail.patient_CNIC || '',
+    Name: detail.patient_Name || '',
+    ContactNo: detail.patient_ContactNo || '',
+    Gender: detail.patient_Gender || '',
+    Age: detail.patient_Age || '',
+    DOB: detail.patient_DOB || '',
+    ReferredBy: detail.referredBy || '',
+    Guardian: detail.patient_Guardian || '',
+    MaritalStatus: detail.maritalStatus || '',
+  });
 
-    // Build rows from record
-    const rows = (rec.selectedTests || []).map((t, idx) => {
-      const td = t.testDetails || {};
-      const price = Number(td.testPrice ?? 0);
-      const disc = Number(td.discountAmount ?? 0);
-      const paid = Number(td.advanceAmount ?? 0);
-      const final = Math.max(0, price - disc);
-      const remaining = Math.max(0, final - paid);
-
-      return {
-        srNo: idx + 1,
-        testId: getId(t.test),
-        testName: td.testName || '',
-        testCode: td.testCode || '',
-        sampleDate: ymd(td.testDate || t.testDate),
-        reportDate: '',
-        amount: price,
-        discount: disc,
-        finalAmount: final,
-        paid: paid,
-        remaining: remaining,
-        sampleStatus: td.sampleStatus || t.sampleStatus || 'pending',
-        reportStatus: td.reportStatus || t.reportStatus || 'not_started',
-        testStatus: t.testStatus || 'registered',
-        statusHistory: t.statusHistory || [],
-        notes: t.notes || '',
-      };
-    });
-
-    setTestRows(rows);
-
-    // Recalculate totals from rows
-    const sumAmount = rows.reduce((s, r) => s + (r.amount || 0), 0);
-    const sumDiscount = rows.reduce((s, r) => s + (r.discount || 0), 0);
-    const sumFinal = sumAmount - sumDiscount;
-    const sumPaid = rows.reduce((s, r) => s + (r.paid || 0), 0);
-    const sumRemaining = Math.max(0, sumFinal - sumPaid);
-
-    let paymentStatus = 'unpaid';
-    if (sumRemaining === 0 && sumPaid > 0) paymentStatus = 'paid';
-    else if (sumPaid > 0) paymentStatus = 'partial';
-
-    setMeta({
-      isExternalPatient: !!rec.isExternalPatient,
-      tokenNumber: rec.tokenNumber ?? '',
-      paymentStatus,
-    });
-
-    setBilling({
-      totalAmount: sumAmount,
-      discountAmount: sumDiscount,
-      advanceAmount: sumPaid,
-      remainingAmount: sumRemaining,
-      cancelledAmount: rec.cancelledAmount ?? 0,
-      refundableAmount: rec.refundableAmount ?? 0,
-      paidAfterReport: rec.paidAfterReport ?? 0,
-    });
-
-    // Seed history
-    const initialPayments = [];
-    if (sumPaid > 0) {
-      initialPayments.push({
-        date: new Date().toISOString(),
-        amount: sumPaid,
-        type: 'initial',
-        description: 'Initial payment',
-      });
+  // Set the dob state from patient_DOB - IMPORTANT!
+  if (detail.patient_DOB) {
+    const dobDate = new Date(detail.patient_DOB);
+    if (!isNaN(dobDate.getTime())) {
+      setDob(dobDate);
     }
-    setPaymentHistory(initialPayments);
-    setTotalPayments(sumPaid);
-    setAdditionalPayment(0);
-  }, [patientTestById]);
+  }
+
+  // Rest of your existing code remains the same...
+  // Build rows from record
+  const rows = (rec.selectedTests || []).map((t, idx) => {
+    const td = t.testDetails || {};
+    const price = Number(td.testPrice ?? 0);
+    const disc = Number(td.discountAmount ?? 0);
+    const paid = Number(td.advanceAmount ?? 0);
+    const final = Math.max(0, price - disc);
+    const remaining = Math.max(0, final - paid);
+
+    return {
+      srNo: idx + 1,
+      testId: getId(t.test),
+      testName: td.testName || '',
+      testCode: td.testCode || '',
+      sampleDate: ymd(td.testDate || t.testDate),
+      reportDate: '',
+      amount: price,
+      discount: disc,
+      finalAmount: final,
+      paid: paid,
+      remaining: remaining,
+      sampleStatus: td.sampleStatus || t.sampleStatus || 'pending',
+      reportStatus: td.reportStatus || t.reportStatus || 'not_started',
+      testStatus: t.testStatus || 'registered',
+      statusHistory: t.statusHistory || [],
+      notes: t.notes || '',
+    };
+  });
+
+  setTestRows(rows);
+
+  // Recalculate totals from rows
+  const sumAmount = rows.reduce((s, r) => s + (r.amount || 0), 0);
+  const sumDiscount = rows.reduce((s, r) => s + (r.discount || 0), 0);
+  const sumFinal = sumAmount - sumDiscount;
+  const sumPaid = rows.reduce((s, r) => s + (r.paid || 0), 0);
+  const sumRemaining = Math.max(0, sumFinal - sumPaid);
+
+  let paymentStatus = 'unpaid';
+  if (sumRemaining === 0 && sumPaid > 0) paymentStatus = 'paid';
+  else if (sumPaid > 0) paymentStatus = 'partial';
+
+  setMeta({
+    isExternalPatient: !!rec.isExternalPatient,
+    tokenNumber: rec.tokenNumber ?? '',
+    paymentStatus,
+  });
+
+  setBilling({
+    totalAmount: sumAmount,
+    discountAmount: sumDiscount,
+    advanceAmount: sumPaid,
+    remainingAmount: sumRemaining,
+    cancelledAmount: rec.cancelledAmount ?? 0,
+    refundableAmount: rec.refundableAmount ?? 0,
+    paidAfterReport: rec.paidAfterReport ?? 0,
+  });
+
+  // Seed history
+  const initialPayments = [];
+  if (sumPaid > 0) {
+    initialPayments.push({
+      date: new Date().toISOString(),
+      amount: sumPaid,
+      type: 'initial',
+      description: 'Initial payment',
+    });
+  }
+  setPaymentHistory(initialPayments);
+  setTotalPayments(sumPaid);
+  setAdditionalPayment(0);
+}, [patientTestById]);
 
   const handlePatientChange = (e) => {
     const { name, value } = e.target;
@@ -603,6 +614,7 @@ const EditPatientTest = () => {
         patient_ContactNo: patient.ContactNo,
         patient_Gender: patient.Gender,
         patient_Age: patient.Age,
+        patient_DOB: dob,
         referredBy: patient.ReferredBy,
         maritalStatus: patient.MaritalStatus,
       },

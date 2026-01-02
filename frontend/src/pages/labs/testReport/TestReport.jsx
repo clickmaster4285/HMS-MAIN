@@ -54,9 +54,11 @@ const TestReport = () => {
   const [filters, setFilters] = useState({
     search: '',
     paymentStatus: 'all',
-    testStatus: 'all',
+    testName: '',
     startDate: null,
     endDate: null,
+    gender: '',
+    contact: '',
   });
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showPrintOptionsModal, setShowPrintOptionsModal] = useState(false);
@@ -80,39 +82,49 @@ const TestReport = () => {
   const [itemsPerPage, setItemsPerPage] = useState(20);
   const [localSearchTerm, setLocalSearchTerm] = useState("");
 
-  // Build query parameters for backend
+  // Build query parameters for backend - UPDATED
   const buildQueryParams = useCallback(() => {
     const params = {
       page: currentPage,
       limit: itemsPerPage,
     };
 
-    // Combine search and filter terms
-    let searchTerms = [];
-    if (localSearchTerm) searchTerms.push(localSearchTerm);
-    
-    // Only add filter terms to search if they're not "all"
+    // Add text search
+    if (filters.search && filters.search.trim()) {
+      params.search = filters.search.trim();
+    }
+
+    // Add payment status filter
     if (filters.paymentStatus && filters.paymentStatus !== 'all') {
-      searchTerms.push(`paymentStatus:${filters.paymentStatus}`);
-    }
-    if (filters.testStatus && filters.testStatus !== 'all') {
-      searchTerms.push(`status:${filters.testStatus}`);
+      params.status = filters.paymentStatus;
     }
 
-    if (searchTerms.length > 0) {
-      params.search = searchTerms.join(' ');
+    // Add test name filter
+    if (filters.testName && filters.testName.trim()) {
+      params.testName = filters.testName.trim();
     }
 
-    // Add date filters separately (backend should handle these)
-    if (filters.startDate) {
+    // Add gender filter
+    if (filters.gender && filters.gender.trim()) {
+      params.gender = filters.gender.trim();
+    }
+
+    // Add contact filter
+    if (filters.contact && filters.contact.trim()) {
+      params.contact = filters.contact.trim();
+    }
+
+    // Add date range filter
+    if (filters.startDate && filters.endDate) {
       params.startDate = format(filters.startDate, 'yyyy-MM-dd');
-    }
-    if (filters.endDate) {
       params.endDate = format(filters.endDate, 'yyyy-MM-dd');
+    } else if (filters.startDate) {
+      params.startDate = format(filters.startDate, 'yyyy-MM-dd');
+      params.endDate = format(filters.startDate, 'yyyy-MM-dd');
     }
 
     return params;
-  }, [currentPage, itemsPerPage, localSearchTerm, filters]);
+  }, [currentPage, itemsPerPage, filters]);
 
   // Fetch data with pagination and filters
   useEffect(() => {
@@ -134,12 +146,12 @@ const TestReport = () => {
     };
   }, []);
 
-  // Handle search with debounce - FIXED
+  // Handle search with debounce
   useEffect(() => {
     const timer = setTimeout(() => {
       setLocalSearchTerm(filters.search);
-      setCurrentPage(1); // Reset to page 1 when searching
-    }, 500); // 500ms debounce
+      setCurrentPage(1);
+    }, 500);
 
     return () => clearTimeout(timer);
   }, [filters.search]);
@@ -214,7 +226,7 @@ const TestReport = () => {
       ...prev,
       [name]: value,
     }));
-    setCurrentPage(1); // Reset to page 1 when filters change
+    setCurrentPage(1);
   };
 
   const handleDateChange = (dates) => {
@@ -231,14 +243,18 @@ const TestReport = () => {
     setFilters({
       search: '',
       paymentStatus: 'all',
-      testStatus: 'all',
+      testName: '',
       startDate: null,
       endDate: null,
+      gender: '',
+      contact: '',
     });
     setCurrentPage(1);
+    setShowFilterPopup(false);
   };
 
   const applyFilters = () => {
+    setCurrentPage(1);
     setShowFilterPopup(false);
   };
 
@@ -659,12 +675,10 @@ const TestReport = () => {
     const pages = [];
     
     if (totalPages <= 5) {
-      // Show all pages if 5 or less
       for (let i = 1; i <= totalPages; i++) {
         pages.push(i);
       }
     } else {
-      // Show first, last, and pages around current
       if (currentPage <= 3) {
         pages.push(1, 2, 3, 4, '...', totalPages);
       } else if (currentPage >= totalPages - 2) {
@@ -686,7 +700,7 @@ const TestReport = () => {
   const handleItemsPerPageChange = (e) => {
     const newItemsPerPage = parseInt(e.target.value);
     setItemsPerPage(newItemsPerPage);
-    setCurrentPage(1); // Reset to first page when changing items per page
+    setCurrentPage(1);
   };
 
   return (
@@ -721,7 +735,7 @@ const TestReport = () => {
               name="search"
               value={filters.search}
               onChange={handleFilterChange}
-              placeholder="Search patients, MRNo..."
+              placeholder="Search patients, MRNo, Token..."
               className="pl-10 w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
             />
           </div>
@@ -739,7 +753,7 @@ const TestReport = () => {
               )}
             </button>
             {showFilterPopup && (
-              <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-xl border border-gray-200 z-50 p-4">
+              <div className="absolute right-0 mt-2 w-96 bg-white rounded-lg shadow-xl border border-gray-200 z-50 p-4">
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="text-lg font-semibold text-gray-800">
                     More Filters
@@ -788,20 +802,45 @@ const TestReport = () => {
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Test Status
+                        Test Name
+                      </label>
+                      <input
+                        type="text"
+                        name="testName"
+                        value={filters.testName}
+                        onChange={handleFilterChange}
+                        placeholder="e.g. Blood Test, X-Ray"
+                        className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Gender
                       </label>
                       <select
-                        name="testStatus"
-                        value={filters.testStatus}
+                        name="gender"
+                        value={filters.gender}
                         onChange={handleFilterChange}
                         className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                       >
-                        <option value="all">All Test Status</option>
-                        <option value="completed">Completed</option>
-                        <option value="processing">Processing</option>
-                        <option value="registered">Registered</option>
-                        <option value="not_started">Not Started</option>
+                        <option value="">All Genders</option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Other">Other</option>
                       </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Contact No
+                      </label>
+                      <input
+                        type="text"
+                        name="contact"
+                        value={filters.contact}
+                        onChange={handleFilterChange}
+                        placeholder="e.g. 0300-1234567"
+                        className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      />
                     </div>
                   </div>
                 </div>
@@ -810,7 +849,7 @@ const TestReport = () => {
                     onClick={clearFilters}
                     className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 text-sm font-medium transition-colors"
                   >
-                    Clear All
+                    Clear All Filters
                   </button>
                   <button
                     onClick={applyFilters}
