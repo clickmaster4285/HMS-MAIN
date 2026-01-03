@@ -223,7 +223,7 @@ const AllAddedTests = () => {
                   
 
 
-              <table className="min-w-[900px] w-full">
+              <table className="min-w-225 w-full">
                 <thead className="bg-linear-to-r from-primary-600 to-teal-600 text-white rounded-t-2xl">
                   <tr>
                     <th className="py-4 px-2 sm:px-4 text-left font-semibold text-xs sm:text-sm">Test Name</th>
@@ -341,8 +341,6 @@ const AllAddedTests = () => {
                 
                 {pagination.totalPages > 1 && (
                   <>
-                  
-
                     <div className="flex items-center justify-end gap-2 ">
                       <button
                         onClick={() => handlePageChange(1)}

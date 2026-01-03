@@ -762,7 +762,7 @@ export default function Expenses() {
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
                           <div className="flex items-center">
-                            <FileTextIcon className="h-4 w-4 text-gray-400 mr-2 flex-shrink-0" />
+                            <FileTextIcon className="h-4 w-4 text-gray-400 mr-2 shrink-0" />
                             <span className="truncate" title={expense.description}>
                               {expense.description || 'No description'}
                             </span>
