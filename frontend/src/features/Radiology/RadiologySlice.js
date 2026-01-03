@@ -36,7 +36,7 @@ export const createRadiologyReport = createAsyncThunk(
   }
 );
 
-// Updated with pagination and filters
+// Updated with all filter parameters
 export const fetchAllRadiologyReports = createAsyncThunk(
   'radiology/fetchAllReports',
   async (params = {}, { rejectWithValue }) => {
@@ -58,24 +58,26 @@ export const fetchAllRadiologyReports = createAsyncThunk(
         maxAmount = ''
       } = params;
 
+      // Clean params - remove empty values
+      const cleanParams = {};
+      if (page) cleanParams.page = page;
+      if (limit) cleanParams.limit = limit;
+      if (search) cleanParams.search = search;
+      if (status) cleanParams.status = status;
+      if (paymentStatus) cleanParams.paymentStatus = paymentStatus;
+      if (gender) cleanParams.gender = gender;
+      if (contact) cleanParams.contact = contact;
+      if (dateRange) cleanParams.dateRange = dateRange;
+      if (startDate) cleanParams.startDate = startDate;
+      if (endDate) cleanParams.endDate = endDate;
+      if (doctor) cleanParams.doctor = doctor;
+      if (testName) cleanParams.testName = testName;
+      if (minAmount) cleanParams.minAmount = minAmount;
+      if (maxAmount) cleanParams.maxAmount = maxAmount;
+
       const response = await axios.get(`${API_URL}/radiology/get-reports`, {
         headers: getAuthHeaders(),
-        params: {
-          page,
-          limit,
-          search,
-          status,
-          paymentStatus,
-          gender,
-          contact,
-          dateRange,
-          startDate,
-          endDate,
-          doctor,
-          testName,
-          minAmount,
-          maxAmount
-        }
+        params: cleanParams
       });
       return response.data.data;
     } catch (error) {
@@ -301,6 +303,7 @@ const initialState = {
     fetchTemplates: 'idle',
     fetchByDate: 'idle',
     deleteStudy: 'idle',
+    fetchByMrno: 'idle',
   },
   isLoading: false,
   isError: false,
@@ -320,6 +323,11 @@ const radiologySlice = createSlice({
 
     clearCurrentReport: (state) => {
       state.currentReport = null;
+    },
+    
+    // Add a reducer to update filters directly
+    updateFilters: (state, action) => {
+      state.filters = { ...state.filters, ...action.payload };
     },
   },
 
@@ -451,7 +459,6 @@ const radiologySlice = createSlice({
       .addCase(fetchRadiologyReportsByDate.fulfilled, (state, action) => {
         state.status.fetchByDate = "succeeded";
         state.isLoading = false;
-        // Store filtered reports separately if needed
       })
       .addCase(fetchRadiologyReportsByDate.rejected, (state, action) => {
         state.status.fetchByDate = "failed";
@@ -521,6 +528,7 @@ const radiologySlice = createSlice({
 export const {
   resetRadiologyStatus,
   clearCurrentReport,
+  updateFilters,
 } = radiologySlice.actions;
 
 export default radiologySlice.reducer;
