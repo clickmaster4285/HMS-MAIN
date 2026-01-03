@@ -416,24 +416,21 @@ export const usePatientForm = (mode = "create") => {
       }
 
       if (name === "patient_DateOfBirth") {
-         const age = calculateAge(value);
          setFormData(prev => ({
             ...prev,
-            patient_DateOfBirth: value,
-            patient_Age: age
+            [name]: value
          }));
          return;
       }
 
       if (name === "patient_Age") {
-         if (validateAgeInput(value)) {
-            setFormData(prev => ({
-               ...prev,
-               patient_Age: value
-            }));
-         }
+         setFormData(prev => ({
+            ...prev,
+            [name]: value
+         }));
          return;
       }
+
 
       // Handle CNIC formatting
       if (name === "patient_CNIC") {

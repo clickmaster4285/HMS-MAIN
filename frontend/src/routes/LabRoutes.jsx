@@ -41,7 +41,7 @@ const RadiologyForm = lazy(() => import("../pages/Radiology/RadiologyForm"));
 const RadiologySummer = lazy(() => import("../pages/Radiology/RadiologySummer"));
 
 /* reception */
-const Expenses = lazy(() => import("../pages/reception/ReceptionPages").then(m => ({ default: m.Expenses })));
+const Expenses = lazy(() => import("../pages/reception/Expenses/expenses").then(m => ({ default: m.Expenses })));
 
 const PageLoader = () => <div style={{ padding: 20 }}>Loading...</div>;
 

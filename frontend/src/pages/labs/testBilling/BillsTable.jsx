@@ -324,7 +324,7 @@ const BillsTable = ({
         </div>
 
         <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-          <div className="relative flex-1 min-w-[200px]">
+          <div className="relative flex-1 min-w-50">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <FaSearch className="text-gray-400" />
             </div>
@@ -643,7 +643,7 @@ const BillsTable = ({
             <div className="mt-2 space-y-2">
               {selectedBillTests.map((item, index) => (
                 <div key={item.testId || index} className="mb-1 last:mb-0">
-                  <span className="font-medium flex items-center gap-2 break-words">
+                  <span className="font-medium flex items-center gap-2 wrap-break-word">
                     <FaFlask className="text-teal-500 text-sm" />
                     {item.name || 'Unknown'}
                   </span>

@@ -3,6 +3,7 @@ import Logo from '../../../assets/images/logo1.png';
 import { QRCodeSVG } from 'qrcode.react';
 
 const PrintA4 = ({ formData }) => {
+  
   const safe = (v, fallback = '_________') =>
     v !== undefined && v !== null && v !== '' ? v : fallback;
   const formatCurrency = (amount) =>

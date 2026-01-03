@@ -1129,10 +1129,10 @@ const TestReport = () => {
                           <FiMoreVertical className="h-5 w-5" />
                         </button>
                       </div>
-                      <div className="min-h-[90px] absolute top-0 right-16">
+                      <div className="min-h-22.5 absolute top-0 right-16">
                         <div
                           id={`dropdown-${report.id}`}
-                          className="hidden bg-white z-10 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none transition duration-150 ease-in-out"
+                          className="hidden z-10 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none transition duration-150 ease-in-out"
                           role="menu"
                           aria-orientation="vertical"
                           aria-labelledby={`options-menu-${report.id}`}

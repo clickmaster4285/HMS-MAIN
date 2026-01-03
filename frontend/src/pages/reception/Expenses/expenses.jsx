@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   DollarSignIcon,
   UserIcon,
@@ -23,10 +23,10 @@ import {
   DownloadIcon
 } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
-import { 
-  createExpense, 
-  getExpenses, 
-  updateExpense, 
+import {
+  createExpense,
+  getExpenses,
+  updateExpense,
   deleteExpense,
   setFilters,
   clearFilters,
@@ -68,12 +68,18 @@ export default function Expenses() {
     status: 'active'
   });
 
+  const isLocalUpdate = useRef(false);
+
   const dispatch = useDispatch();
-  const { 
-    expenses, 
-    loading, 
-    error, 
-    success, 
+
+
+
+
+  const {
+    expenses,
+    loading,
+    error,
+    success,
     message,
     pagination,
     filters: reduxFilters,
@@ -93,16 +99,23 @@ export default function Expenses() {
       limit: pagination.limit,
       ...reduxFilters
     };
-    
+
     dispatch(getExpenses(params));
   }, [dispatch, pagination.page, pagination.limit, reduxFilters]);
 
   // Sync local filters with redux filters
   useEffect(() => {
+    if (isLocalUpdate.current) {
+      isLocalUpdate.current = false;
+      return;
+    }
+
     if (JSON.stringify(localFilters) !== JSON.stringify(reduxFilters)) {
       setLocalFilters(reduxFilters);
     }
   }, [reduxFilters]);
+
+
 
   const handleFilterChange = (field, value) => {
     setLocalFilters(prev => ({ ...prev, [field]: value }));
@@ -114,8 +127,7 @@ export default function Expenses() {
   }, [dispatch, localFilters]);
 
   const clearAllFilters = useCallback(() => {
-    dispatch(clearFilters());
-    setLocalFilters({
+    const emptyFilters = {
       search: '',
       expenseType: '',
       doctor: '',
@@ -124,9 +136,11 @@ export default function Expenses() {
       minAmount: '',
       maxAmount: '',
       status: 'active'
-    });
+    };
+
+    setLocalFilters(emptyFilters);
     setShowFilterPanel(false);
-  }, [dispatch]);
+  }, []);
 
   const handlePageChange = (newPage) => {
     if (newPage >= 1 && newPage <= pagination.totalPages) {
@@ -202,7 +216,7 @@ export default function Expenses() {
     setIsCreating(true);
     try {
       await dispatch(createExpense(expenseData)).unwrap();
-      
+
       setFormData({
         expenseType: "doctor",
         doctor: "",
@@ -213,7 +227,7 @@ export default function Expenses() {
         date: new Date().toISOString().split('T')[0]
       });
       setShowAddForm(false);
-      
+
     } catch (err) {
       console.error("Create failed:", err);
     } finally {
@@ -242,7 +256,7 @@ export default function Expenses() {
     if (summary) {
       return summary.grandTotal || 0;
     }
-    
+
     // Fallback to local calculation if summary not available
     return expenses.reduce((total, expense) => {
       if (!expense || typeof expense !== 'object') return total;
@@ -271,7 +285,7 @@ export default function Expenses() {
   // Calculate doctor summary from filtered data
   const calculateDoctorSummary = () => {
     const summary = {};
-    
+
     doctorExpenses.forEach((expense) => {
       const key = expense.doctor || "Unassigned";
       if (!summary[key]) {
@@ -336,7 +350,7 @@ export default function Expenses() {
     const totalPages = pagination.totalPages || 1;
     const currentPage = pagination.page || 1;
     const pages = [];
-    
+
     if (totalPages <= 5) {
       for (let i = 1; i <= totalPages; i++) {
         pages.push(i);
@@ -350,11 +364,20 @@ export default function Expenses() {
         pages.push(1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages);
       }
     }
-    
+
     return pages;
   };
 
   const pageNumbers = generatePageNumbers();
+
+  // Auto-apply filters whenever localFilters change + reset to page 1
+  useEffect(() => {
+    isLocalUpdate.current = true;
+    dispatch(setFilters(localFilters));
+    dispatch(setPage(1));
+  }, [localFilters, dispatch]);
+
+
 
   return (
     <div className="w-full space-y-6">
@@ -393,12 +416,25 @@ export default function Expenses() {
         {/* Content */}
         <div className="p-6">
           {/* Section title */}
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-1 bg-teal-600 h-6 rounded-full" />
-            <h2 className="text-lg font-semibold text-gray-800">
-              Expense Management Dashboard
-            </h2>
+          <div className="flex items-center justify-between mb-6">
+            {/* Left side */}
+            <div className="flex items-center gap-3">
+              <div className="w-1 bg-teal-600 h-6 rounded-full" />
+              <h2 className="text-lg font-semibold text-gray-800">
+                Expense Management Dashboard
+              </h2>
+            </div>
+
+            {/* Right side */}
+            <button
+              onClick={() => setShowAddForm(true)}
+              className="flex items-center bg-teal-600 hover:bg-teal-700 text-white px-6 h-10 rounded-md"
+            >
+              <PlusIcon className="w-4 h-4 mr-2" />
+              Add Expense
+            </button>
           </div>
+
 
           {/* Search and Filter Bar */}
           <div className="flex flex-col md:flex-row gap-4 mb-6">
@@ -420,35 +456,30 @@ export default function Expenses() {
                 </button>
               )}
             </div>
-            
+
             <div className="flex gap-2">
               <button
                 onClick={() => setShowFilterPanel(!showFilterPanel)}
-                className={`flex items-center border px-4 h-10 rounded-md ${
-                  showFilterPanel || Object.values(localFilters).some(val => val && val !== 'active')
-                    ? 'border-teal-500 bg-teal-50 text-teal-700'
+                className={`flex items-center border px-4 h-10 rounded-md ${showFilterPanel || Object.values(localFilters).some(val => val && val !== 'active')
+                    ? 'border-teal-50 bg-teal-50 text-teal-700'
                     : 'border-gray-300 text-gray-700 hover:bg-gray-50'
-                }`}
+                  }`}
               >
                 <FilterIcon className="w-4 h-4 mr-2" />
                 Filters
-                {Object.values(localFilters).some(val => val && val !== 'active') && (
-                  <span className="ml-2 bg-teal-500 text-white text-xs px-2 py-0.5 rounded-full">
-                    Active
-                  </span>
-                )}
+
               </button>
-              
-              {(localFilters.search || localFilters.expenseType || localFilters.doctor || 
-                localFilters.startDate || localFilters.endDate || 
+
+              {(localFilters.search || localFilters.expenseType || localFilters.doctor ||
+                localFilters.startDate || localFilters.endDate ||
                 localFilters.minAmount || localFilters.maxAmount || localFilters.status !== 'active') && (
-                <button
-                  onClick={clearAllFilters}
-                  className="flex items-center border border-red-300 text-red-600 hover:bg-red-50 px-4 h-10 rounded-md"
-                >
-                  Clear Filters
-                </button>
-              )}
+                  <button
+                    onClick={clearAllFilters}
+                    className="flex items-center border border-red-300 text-red-600 hover:bg-red-50 px-4 h-10 rounded-md"
+                  >
+                    Clear Filters
+                  </button>
+                )}
             </div>
           </div>
 
@@ -560,7 +591,7 @@ export default function Expenses() {
                 </div>
 
                 {/* Status Filter */}
-                <div>
+                {/* <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Status
                   </label>
@@ -573,10 +604,10 @@ export default function Expenses() {
                     <option value="deleted">Deleted</option>
                     <option value="all">All</option>
                   </select>
-                </div>
+                </div> */}
               </div>
 
-              <div className="flex justify-end gap-3 mt-4">
+              {/* <div className="flex justify-end gap-3 mt-4">
                 <button
                   onClick={() => setShowFilterPanel(false)}
                   className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-100"
@@ -589,13 +620,13 @@ export default function Expenses() {
                 >
                   Apply Filters
                 </button>
-              </div>
+              </div> */}
             </div>
           )}
 
           {/* Quick Stats */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+            <div className="bg-blue-50 p-4 rounded-lg border border-blue-50">
               <div className="flex items-center">
                 <UserIcon className="h-8 w-8 text-blue-600 mr-3" />
                 <div>
@@ -607,19 +638,19 @@ export default function Expenses() {
                 </div>
               </div>
             </div>
-            <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+            <div className="bg-green-50 p-4 rounded-lg border border-green-50">
               <div className="flex items-center">
                 <HospitalIcon className="h-8 w-8 text-green-600 mr-3" />
                 <div>
                   <p className="text-sm text-green-600">Hospital Expenses</p>
                   <p className="text-2xl font-bold text-green-800">{hospitalExpenses.length}</p>
                   <p className="text-xs text-green-500">
-                    {summary?.hospitalTotal ? `PKR ${summary.hospitalTotal.toFixed(2)}` : 'Calculating...'}
+                    PKR {hospitalTotals.total.toFixed(2)}
                   </p>
                 </div>
               </div>
             </div>
-            <div className="bg-teal-50 p-4 rounded-lg border border-teal-200">
+            <div className="bg-teal-50 p-4 rounded-lg border border-teal-50">
               <div className="flex items-center">
                 <DollarSignIcon className="h-8 w-8 text-teal-600 mr-3" />
                 <div>
@@ -635,27 +666,6 @@ export default function Expenses() {
             </div>
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex justify-between mb-6">
-            <button
-              type="button"
-              onClick={toggleSummary}
-              className="flex items-center border border-teal-600 text-teal-600 hover:bg-teal-50 px-4 h-10 rounded-md"
-            >
-              <EyeIcon className="w-4 h-4 mr-2" />
-              {showSummary ? "Hide Summary" : "View Summary"}
-            </button>
-
-            <div className="flex gap-2">
-              <button
-                onClick={() => setShowAddForm(true)}
-                className="flex items-center bg-teal-600 hover:bg-teal-700 text-white px-6 h-10 rounded-md"
-              >
-                <PlusIcon className="w-4 h-4 mr-2" />
-                Add Expense
-              </button>
-            </div>
-          </div>
 
           {/* Pagination Info and Controls */}
           <div className="flex flex-col md:flex-row justify-between items-center mb-6">
@@ -664,7 +674,7 @@ export default function Expenses() {
               {Math.min(pagination.page * pagination.limit, pagination.total)} of{' '}
               {pagination.total} expenses
             </div>
-            
+
             <div className="flex items-center space-x-4">
               <div className="flex items-center">
                 <label className="mr-2 text-sm">Rows per page:</label>
@@ -730,11 +740,10 @@ export default function Expenses() {
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            expense.expenseType === 'doctor' 
-                              ? 'bg-blue-100 text-blue-800' 
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${expense.expenseType === 'doctor'
+                              ? 'bg-blue-100 text-blue-800'
                               : 'bg-green-100 text-green-800'
-                          }`}>
+                            }`}>
                             {expense.expenseType === 'doctor' ? (
                               <>
                                 <UserIcon className="h-3 w-3 mr-1" />
@@ -753,7 +762,7 @@ export default function Expenses() {
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
                           <div className="flex items-center">
-                            <FileTextIcon className="h-4 w-4 text-gray-400 mr-2 flex-shrink-0" />
+                            <FileTextIcon className="h-4 w-4 text-gray-400 mr-2 shrink-0" />
                             <span className="truncate" title={expense.description}>
                               {expense.description || 'No description'}
                             </span>
@@ -808,7 +817,7 @@ export default function Expenses() {
           {!loading && expenses.length === 0 && (
             <div className="text-center py-12 bg-gray-50 rounded-lg">
               <p className="text-gray-500">
-                {Object.values(localFilters).some(filter => filter && filter !== 'active') 
+                {Object.values(localFilters).some(filter => filter && filter !== 'active')
                   ? 'No expenses found matching your filters.'
                   : 'No expenses found. Add your first expense!'}
               </p>
@@ -825,26 +834,24 @@ export default function Expenses() {
                 <button
                   onClick={() => handlePageChange(1)}
                   disabled={pagination.page === 1}
-                  className={`px-3 py-1 rounded border ${
-                    pagination.page === 1
+                  className={`px-3 py-1 rounded border ${pagination.page === 1
                       ? 'text-gray-400 cursor-not-allowed'
                       : 'text-gray-700 hover:bg-gray-50'
-                  }`}
+                    }`}
                 >
                   First
                 </button>
                 <button
                   onClick={() => handlePageChange(pagination.page - 1)}
                   disabled={pagination.page === 1}
-                  className={`px-3 py-1 rounded border flex items-center ${
-                    pagination.page === 1
+                  className={`px-3 py-1 rounded border flex items-center ${pagination.page === 1
                       ? 'text-gray-400 cursor-not-allowed'
                       : 'text-gray-700 hover:bg-gray-50'
-                  }`}
+                    }`}
                 >
                   <ChevronLeftIcon className="mr-1" size={16} /> Previous
                 </button>
-                
+
                 {/* Page numbers */}
                 <div className="flex space-x-1">
                   {pageNumbers.map((pageNum, index) => (
@@ -854,11 +861,10 @@ export default function Expenses() {
                       <button
                         key={pageNum}
                         onClick={() => handlePageChange(pageNum)}
-                        className={`px-3 py-1 rounded border ${
-                          pagination.page === pageNum
+                        className={`px-3 py-1 rounded border ${pagination.page === pageNum
                             ? 'bg-teal-600 text-white border-teal-600'
                             : 'text-gray-700 hover:bg-gray-50'
-                        }`}
+                          }`}
                       >
                         {pageNum}
                       </button>
@@ -869,22 +875,20 @@ export default function Expenses() {
                 <button
                   onClick={() => handlePageChange(pagination.page + 1)}
                   disabled={pagination.page === pagination.totalPages}
-                  className={`px-3 py-1 rounded border flex items-center ${
-                    pagination.page === pagination.totalPages
+                  className={`px-3 py-1 rounded border flex items-center ${pagination.page === pagination.totalPages
                       ? 'text-gray-400 cursor-not-allowed'
                       : 'text-gray-700 hover:bg-gray-50'
-                  }`}
+                    }`}
                 >
                   Next <ChevronRightIcon className="ml-1" size={16} />
                 </button>
                 <button
                   onClick={() => handlePageChange(pagination.totalPages)}
                   disabled={pagination.page === pagination.totalPages}
-                  className={`px-3 py-1 rounded border ${
-                    pagination.page === pagination.totalPages
+                  className={`px-3 py-1 rounded border ${pagination.page === pagination.totalPages
                       ? 'text-gray-400 cursor-not-allowed'
                       : 'text-gray-700 hover:bg-gray-50'
-                  }`}
+                    }`}
                 >
                   Last
                 </button>

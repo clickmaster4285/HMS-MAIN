@@ -26,12 +26,12 @@ import {
 const StatsCard = ({ title, value, icon, color, subValue, trend, trendValue, onClick }) => {
    // Color schemes with neutral palette
    const colorSchemes = {
-      blue: {
-         border: 'border-l-blue-500',
-         bg: 'bg-blue-50',
-         icon: 'text-blue-600',
-         trendUp: 'text-blue-700',
-         trendDown: 'text-blue-400'
+      sky: {
+         border: 'border-l-sky-500',
+         bg: 'bg-sky-50',
+         icon: 'text-sky-600',
+         trendUp: 'text-sky-700',
+         trendDown: 'text-sky-400'
       },
       green: {
          border: 'border-l-emerald-500',
