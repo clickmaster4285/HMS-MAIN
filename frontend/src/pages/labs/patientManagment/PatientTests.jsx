@@ -168,6 +168,8 @@ const PatientTestsTable = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
+
+
   const { allPatientTests, status, error, pagination } = useSelector(
     (state) => state.patientTest
   );
@@ -349,8 +351,8 @@ const PatientTestsTable = () => {
       totalDiscount: t.totalDiscount,
       totalPaid: t.totalPaid,
       remaining: t.remainingAmount,
-      sampleDate: t.selectedTests[0]?.testDate
-        ? format(new Date(t.selectedTests[0].testDate), 'yyyy-MM-dd')
+      sampleDate: t.createdAt
+        ? format(new Date(t.createdAt), 'yyyy-MM-dd')
         : '',
       reportDate: t.selectedTests[0]?.testDate
         ? format(new Date(t.selectedTests[0].testDate), 'yyyy-MM-dd')
@@ -371,7 +373,7 @@ const PatientTestsTable = () => {
       document.body.appendChild(warn);
       return;
     }
-
+ 
     const html = ReactDOMServer.renderToStaticMarkup(
       <PrintA4 formData={printData} />
     );

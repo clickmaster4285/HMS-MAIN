@@ -90,11 +90,28 @@ const createTest = async (req, res) => {
 
 const getTests = async (req, res) => {
   try {
+    //for pagination
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+
     const tests = await hospitalModel.TestManagment.find({ isDeleted: false })
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 }).skip(skip)          
+      .limit(limit);
+    
+    
+    const total = await hospitalModel.TestManagment.countDocuments({ isDeleted: false });
+    
 
     if (tests.length === 0) {
-      return res.status(200).json({ message: 'No active tests found' });
+      return res.status(200).json({ message: 'No active tests found' ,tests: [],
+        pagination: {
+          total,
+          page,
+          limit,
+          totalPages: Math.ceil(total / limit)
+        }});
     }
 
     // Convert Maps to objects for frontend
@@ -111,7 +128,16 @@ const getTests = async (req, res) => {
       return testObj;
     });
 
-    res.status(200).json(testsWithPlainRanges);
+   res.status(200).json({
+      tests: testsWithPlainRanges,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit)
+      }
+   });
+    
   } catch (err) {
     res.status(500).json({
       message: 'Failed to fetch tests',

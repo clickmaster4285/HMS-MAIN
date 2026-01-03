@@ -2,24 +2,33 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { getAllTests, deleteTest, selectAllTests, selectGetAllLoading, selectGetAllError, selectDeleteLoading, selectDeleteError, selectDeleteSuccess } from '../../../features/testManagment/testSlice';
+import { setPage, setLimit } from '../../../features/testManagment/testSlice';
+import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
 import { FaEdit, FaTrash } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 
 const AllAddedTests = () => {
   const dispatch = useDispatch();
   const [searchTerm, setSearchTerm] = useState('');
-  const tests = useSelector(selectAllTests);
-  const getAllLoading = useSelector(selectGetAllLoading);
-  const getAllError = useSelector(selectGetAllError);
-  const deleteLoading = useSelector(selectDeleteLoading);
-  const deleteError = useSelector(selectDeleteError);
-  const deleteSuccess = useSelector(selectDeleteSuccess);
+
+
+  const {
+    tests,
+    getAllLoading,
+    getAllError,
+    deleteLoading,
+    deleteError,
+    deleteSuccess,
+    pagination = { page: 1, limit: 10, total: 0, totalPages: 1 }
+  } = useSelector((state) => state.labtest); 
+
+
 
   const navigate = useNavigate();
 
   useEffect(() => {
-    dispatch(getAllTests());
-  }, [dispatch]);
+    dispatch(getAllTests({ page: pagination.page, limit: pagination.limit }));
+  }, [dispatch, pagination.page, pagination.limit]);
 
   // Reset search handler
   const handleResetSearch = () => {
@@ -46,6 +55,16 @@ const AllAddedTests = () => {
       const errorMsg = resultAction.payload || resultAction.error?.message || 'Failed to delete test.';
       toast.error(errorMsg);
     }
+  };
+
+  const handlePageChange = (newPage) => {
+    if (newPage >= 1 && newPage <= pagination.totalPages) {
+      dispatch(setPage(newPage));
+    }
+  };
+
+  const handleLimitChange = (e) => {
+    dispatch(setLimit(parseInt(e.target.value)));
   };
 
   return (
@@ -174,8 +193,36 @@ const AllAddedTests = () => {
             <div className="flex items-center mb-6 mt-12">
               <div className="h-8 w-1 bg-primary-600 mr-3 rounded-full"></div>
               <h2 className="text-2xl font-bold text-primary-800 tracking-tight">All Lab Tests</h2>
-            </div>
-            <div className="bg-white rounded-2xl shadow-2xl border border-primary-100 overflow-x-auto w-full">
+                </div>
+                
+
+
+                <div className="flex flex-col md:flex-row justify-between items-center   ">
+                  <div className="text-sm text-primary-600 mb-4 md:mb-0">
+                    Showing {((pagination.page - 1) * pagination.limit) + 1} to{' '}
+                    {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} tests
+                  </div>
+
+                  <div className="flex items-center gap-4">
+                    <span className="text-sm text-primary-700">Rows per page:</span>
+                    <select
+                      value={pagination.limit}
+                      onChange={handleLimitChange}
+                      className="border border-primary-300 rounded px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    >
+                      <option value={10}>10</option>
+                      <option value={20}>20</option>
+                      <option value={50}>50</option>
+                      <option value={100}>100</option>
+                    </select>
+                  </div>
+                </div>
+
+
+                <div className="bg-white rounded-2xl shadow-2xl border border-primary-100 overflow-x-auto w-full">
+                  
+
+
               <table className="min-w-[900px] w-full">
                 <thead className="bg-linear-to-r from-primary-600 to-teal-600 text-white rounded-t-2xl">
                   <tr>
@@ -290,7 +337,49 @@ const AllAddedTests = () => {
                   )}
                 </tbody>
               </table>
-            </div>
+                </div>
+                
+                {pagination.totalPages > 1 && (
+                  <>
+                  
+
+                    <div className="flex items-center justify-end gap-2 ">
+                      <button
+                        onClick={() => handlePageChange(1)}
+                        disabled={pagination.page === 1}
+                        className="px-4 py-2 rounded border text-primary-700 disabled:text-gray-400 disabled:cursor-not-allowed hover:bg-primary-50"
+                      >
+                        First
+                      </button>
+                      <button
+                        onClick={() => handlePageChange(pagination.page - 1)}
+                        disabled={pagination.page === 1}
+                        className="px-4 py-2 rounded border flex items-center text-primary-700 disabled:text-gray-400 disabled:cursor-not-allowed hover:bg-primary-50"
+                      >
+                        <ChevronLeftIcon size={16} className="mr-1" /> Previous
+                      </button>
+
+                      <span className="px-4 py-2 text-sm font-medium text-primary-800">
+                        Page {pagination.page} of {pagination.totalPages}
+                      </span>
+
+                      <button
+                        onClick={() => handlePageChange(pagination.page + 1)}
+                        disabled={pagination.page === pagination.totalPages}
+                        className="px-4 py-2 rounded border flex items-center text-primary-700 disabled:text-gray-400 disabled:cursor-not-allowed hover:bg-primary-50"
+                      >
+                        Next <ChevronRightIcon size={16} className="ml-1" />
+                      </button>
+                      <button
+                        onClick={() => handlePageChange(pagination.totalPages)}
+                        disabled={pagination.page === pagination.totalPages}
+                        className="px-4 py-2 rounded border text-primary-700 disabled:text-gray-400 disabled:cursor-not-allowed hover:bg-primary-50"
+                      >
+                        Last
+                      </button>
+                    </div>
+                  </>
+                )}
           </div>
         )}
       </div>

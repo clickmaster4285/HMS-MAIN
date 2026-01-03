@@ -53,17 +53,37 @@ export const createTest = createAsyncThunk(
 // Async thunk to get all tests
 export const getAllTests = createAsyncThunk(
   'testManagement/getAllTests',
-  async (_, { rejectWithValue }) => {
+async ({ page = 1, limit = 10 } = {}, { rejectWithValue }) => {
     try {
-      const response = await axios.get(`${API_URL}/testManagement/getAlltest`, getAuthHeaders());
+      const response = await axios.get(`${API_URL}/testManagement/getAlltest`,{
+        ...getAuthHeaders(),
+        params: { page, limit }  });
       
       // Handle both array and object responses
-      const testsData = Array.isArray(response.data) 
-        ? response.data 
-        : response.data.tests || [];
+     const data = response.data;
+
+      // Handle empty case (your backend returns message + empty tests)
+      if (data.message && data.tests?.length === 0) {
+        return {
+          tests: [],
+          pagination: data.pagination || { page, limit, total: 0, totalPages: 0 }
+        };
+      }
+
+
       
-      return testsData;
-    } catch (error) {
+      return {
+        tests: data.tests || [],
+        pagination: data.pagination || {
+          page: parseInt(page),
+          limit: parseInt(limit),
+          total: data.tests?.length || 0,
+          totalPages: 1
+        }
+      };
+
+
+      } catch (error) {
       console.error('Fetch tests error:', error.response?.data || error.message);
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch tests');
     }
@@ -134,8 +154,25 @@ const testSlice = createSlice({
     deleteLoading: false,
     deleteError: null,
     deleteSuccess: '',
+    pagination: {
+    page: 1,
+    limit: 10,
+    total: 0,
+    totalPages: 1
+    }
+    
   },
-  reducers: {},
+  reducers: {
+  setPage: (state, action) => {
+    state.pagination.page = action.payload;
+  },
+  setLimit: (state, action) => {
+    state.pagination.limit = action.payload;
+    state.pagination.page = 1; // reset to page 1 when changing limit
+  }
+  },
+  
+
   extraReducers: (builder) => {
     builder
 
@@ -160,11 +197,17 @@ const testSlice = createSlice({
         state.getAllLoading = true;
         state.getAllError = null;
       })
+
+
       .addCase(getAllTests.fulfilled, (state, action) => {
         state.getAllLoading = false;
-        state.tests = Array.isArray(action.payload)
-          ? action.payload
-          : action.payload.tests || [];
+  state.tests = action.payload.tests || [];
+        state.pagination = action.payload.pagination || {
+          page: state.pagination.page,
+          limit: state.pagination.limit,
+          total: state.tests?.length || 0,
+          totalPages: 1
+        };
       })
       .addCase(getAllTests.rejected, (state, action) => {
         state.getAllLoading = false;
@@ -219,7 +262,7 @@ const testSlice = createSlice({
 });
 
 export default testSlice.reducer;
-
+export const { setPage, setLimit } = testSlice.actions;
 // Selectors
 export const selectAllTests = state => state.labtest.tests;
 export const selectSelectedTest = state => state.labtest.selectedTest;

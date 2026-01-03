@@ -87,6 +87,7 @@ export const fetchPatientTestAll = createAsyncThunk(
           endDate
         } 
       });
+    console.log("res= " , response)
       return response.data.data; 
     } catch (error) {
       const message =
@@ -105,6 +106,7 @@ export const fetchPatientTestById = createAsyncThunk(
       const response = await axios.get(`${API_URL}/patientTest/${id}`, {
         headers: getAuthHeaders(),
       });
+     
       return response.data.data;
     } catch (error) {
       const message =
