@@ -1,9 +1,24 @@
 import React from 'react';
 import { InputField } from '../../../../components/common/FormFields';
 import { FormSection, FormGrid } from '../../../../components/common/FormSection';
+import AgeInput from './AgeInput';
 
 const PatientForm = ({ formData, handleChange, mode, validGenders, validBloodTypes, validMaritalStatuses }) => {
    const guardianRelations = ["Father", "Mother", "Sibling", "Spouse", "Uncle", "Aunt", "Grandfather", "Grandmother", "Other"];
+
+   const handleAgeChange = (age) => {
+      // Update form data with new age
+      handleChange({
+         target: { name: 'patient_Age', value: age }
+      });
+   };
+
+   const handleDOBChange = (dob) => {
+      // Update form data with new DOB
+      handleChange({
+         target: { name: 'patient_DateOfBirth', value: dob }
+      });
+   };
 
    return (
       <FormSection title="Patient Information">
@@ -28,7 +43,16 @@ const PatientForm = ({ formData, handleChange, mode, validGenders, validBloodTyp
                required
             />
 
-            <InputField
+            <div className="col-span-1 lg:col-span-2">
+               <AgeInput
+                  age={formData.patient_Age}
+                  dob={formData.patient_DateOfBirth}
+                  onAgeChange={handleAgeChange}
+                  onDOBChange={handleDOBChange}
+               />
+            </div>
+
+            {/* <InputField
                name="patient_DateOfBirth"
                label="Date of Birth"
                icon="calendar"
@@ -46,7 +70,7 @@ const PatientForm = ({ formData, handleChange, mode, validGenders, validBloodTyp
                onChange={handleChange}
                placeholder="Age will auto-calculate"
                readOnly
-            />
+            /> */}
 
             <InputField
                name="patient_ContactNo"

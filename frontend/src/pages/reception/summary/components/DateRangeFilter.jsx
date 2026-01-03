@@ -4,7 +4,7 @@ import { Calendar, Filter, RefreshCw, ChevronDown } from 'lucide-react';
 
 const DateRangeFilter = ({ startDate, endDate, onDateChange, onReset }) => {
    const quickFilters = [
-      { label: 'Today', days: 0, color: 'blue' },
+      { label: 'Today', days: 0, color: 'sky' },
       { label: 'Yesterday', days: -1, color: 'slate' },
       { label: 'Last 7 Days', days: -7, color: 'emerald' },
       { label: 'Last 30 Days', days: -30, color: 'amber' },
@@ -47,7 +47,7 @@ const DateRangeFilter = ({ startDate, endDate, onDateChange, onReset }) => {
 
    const getColorClass = (color) => {
       const colors = {
-         blue: 'bg-blue-100 text-blue-700 hover:bg-blue-200 border-blue-200',
+         sky: 'bg-sky-100 text-sky-700 hover:bg-sky-200 border-sky-200',
          emerald: 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200 border-emerald-200',
          amber: 'bg-amber-100 text-amber-700 hover:bg-amber-200 border-amber-200',
          violet: 'bg-violet-100 text-violet-700 hover:bg-violet-200 border-violet-200',
@@ -61,8 +61,8 @@ const DateRangeFilter = ({ startDate, endDate, onDateChange, onReset }) => {
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-8">
          <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-6">
             <div className="flex items-center space-x-3 mb-4 lg:mb-0">
-               <div className="p-2 bg-blue-50 rounded-lg">
-                  <Filter className="w-5 h-5 text-blue-600" />
+               <div className="p-2 bg-sky-50 rounded-lg">
+                  <Filter className="w-5 h-5 text-sky-600" />
                </div>
                <div>
                   <h2 className="text-lg font-semibold text-slate-800">Date Range Filter</h2>
@@ -88,7 +88,7 @@ const DateRangeFilter = ({ startDate, endDate, onDateChange, onReset }) => {
                   type="date"
                   value={startDate}
                   onChange={(e) => onDateChange(e.target.value, endDate)}
-                  className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-slate-700 bg-white transition-colors"
+                  className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500 text-slate-700 bg-white transition-colors"
                />
             </div>
 
@@ -101,7 +101,7 @@ const DateRangeFilter = ({ startDate, endDate, onDateChange, onReset }) => {
                   type="date"
                   value={endDate}
                   onChange={(e) => onDateChange(startDate, e.target.value)}
-                  className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-slate-700 bg-white transition-colors"
+                  className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500 text-slate-700 bg-white transition-colors"
                />
             </div>
 
@@ -115,7 +115,7 @@ const DateRangeFilter = ({ startDate, endDate, onDateChange, onReset }) => {
                      const filter = quickFilters.find(f => f.label === e.target.value);
                      if (filter) handleQuickFilter(filter);
                   }}
-                  className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-slate-700 bg-white appearance-none"
+                  className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500 text-slate-700 bg-white appearance-none"
                >
                   <option value="">Select Quick Filter</option>
                   {quickFilters.map((filter) => (
