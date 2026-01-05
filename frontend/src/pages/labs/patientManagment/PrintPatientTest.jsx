@@ -182,10 +182,7 @@ const PrintA4 = ({ formData }) => {
             <p>
               <strong>Sample Date:</strong> {safe(formData.sampleDate)}
             </p>
-            <p>
-              <strong>Report Date:</strong>{' '}
-              {safe(formData.reportDate || currentDate)}
-            </p>
+   
             <p>
               <strong>Print Time:</strong> {currentTime}
             </p>
