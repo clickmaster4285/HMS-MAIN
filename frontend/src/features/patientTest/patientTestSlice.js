@@ -125,8 +125,13 @@ export const fetchAllTests = createAsyncThunk(
       const response = await axios.get(`${API_URL}/testManagement/getAlltest`, {
         headers: getAuthHeaders(),
       });
-      // Ensure we always return an array, even if response structure is unexpected
-      const tests = response.data?.activeTests || response.data || [];
+
+      console.log("API Response:", response.data); // Check structure
+
+      // FIXED: Extract tests from the correct property
+      const tests = response.data?.tests || response.data?.activeTests || response.data || [];
+      console.log("Extracted tests:", tests);
+
       return Array.isArray(tests) ? tests : [];
     } catch (error) {
       const message =

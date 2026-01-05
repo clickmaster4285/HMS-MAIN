@@ -3,7 +3,6 @@ import Header from './Header';
 import TestSummaryCard from './TestSummaryCard';
 import TestTypeOverview from './TestTypeOverview';
 import AlertsList from './AlertsList';
-import LabTechnicianSummary from './LabTechnicianSummary';
 import { getTestHistory } from "../../../features/patientTest/patientTestSlice";
 import { useSelector, useDispatch } from "react-redux";
 import { motion } from 'framer-motion';
@@ -33,7 +32,6 @@ const DashboardPannel = () => {
             <AlertsList alerts={alerts} />
           </div>
         </div>
-        <LabTechnicianSummary testHistory={testHistory} />
       </motion.div>
     </div>
   );

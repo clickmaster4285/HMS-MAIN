@@ -7,7 +7,7 @@ const doctorList = [
   "Dr. Faizan Rauf",
   "Dr. Faraz Mehmood",
   "Dr. Farooq",
-  "Dr. Fraz Mehmood",
+  "Dr. Asim Mehmood",
   "Dr. Fouzia Malik",
   "Dr. Hammad",
   "Dr. Jibran Bari Khan",
