@@ -123,7 +123,7 @@ const CreateRadiologyReport = () => {
         setSuccessMessage('Report deleted successfully');
         fetchReports();
       } catch (err) {
-        setError('Failed to delete report');
+        setError('Failed to delete report', err);
       }
     }
   };
@@ -333,7 +333,7 @@ const CreateRadiologyReport = () => {
             No reports found. Create your first report above.
           </div>
         ) : (
-          <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2">
+          <div className="space-y-3 max-h-125 overflow-y-auto pr-2">
             {reports.map((report) => (
               <div
                 key={report._id}

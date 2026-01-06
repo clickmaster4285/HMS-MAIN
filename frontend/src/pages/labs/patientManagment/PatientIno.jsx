@@ -170,7 +170,7 @@ useEffect(() => {
             placeholder="e.g., 20, 0.2, 2 months, 1.5"
             value={ageInput}
             onChange={handleAgeInputChange}
-            className="border rounded px-3 py-2 h-[42px] w-full border-gray-300 shadow-sm"
+            className="border rounded px-3 py-2 h-10.5 w-full border-gray-300 shadow-sm"
           />
           {isTyping && (
             <p className="mt-1 text-xs text-gray-500">Calculating DOB...</p>
@@ -200,7 +200,7 @@ useEffect(() => {
           name="Gender"
           value={patient.Gender || ''}
           onChange={handlePatientChange}
-          className="border h-[42px] p-2 rounded w-full border-gray-300 shadow-sm"
+          className="border h-10.5 p-2 rounded w-full border-gray-300 shadow-sm"
         >
           <option value="">Select Gender</option>
           <option value="Male">Male</option>
@@ -255,7 +255,7 @@ useEffect(() => {
           name="ReferredBy"
           value={patient.ReferredBy || ''}
           onChange={handlePatientChange}
-          className="border h-[42px] p-2 rounded w-full border-gray-300 shadow-sm"
+          className="border h-10.5 p-2 rounded w-full border-gray-300 shadow-sm"
         >
           <option value="">Select Referred By</option>
           <option value={doctorList[0]}>Self</option>
@@ -295,7 +295,7 @@ useEffect(() => {
       />
       <button
         type="button"
-        className="px-4 py-2 bg-primary-700 text-white rounded h-[42px]"
+        className="px-4 py-2 bg-primary-700 text-white rounded h-10.5"
         onClick={handleSearch}
       >
         Search
@@ -315,7 +315,7 @@ useEffect(() => {
         onChange={(e) =>
           handleDobChange(e.target.value ? new Date(e.target.value) : null)
         }
-        className="border rounded px-3 py-2 h-[42px] w-full border-gray-300 shadow-sm"
+        className="border rounded px-3 py-2 h-10.5 w-full border-gray-300 shadow-sm"
       />
     </div>
   );

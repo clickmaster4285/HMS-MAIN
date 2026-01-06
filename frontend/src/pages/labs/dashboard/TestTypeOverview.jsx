@@ -1,5 +1,4 @@
 import React from 'react';
-import { motion } from 'framer-motion';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
 const TestTypeOverview = ({ testHistory }) => {
@@ -55,7 +54,7 @@ const processTestData = () => {
             <span className="w-2 h-2 rounded-full bg-[#009689] mr-1"></span>
             Completed
           </span>
-          <span className="flex items-center text-sm text-sm text-gray-500">
+          <span className="flex items-center text-sm text-gray-500">
             <span className="w-2 h-2 rounded-full bg-[#4db6ac] mr-1"></span>
             Pending
           </span>

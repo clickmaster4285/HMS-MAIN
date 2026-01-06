@@ -209,7 +209,7 @@ const TestInformationForm = ({
               onMouseEnter={() => setShowSelectedPreview(true)}
               onMouseLeave={() => setShowSelectedPreview(false)}
               disabled={selectedTests.length === 0}
-              className="px-4 py-2 bg-primary-700 text-white rounded h-[42px] hover:bg-primary-800 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+              className="px-4 py-2 bg-primary-700 text-white rounded h-10.5 hover:bg-primary-800 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
             >
               Add Selected ({selectedTests.length})
             </button>

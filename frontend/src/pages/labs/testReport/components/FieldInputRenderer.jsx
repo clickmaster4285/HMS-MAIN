@@ -174,7 +174,7 @@ export const FieldInputRenderer = ({
             Normal Range
           </label>
           <div
-            className="text-sm text-gray-600 bg-gray-50 rounded-lg px-3 py-2 border min-h-[42px]"
+            className="text-sm text-gray-600 bg-gray-50 rounded-lg px-3 py-2 border min-h-10.5"
             title={formatNormalRange(field.normalRange, patientData)}
           >
             <div className="font-medium text-xs text-primary-600">
