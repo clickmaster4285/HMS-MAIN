@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { getallDepartments } from '../../../features/department/DepartmentSlice';
-import { getAllStaff } from '../../../features/staff/Staffslice';
+import { getAllStaff } from '../../../features/staff/staffslice';
 import {
   createWard,
   clearWardState,
