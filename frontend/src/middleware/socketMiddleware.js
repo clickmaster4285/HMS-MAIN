@@ -3,7 +3,7 @@ import { getAllStaff } from "../features/staff/staffslice";
 // import { getAllAppointments } from "../features/appointments/appointmentSlice";
 import { getAllAdmittedPatients } from "../features/ipdPatient/IpdPatientSlice";
 import { getallDepartments } from "../features/department/DepartmentSlice";
-import { fetchAllDoctors } from "../features/doctor/DoctorSlice";
+import { fetchAllDoctors } from "../features/doctor/doctorSlice";
 import {fetchPatients} from "../features/patient/patientSlice";
 import { fetchPatientTestAll } from "../features/patientTest/patientTestSlice";
 import {getAllTests} from "../features/testManagment/testSlice";
