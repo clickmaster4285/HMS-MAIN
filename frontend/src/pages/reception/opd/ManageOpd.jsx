@@ -20,7 +20,7 @@ import PatientDetailModal from "./PatientDetailModal";
 import DeletePatientConfirmation from './DeletePatientConfirmation';
 import { useNavigate } from 'react-router-dom';
 import PrintOptionsModal from './components/PrintOptionsModal';
-import Pagination from "./manageopd/pagination";
+import Pagination from "./manageopd/Pagination";
 import { getRoleRoute } from '../../../utils/getRoleRoute';
 import PurposeFilterDropdown from './manageopd/PurposeFilterDropdown';
 import { matchesPurposeFilter } from '../../../utils/purposeOptions';
