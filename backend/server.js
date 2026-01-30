@@ -46,21 +46,21 @@ app.use('/', indexRouter);
 // });
 
 
-const PORT = process.env.PORT || 5000;
-const HOST = process.env.HOST || '0.0.0.0';
-const MODE = process.env.NODE_ENV || 'development';
+const PORT = process.env.PORT;
+const HOST = process.env.HOST;
+const MODE = process.env.NODE_ENV;
 
 const server = http.createServer(app);
 
 const io = initSocket(server);
 app.set("io", io); 
 
-server.listen(PORT, HOST, (err) => {
+server.listen(PORT,(err) => {
   if (err) {
     console.error('❌ Server failed to start:', err);
     process.exit(1);
   }
-  const shownHost = HOST === '0.0.0.0' ? 'localhost' : HOST;
-  console.log(`Server running in ${MODE} mode on http://${shownHost}:${PORT}`);
+  // const shownHost = HOST === '0.0.0.0' ? 'localhost' : HOST;
+  console.log(`Server running in ${MODE} mode on :${PORT}`);
 });
 
