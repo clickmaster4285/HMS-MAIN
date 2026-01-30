@@ -8,7 +8,7 @@ import {
   getStaffById,
   clearError,
   clearSuccessMessage
-} from '../../../features/staff/Staffslice';
+} from '../../../features/staff/staffslice';
 
 import { getallDepartments } from '../../../features/department/DepartmentSlice';
 import StaffForm from './StaffForm';

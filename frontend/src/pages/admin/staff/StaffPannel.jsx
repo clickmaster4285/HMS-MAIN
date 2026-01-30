@@ -8,7 +8,7 @@ import {
   softDeleteStaff,
   restoreStaff,
   getDeletedStaff
-} from '../../../features/staff/Staffslice';
+} from '../../../features/staff/staffslice';
 import DataTable from '../../../components/common/DataTable';
 import TabNavigation from '../../../components/common/TabNavigation';
 import Modal from '../../../components/common/Modal';
