@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import Header from './Header';
 import StatsCard from './StatsCard';
-import FilterDropdown from './FilterDropDown';
+import FilterDropdown from './FilterDropdown';
 import FilterBar from './FilterBar';
 import PendingCollection from './PendingCollection';
 

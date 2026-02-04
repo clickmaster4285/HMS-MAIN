@@ -9,7 +9,7 @@ import {
   setFilters,
   clearFilters,
   setItemsPerPage,
-} from '../../../features/critcalResult/criticalSlice';
+} from '../../../features/criticalResult/criticalSlice';
 import PrintCriticalForm from './PrintCriticalForm';
 import CriticalFormHeader from './CriticalFormHeader';
 import CriticalResultsTable from './CriticalResultsTable';

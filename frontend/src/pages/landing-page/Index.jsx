@@ -3,7 +3,7 @@ import Header from "./Header";
 import HeroSection from "./HeroSection";
 import ClientsSection from "./ClientSection";
 import WhyChooseSection from "./WhyChooseSection";
-import MobileAppSection from "./MobileAppSection ";
+import MobileAppSection from "./MobileAppSection";
 import PeopleSection from "./PeopleSection";
 import FeaturesSection from "./FeaturesSection";
 import DashboardShowcaseSection from "./DashboardShowcaseSection";
