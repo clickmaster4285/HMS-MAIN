@@ -18,7 +18,7 @@ import testReducer from "../features/testManagment/testSlice";
 import testResultReducer from "../features/testResult/TestResultSlice";
 import labBillReducer from "../features/labBill/LabBillSlice";
 import RadiologySlice from "../features/Radiology/RadiologySlice";
-import criticalResultReducer from "../features/critcalResult/criticalSlice";
+import criticalResultReducer from "../features/criticalResult/criticalSlice";
 import refundOpdReducer from "../features/refund/refundopdSlice";
 import expensesReducer from "../features/expenses/expensesSlice";
 import summaryReducer from '../features/summary/summarySlice';

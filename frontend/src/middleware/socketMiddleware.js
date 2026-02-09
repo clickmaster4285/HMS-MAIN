@@ -10,7 +10,7 @@ import {getAllTests} from "../features/testManagment/testSlice";
 import {getAllWards} from "../features/ward/Wardslice";
 import {getAllRooms} from "../features/roomsManagment/RoomSlice";
 import { fetchPatientTestById } from "../features/patientTest/patientTestSlice";
-import { fetchCriticalResults } from "../features/critcalResult/criticalSlice";
+import { fetchCriticalResults } from "../features/criticalResult/criticalSlice";
 import {getExpenses} from "../features/expenses/expensesSlice";
 import {getAllRefunds} from "../features/refund/refundopdSlice";
 import {fetchAllRadiologyReports} from "../features/Radiology/RadiologySlice";
