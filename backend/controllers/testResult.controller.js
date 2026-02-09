@@ -1,6 +1,9 @@
 const hospitalModel = require("../models/index.model");
 const mongoose = require("mongoose");
 const utils = require("../utils/utilsIndex");
+const emitGlobalEvent = require("../utils/emitGlobalEvent");
+const EVENTS = require("../utils/socketEvents");
+
 
 const submitTestResults = async (req, res) => {
   const { patientTestId, testId } = req.params;
@@ -115,14 +118,46 @@ const submitTestResults = async (req, res) => {
     const operationResults = await Promise.allSettled(updatePromises);
     await patientTest.save();
 
+    // 🔥 CORRECTED: Extract successful results for socket emission
+    const successfulResults = operationResults
+      .filter(r => r.status === 'fulfilled')
+      .map(r => r.value);
+
+    // 🔥 Emit socket event for each updated test result
+    successfulResults.forEach(({ testId, testResult }) => {
+      emitGlobalEvent(req, "test_result_changed", "update", {
+        patientTestId: patientTestId,
+        testId: testId,
+        testResultId: testResult._id,
+        status: testResult.status,
+        performedBy: testResult.performedBy,
+        updatedAt: testResult.updatedAt,
+        // Include necessary data for frontend update
+        data: {
+          patientTestId: patientTestId,
+          testId: testId,
+          status: testResult.status,
+          results: testResult.results
+        }
+      });
+    });
+
+    // Also emit a general patient_test_changed event if needed
+    emitGlobalEvent(req, "patient_test_changed", "update", {
+      patientTestId: patientTestId,
+      action: "test_results_updated"
+    });
+
     return res.status(200).json({
       success: true,
       message: "Test results saved successfully",
       data: {
-        testResults: operationResults.map(r => r.value || {
-          error: r.reason.message,
-          testId: r.reason.testId
-        }),
+        testResults: operationResults.map(r => r.status === 'fulfilled' ? 
+          r.value : {
+            error: r.reason.message,
+            testId: r.reason.testId
+          }
+        ),
         patientDetails: {
           name: patientTest.patient_Detail.patient_Name,
           mrNo: patientTest.patient_Detail.patient_MRNo,
@@ -197,7 +232,6 @@ const getAllTestResults = async (req, res) => {
 const getPatientByResultId = async (req, res) => {
   try {
     const { resultId } = req.params;
-    console.log("the id is", resultId)
     if (!mongoose.Types.ObjectId.isValid(resultId)) {
       return res.status(400).json({
         success: false,
@@ -226,8 +260,6 @@ const getPatientByResultId = async (req, res) => {
         message: "Test result not found",
       });
     }
-    console.log("the testResult is ", testResult)
-    console.log("the patientDetails is", patientDetails)
     return res.status(200).json({
       success: true,
       data: {
@@ -282,7 +314,6 @@ const getSummaryByDate = async (req, res) => {
     const patientTestIds = patients.map(patient => patient._id);
     const testResults = await hospitalModel.TestResult.find({
       patientTestId: { $in: patientTestIds }
-      // console.log("The queryquery are: ",patients)
     }).lean();
 
     const responseData = patients.map(patient => ({

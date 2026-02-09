@@ -33,7 +33,6 @@ const BillingOpd = () => {
       end: today
     };
   });
-  // console.log("the patient in the opd ", patients )
   // In your BillingOpd component
   useEffect(() => {
     dispatch(fetchPatients()).unwrap()
@@ -59,8 +58,6 @@ const BillingOpd = () => {
   };
 
   const confirmDelete = () => {
-    // Implement actual delete logic here
-    console.log(`Deleting patient MR# ${patientToDelete}`);
     setPatientToDelete(null);
   };
 

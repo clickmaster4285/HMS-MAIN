@@ -162,7 +162,7 @@ const API_URL = import.meta.env.VITE_REACT_APP_API_URL;
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-indigo-50">
+      <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-primary-50 to-indigo-50">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-primary-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
           <p className="mt-4 text-gray-600 font-medium">Loading financial data...</p>
@@ -173,7 +173,7 @@ const API_URL = import.meta.env.VITE_REACT_APP_API_URL;
   
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-indigo-50">
+      <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-primary-50 to-indigo-50">
         <div className="bg-white p-6 rounded-xl shadow-lg text-center max-w-md border border-gray-100">
           <div className="text-red-500 text-5xl mb-4">⚠️</div>
           <h2 className="text-xl font-bold text-gray-800 mb-2">Error Loading Data</h2>
@@ -190,7 +190,7 @@ const API_URL = import.meta.env.VITE_REACT_APP_API_URL;
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-50 to-indigo-50 p-4 md:p-6">
+    <div className="min-h-screen bg-linear-to-br from-primary-50 to-indigo-50 p-4 md:p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between">

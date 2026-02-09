@@ -2,8 +2,6 @@
 import React from 'react';
 
 const PrintThermal = ({ formData }) => {
-  console.log("PrintThermal received:", formData); // Debug what's received
-
   // Extract data with proper fallbacks - check these paths match your formData structure
   const patientMRNo = formData?.patient_MRNo || formData?.patientMRNo || 'N/A';
   const patientName = formData?.patient_Name || formData?.patientName || 'N/A';

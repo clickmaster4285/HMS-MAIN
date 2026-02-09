@@ -96,8 +96,6 @@ export const getBillDetails = createAsyncThunk(
 export const processRefund = createAsyncThunk(
   "billing/processRefund",
   async ({ patientId, refundData }, { rejectWithValue }) => {
-        console.log("the api hits at from lab  :",refundData)
-
     try {
       const response = await axios.patch(
         `${API_URL}/labBills/bill/refund-amount-by-lab/${patientId}`,
@@ -172,8 +170,7 @@ export const processRadiologyPayment = createAsyncThunk(
 export const processRadiologyRefund = createAsyncThunk(
   "billing/processRadiologyRefund",
   async ({ patientId, refundData }, { rejectWithValue }) => {
-    // console.log("the api hits at from radiology  :",repatientTestfundData)
-    try {
+   try {
       const response = await axios.patch(
         `${API_URL}/labBills/bill/refund-amount-by-radiology/${patientId}`,
         refundData,

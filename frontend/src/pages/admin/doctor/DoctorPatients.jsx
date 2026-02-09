@@ -60,14 +60,12 @@ const DoctorPatients = ({ doctorId, patients = [] }) => {
         }
     }, [patients, dateRange, searchTerm, filters, dateFilterType]);
 
-    // console.log('Patients data:', patients);
-
     return (
         <div className="mt-12 animate-fade-in">
             {/* Header with Search */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                 <div className="flex items-center">
-                    <div className="bg-gradient-to-r from-primary-500 to-primary-700 p-3 rounded-full mr-4 shadow-lg">
+                    <div className="bg-linear-to-r from-primary-500 to-primary-700 p-3 rounded-full mr-4 shadow-lg">
                         <FaUserInjured className="text-white text-2xl" />
                     </div>
                     <div>
@@ -244,7 +242,7 @@ const DoctorPatients = ({ doctorId, patients = [] }) => {
 
 // Enhanced StatCard with gradient and trend indicator
 const StatCard = ({ icon, title, value, trend, color }) => (
-    <div className={`bg-gradient-to-r ${color} p-4 border border-primary-700 text-primary-600 rounded-xl shadow-sm transform hover:scale-[1.02] transition-transform`}>
+    <div className={`bg-linear-to-r ${color} p-4 border border-primary-700 text-primary-600 rounded-xl shadow-sm transform hover:scale-[1.02] transition-transform`}>
         <div className="flex justify-between items-start">
             <div>
                 <p className="text-sm font-medium opacity-90">{title}</p>
@@ -280,7 +278,7 @@ const PatientRow = ({ patient }) => (
     <tr className="hover:bg-gray-50 transition-colors group">
         <td className="px-6 py-4 whitespace-nowrap">
             <div className="flex items-center">
-                <div className="flex-shrink-0 h-10 w-10">
+                <div className="shrink-0 h-10 w-10">
                     <img
                         className="h-10 w-10 rounded-full object-cover border-2 border-white group-hover:border-primary-100 transition-colors"
                         src={`https://ui-avatars.com/api/?name=${encodeURIComponent(patient.patient_Name)}&background=random`}

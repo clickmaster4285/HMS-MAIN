@@ -15,7 +15,6 @@ const DashboardPannel = () => {
   useEffect(() => {
     dispatch(getTestHistory());
   }, [dispatch]);
-// console.log("📊 Dashboard Stats:", stats);
   return (
     <div className="bg-gray-50 min-h-screen">
       <Header />

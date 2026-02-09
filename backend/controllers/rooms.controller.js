@@ -1,9 +1,9 @@
 const hospitalModel = require("../models/index.model")
-
+const emitGlobalEvent = require("../utils/emitGlobalEvent");
+const EVENTS = require("../utils/socketEvents");
 const createRooms = async (req, res) => {
     try {
         const { department, roomNumber, wardType, bedCount, availableBeds, equipment, floor, features, charges, assignedDoctor } = req.body;
-console.log(req.body)
         // Create an array of bed objects
         const beds = [];
         for (let i = 1; i <= bedCount; i++) {
@@ -30,9 +30,12 @@ console.log(req.body)
         });
 
         await newRoom.save();
+
+        emitGlobalEvent(req, EVENTS.ROOM, "create", { room: newRoom });
+
         res.status(202).json({ message: "Successfully Created New Room", rooms: newRoom });
     } catch (error) {
-        console.log(error);
+        console.error(error);
         return res.status(500).json({ message: "Error Creating Room", error: error.message });
     }
 };
@@ -105,6 +108,8 @@ const updateRoomById = async (req, res) => {
         // Save the updated room document
         await room.save();
 
+        emitGlobalEvent(req, EVENTS.ROOM, "update", { room });
+
         return res.status(202).json({ room });
     } catch (error) {
         console.error(error);
@@ -120,6 +125,9 @@ const deleteRoom = async (req, res) => {
             res.status(404).json({ message: "room not found" })
         }
         res.status(202).json({ message: "room have deleted successfully", room })
+
+        emitGlobalEvent(req, EVENTS.ROOM, "delete", { room });
+
     } catch (error) {
         return res.status(500).json({ message: "Error deleting room ", error: error.message })
     }

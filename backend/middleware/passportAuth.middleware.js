@@ -18,9 +18,6 @@ passport.use(
       // Find the user in database using the ID from JWT payload
       const user = await hospitalModel.User.findById(jwt_payload.id || jwt_payload._id);
 
-      // console.log("The JWT payload is:", jwt_payload);
-      // console.log("Authenticated user:", user);
-
       if (user) {
         return done(null, user); // Authentication successful with user object
       } else {

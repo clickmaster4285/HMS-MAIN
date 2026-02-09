@@ -1,5 +1,6 @@
 const hospitalModel = require('../models/index.model');
-
+const emitGlobalEvent = require("../utils/emitGlobalEvent");
+const EVENTS = require("../utils/socketEvents");
 exports.getSummary = async (req, res) => {
    try {
       const doctor = await hospitalModel.Doctor.find().populate('user', 'user_Name user_Email');

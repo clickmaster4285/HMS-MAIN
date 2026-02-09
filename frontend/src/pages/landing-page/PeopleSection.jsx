@@ -10,7 +10,7 @@ const PeopleSection = () => {
   }, []);
 
   return (
-    <section className="relative bg-gradient-to-br from-white via-slate-50 to-primary-50 overflow-hidden">
+    <section className="relative bg-linear-to-br from-white via-slate-50 to-primary-50 overflow-hidden">
       {/* Background pattern - moved outside content container */}
 <div className="relative h-full w-full bg-white py-20"><div className="absolute bottom-0 left-0 right-0 top-0 bg-[linear-gradient(to_right,#4f4f4f2e_1px,transparent_1px),linear-gradient(to_bottom,#4f4f4f2e_1px,transparent_1px)] bg-[size:14px_24px] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_0%,#000_70%,transparent_110%)]"></div>
 
@@ -23,7 +23,7 @@ const PeopleSection = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 items-center gap-16">
           {/* Content Section */}
           <div className={`order-2 lg:order-1 transform transition-all duration-1000 ${isVisible ? 'translate-x-0 opacity-100' : '-translate-x-10 opacity-0'}`}>
-            <div className="inline-flex items-center px-6 py-2 text-sm font-medium text-sky-700 bg-gradient-to-r from-sky-100 to-primary-200 rounded-full mb-6 shadow-sm">
+            <div className="inline-flex items-center px-6 py-2 text-sm font-medium text-sky-700 bg-linear-to-r from-sky-100 to-primary-200 rounded-full mb-6 shadow-sm">
               <Users className="mr-2" size={16} />
               Our Healthcare System
             </div>

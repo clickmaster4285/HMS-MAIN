@@ -384,7 +384,6 @@ const BillDetail = () => {
         <div className="bg-teal-100 p-2 rounded-full mr-3">
           <FaFileInvoiceDollar className="text-teal-600 text-xl" />
         </div>
-        {/* {console.log('bill: ', bill)} */}
         <div>
           <h1 className="text-2xl font-bold text-gray-800">
             {isRadiology ? 'Radiology Bill Details' : 'Bill Details'}

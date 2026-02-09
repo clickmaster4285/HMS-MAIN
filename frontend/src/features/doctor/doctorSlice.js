@@ -5,7 +5,6 @@ const API_URL = import.meta.env.VITE_REACT_APP_API_URL;
 
 const getAuthHeader = () => {
   const jwtLoginToken = localStorage.getItem('jwtLoginToken');
-  // console.log("JWT Token from localStorage:", jwtLoginToken); // 🔍 This logs the token
   if (!jwtLoginToken) {
     console.warn("JWT token not found in localStorage!");
     throw new Error('No JWT token found. Please log in.');
@@ -69,8 +68,6 @@ export const fetchDoctorById = createAsyncThunk(
       const response = await axios.get(`${API_URL}/doctor/get-doctor-by-id/${doctorId}`, {
         headers: getAuthHeader(),
       });
-      // console.log("the data in doctor by id is ", response.data?.information?.doctor)
-      // console.log("the data in patient by id is ", response.data?.information)
       return {
         doctor: response.data?.information?.doctor,
         patients: response.data?.information?.patients
@@ -159,116 +156,95 @@ const doctorSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      // createDoctor thunk 
+
+      // ================= CREATE DOCTOR =================
       .addCase(createDoctor.pending, (state) => {
         state.isLoading = true;
         state.isError = false;
-        state.errorMessage = '';
       })
-      .addCase(createDoctor.fulfilled, (state, action) => {
+      .addCase(createDoctor.fulfilled, (state) => {
         state.isLoading = false;
         state.status = 'succeeded';
-        // state.doctors = action.payload.information.doctors;
-        if (action.payload.data?.doctor) {
-          state.doctors.push(action.payload.data.doctor);
-        }
       })
       .addCase(createDoctor.rejected, (state, action) => {
         state.isLoading = false;
         state.isError = true;
         state.errorMessage = action.payload;
       })
-      // fetchAllDoctors thunk
+
+      // ================= FETCH ALL DOCTORS =================
       .addCase(fetchAllDoctors.pending, (state) => {
         state.isLoading = true;
-        state.isError = false;
-        state.errorMessage = '';
       })
       .addCase(fetchAllDoctors.fulfilled, (state, action) => {
         state.isLoading = false;
         state.doctors = action.payload;
-        //  console.log('the data in case ', action.payload)
       })
       .addCase(fetchAllDoctors.rejected, (state, action) => {
         state.isLoading = false;
         state.isError = true;
         state.errorMessage = action.payload;
       })
-      // fetchDoctorById thunk
+
+      // ================= FETCH DOCTOR BY ID =================
       .addCase(fetchDoctorById.pending, (state) => {
         state.isLoading = true;
-        state.isError = false;
-        state.errorMessage = '';
       })
       .addCase(fetchDoctorById.fulfilled, (state, action) => {
         state.isLoading = false;
         state.currentDoctor = action.payload?.doctor || null;
         state.patients = action.payload?.patients || [];
-        // console.log('the patient in state', action.payload)
       })
       .addCase(fetchDoctorById.rejected, (state, action) => {
         state.isLoading = false;
         state.isError = true;
         state.errorMessage = action.payload;
       })
-      // updateDoctorById thunk
+
+      // ================= UPDATE DOCTOR =================
       .addCase(updateDoctorById.pending, (state) => {
         state.isLoading = true;
-        state.isError = false;
-        state.errorMessage = '';
       })
-      .addCase(updateDoctorById.fulfilled, (state, action) => {
+      .addCase(updateDoctorById.fulfilled, (state) => {
         state.isLoading = false;
         state.status = 'succeeded';
-        const updatedDoctor = action.payload;
-        const index = state.doctors.findIndex((doctor) => doctor._id === updatedDoctor._id);
-        if (index !== -1) {
-          state.doctors[index] = updatedDoctor;
-        }
       })
       .addCase(updateDoctorById.rejected, (state, action) => {
         state.isLoading = false;
         state.isError = true;
         state.errorMessage = action.payload.message || 'Failed to update doctor';
       })
-      // deleteDoctorById thunk
+
+      // ================= DELETE DOCTOR =================
       .addCase(deleteDoctorById.pending, (state) => {
         state.isLoading = true;
-        state.isError = false;
-        state.errorMessage = '';
       })
-      .addCase(deleteDoctorById.fulfilled, (state, action) => {
+      .addCase(deleteDoctorById.fulfilled, (state) => {
         state.isLoading = false;
         state.status = 'succeeded';
-        state.doctors = state.doctors.filter(
-          doctor => doctor._id !== action.payload.information?.doctorId
-        );
       })
       .addCase(deleteDoctorById.rejected, (state, action) => {
         state.isLoading = false;
         state.isError = true;
         state.errorMessage = action.payload.message || 'Failed to delete doctor';
       })
-      // fetchDoctorsByDepartmentName  thunk
+
+      // ================= DOCTORS BY DEPARTMENT =================
       .addCase(fetchDoctorsByDepartmentName.pending, (state) => {
         state.isLoading = true;
-        state.isError = false;
-        state.errorMessage = '';
-        state.status = 'loading';
       })
       .addCase(fetchDoctorsByDepartmentName.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.status = 'succeeded';
         state.doctors = action.payload || [];
       })
       .addCase(fetchDoctorsByDepartmentName.rejected, (state, action) => {
         state.isLoading = false;
         state.isError = true;
-        state.status = 'failed';
         state.errorMessage = action.payload;
       });
   },
 });
+
 
 export const {
   resetDoctorState,

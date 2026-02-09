@@ -39,9 +39,7 @@ const DynamicNavbar = ({ toggleSidebar, onLogout }) => {
       color: "bg-sky-700"
     },
   };
-// console.log(`the current user in navabr `, currentUser?.user_Access )
   const config = roleConfig[currentUser?.user_Access] || roleConfig.receptionist;
-  // console.log(config)
 
   // User initials for avatar
   const getUserInitials = () => {

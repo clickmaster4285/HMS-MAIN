@@ -17,7 +17,7 @@ const ClientsSection = () => {
   ];
 
   return (
-    <section className="py-20 bg-gradient-to-b from-primary-50 to-white">
+    <section className="py-20 bg-linear-to-b from-primary-50 to-white">
       <div className="container mx-auto px-4">
         <h2 className="text-center text-3xl font-semibold text-gray-800 mb-4">
           Trusted by Leading Healthcare Institutions

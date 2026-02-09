@@ -65,7 +65,6 @@ export const updateOperation = createAsyncThunk(
             const response = await axios.put(`${API_URL}/ot/update/${mrno}`, operationData, {
                 headers: getAuthHeaders()
             });
-console.log("Update response:", response.data.operation); // Debugging line
             return response.data.operation; // Fixed: Match backend response
         } catch (error) {
             return rejectWithValue(error.response?.data?.message || error.message);

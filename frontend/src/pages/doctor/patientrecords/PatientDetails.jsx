@@ -50,7 +50,7 @@ const { selectedPatient: currentPatient, selectedPatientStatus: status, error } 
     return (
       <div className="bg-red-50 border-l-4 border-red-500 p-4">
         <div className="flex">
-          <div className="flex-shrink-0">
+          <div className="shrink-0">
             <svg className="h-5 w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
             </svg>
@@ -66,7 +66,6 @@ const { selectedPatient: currentPatient, selectedPatientStatus: status, error } 
   if (!currentPatient) {
     return <div className="text-center py-8 text-primary-500">No patient data found</div>;
   }
-  // console.log('the current patient is ', currentPatient);
   // Safely get nested properties
   const patientData = {
     name: currentPatient.patient_Name || 'N/A',
@@ -101,7 +100,7 @@ const { selectedPatient: currentPatient, selectedPatientStatus: status, error } 
 
       {/* Patient Header */}
       <div className="bg-white rounded-lg shadow-md overflow-hidden mb-6">
-        <div className="bg-gradient-to-r from-primary-500 to-primary-700 p-6 text-white">
+        <div className="bg-linear-to-r from-primary-500 to-primary-700 p-6 text-white">
           <div className="flex flex-col md:flex-row items-start md:items-center">
             <div className="mr-6 mb-4 md:mb-0">
               <img

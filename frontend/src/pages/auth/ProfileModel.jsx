@@ -11,7 +11,7 @@ const profiles = [
   {
     role: "Doctor",
     name: "Dr. Sarah Khan",
-    color: "bg-gradient-to-br from-primary-500 to-primary-600",
+    color: "bg-linear-to-br from-primary-500 to-primary-600",
     icon: Doctor,
     textColor: "text-white",
     description: "Access patient records and medical history"
@@ -19,7 +19,7 @@ const profiles = [
   {
     role: "Reception",
     name: "Sonia",
-    color: "bg-gradient-to-br from-primary-400 to-primary-500",
+    color: "bg-linear-to-br from-primary-400 to-primary-500",
     icon: Reception,
     textColor: "text-white",
     description: "Manage appointments and patient registration"
@@ -27,7 +27,7 @@ const profiles = [
   {
     role: "Nurse",
     name: "Nurse Ayesha",
-    color: "bg-gradient-to-br from-primary-600 to-primary-700",
+    color: "bg-linear-to-br from-primary-600 to-primary-700",
     icon: Nurse,
     textColor: "text-white",
     description: "Patient care and treatment administration"
@@ -35,7 +35,7 @@ const profiles = [
   {
     role: "Patient",
     name: "Ali Ahmed",
-    color: "bg-gradient-to-br from-primary-300 to-primary-400",
+    color: "bg-linear-to-br from-primary-300 to-primary-400",
     icon: Patient,
     textColor: "text-white",
     description: "View medical records and appointments"
@@ -122,7 +122,7 @@ const ProfileModal = () => {
             </motion.p>
 
             {/* Profiles Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 px-6 pb-6 overflow-y-auto flex-grow">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 px-6 pb-6 overflow-y-auto grow">
               {profiles.map((profile, index) => (
                 <motion.div
                   key={index}
@@ -132,7 +132,7 @@ const ProfileModal = () => {
                   whileHover={{ y: -5 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={() => handleSelect(profile)}
-                  className="flex flex-col items-center cursor-pointer rounded-2xl p-6 transition-all duration-300 hover:shadow-lg border border-gray-100 hover:border-primary-200 bg-gradient-to-b from-white to-gray-50"
+                  className="flex flex-col items-center cursor-pointer rounded-2xl p-6 transition-all duration-300 hover:shadow-lg border border-gray-100 hover:border-primary-200 bg-linear-to-b from-white to-gray-50"
                 >
                   <motion.div
                     whileHover={{ scale: 1.05 }}
@@ -163,7 +163,7 @@ const ProfileModal = () => {
                 whileHover={{ y: -5 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={handleCreateNew}
-                className="flex flex-col items-center justify-center cursor-pointer rounded-2xl p-6 transition-all duration-300 hover:shadow-lg border-2 border-dashed border-primary-300 hover:border-primary-400 bg-gradient-to-b from-white to-gray-50"
+                className="flex flex-col items-center justify-center cursor-pointer rounded-2xl p-6 transition-all duration-300 hover:shadow-lg border-2 border-dashed border-primary-300 hover:border-primary-400 bg-linear-to-b from-white to-gray-50"
               >
                 <motion.div
                   whileHover={{ scale: 1.1 }}

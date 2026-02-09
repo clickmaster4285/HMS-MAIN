@@ -77,7 +77,7 @@ const StatsSection = () => {
 
   return (
     <section
-      className="py-20 bg-gradient-to-r from-primary-900 to-sky-900 text-white relative overflow-hidden"
+      className="py-20 bg-linear-to-r from-primary-900 to-sky-900 text-white relative overflow-hidden"
       ref={ref}
     >
       {/* Animated background elements */}

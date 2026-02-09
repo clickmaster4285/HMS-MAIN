@@ -4,7 +4,6 @@ import { FormSection, FormGrid } from '../../../../components/common/FormSection
 
 const PatientForm = ({ formData, handleChange, mode, validGenders, validBloodTypes, validMaritalStatuses }) => {
    const guardianRelations = ["Father", "Mother", "Sibling", "Spouse", "Uncle", "Aunt", "Grandfather", "Grandmother", "Other"];
-   // console.log("Form data in PatientForm:", formData);
 
    return (
       <FormSection title="Patient Information">

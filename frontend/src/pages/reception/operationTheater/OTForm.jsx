@@ -73,7 +73,6 @@ const OTForm = ({ operation, onSubmit, onCancel }) => {
   useEffect(() => {   // if some one select department then fetch doctors
     if (formData.department) {
       dispatch(fetchDoctorsByDepartmentName(formData.department))
-      // console.log("doc by dep",formData.department , doctors)
     }
   }, [formData.department, dispatch]);
 

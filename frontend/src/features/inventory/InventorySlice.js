@@ -7,7 +7,6 @@ import axios from "axios";
  export const createInventoryRecord = createAsyncThunk(
     "inventory/add-inventory",
     async(inventoryData , {rejectWithValue}) =>{
-        console.log(inventoryData)
         try{
             const response = await axios.post(`${API_URL}/inventory/add-inventory`, inventoryData,  
         {
@@ -29,8 +28,6 @@ import axios from "axios";
     async(_, {rejectWithValue})=>{
         try{
             const response = await axios.get(`${API_URL}/inventory/get-inventory-records`);
-                    console.log(response.data)
-
             return response.data.inventoryList;
         }
         catch(error){

@@ -1,5 +1,6 @@
 const hospitalModel = require("../models/index.model");
-
+const emitGlobalEvent = require("../utils/emitGlobalEvent");
+const EVENTS = require("../utils/socketEvents");
 
 //to create a new inventory record
 const createMedicineRecord = async (req, res) => {
@@ -31,7 +32,7 @@ const createMedicineRecord = async (req, res) => {
       Medicine: newMedicine,
     });
   } catch (error) {
-    console.log(error);
+    console.error(error);
     req.status(500).json({
       message: "Medicine record was not added successfully.",
       error: error.message,
@@ -61,7 +62,7 @@ const getMedicineById = async (req, res) => {
     }
     res.status(202).json({ message: "medicine found sucessfully", Medicine });
   } catch (error) {
-    console.log(error);
+    console.error(error);
     res.status(500).json({ message: "server error" });
   }
 };
@@ -134,7 +135,7 @@ const deleteMedicineById = async (req, res) => {
     }
     res.status(202).json({ message: "record sucessfully deleted" });
   } catch (error) {
-    console.log(error);
+    console.error(error);
     res.status(500).json({ message: "server error" });
   }
 };

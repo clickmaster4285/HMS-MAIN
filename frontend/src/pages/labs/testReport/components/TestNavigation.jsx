@@ -46,7 +46,7 @@ export const TestNavigation = ({
             className={`group flex items-center px-6 py-2.5 rounded-xl font-medium transition-all duration-300 shadow-md ${
               isFirstTest
                 ? 'bg-gray-100 text-gray-400 cursor-not-allowed shadow-none'
-                : 'bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0'
+                : 'bg-linear-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0'
             }`}
           >
             <FiChevronLeft className={`mr-2 transition-transform duration-300 ${!isFirstTest && 'group-hover:-translate-x-1'}`} />
@@ -56,7 +56,7 @@ export const TestNavigation = ({
           {/* Save Current */}
           <button
             onClick={onSave}
-            className="group flex items-center px-6 py-2.5 bg-gradient-to-r from-emerald-600 to-green-600 text-white rounded-xl font-medium hover:from-emerald-700 hover:to-green-700 transition-all duration-300 shadow-md hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0"
+            className="group flex items-center px-6 py-2.5 bg-linear-to-r from-emerald-600 to-green-600 text-white rounded-xl font-medium hover:from-emerald-700 hover:to-green-700 transition-all duration-300 shadow-md hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0"
           >
             <FiSave className="mr-2 transition-transform duration-300 group-hover:rotate-12" />
             Save
@@ -69,7 +69,7 @@ export const TestNavigation = ({
             className={`group flex items-center px-6 py-2.5 rounded-xl font-medium transition-all duration-300 shadow-md ${
               isLastTest
                 ? 'bg-gray-100 text-gray-400 cursor-not-allowed shadow-none'
-                : 'bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0'
+                : 'bg-linear-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0'
             }`}
           >
             Next

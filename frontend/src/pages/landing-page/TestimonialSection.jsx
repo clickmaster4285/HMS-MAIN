@@ -67,7 +67,7 @@ const TestimonialsSection = () => {
   };
 
   return (
-    <section id="testimonials" className="py-20 bg-gradient-to-br from-gray-50 to-primary-50 relative overflow-hidden">
+    <section id="testimonials" className="py-20 bg-linear-to-br from-gray-50 to-primary-50 relative overflow-hidden">
       <div className="absolute bottom-0 left-0 right-0 top-0 bg-[linear-gradient(to_right,#38bdf82e_1px,transparent_1px),linear-gradient(to_bottom,#7dd3fc0a_1px,transparent_1px)] bg-[size:14px_24px]"></div><div className="absolute left-0 right-0 top-[-9%] h-[1000px] w-[1000px] rounded-full bg-[radial-gradient(circle_400px_at_50%_300px,#bae6fd36,#38bdf8)]"></div>
       {/* Decorative elements */}
       <div className="absolute top-0 left-0 w-full h-full opacity-10">
@@ -141,7 +141,7 @@ const TestimonialsSection = () => {
                             className="w-32 h-32 object-cover rounded-full border-4 border-white shadow-lg"
                           />
                         </motion.div>
-                        <div className="absolute -bottom-3 -right-3 bg-gradient-to-r from-purple-500 to-primary-500 text-white p-2 rounded-full shadow-md">
+                        <div className="absolute -bottom-3 -right-3 bg-linear-to-r from-purple-500 to-primary-500 text-white p-2 rounded-full shadow-md">
                           <Quote size={20} />
                         </div>
                       </div>

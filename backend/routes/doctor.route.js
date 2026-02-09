@@ -44,7 +44,6 @@ router.put(
   ]),
   controller.doctor.updateDoctor
 );
-// console.log("Doctor routes loaded")
 router.get(
 
   "/get-doctors-by-department/:departmentName",

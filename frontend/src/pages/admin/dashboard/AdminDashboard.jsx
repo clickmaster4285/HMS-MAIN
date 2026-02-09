@@ -44,8 +44,7 @@ const Dashboard = () => {
     loading: admittedLoading,
     error: admittedError
   } = useSelector(state => state.ipdPatient);
-  // console.log("the admiited paitents are ", admittedPatients)
-
+ 
   const {
     patients: opdPatients = [],
     loading: opdLoading,

@@ -1,6 +1,8 @@
 const hospitalModel = require('../models/index.model');
 const mongoose = require('mongoose');
 const utils = require('../utils/utilsIndex');
+const emitGlobalEvent = require("../utils/emitGlobalEvent");
+const EVENTS = require("../utils/socketEvents");
 
 
 const createPatientTest = async (req, res) => {
@@ -234,6 +236,9 @@ if (remainingAmount === 0) {
 
     const created = await hospitalModel.PatientTest.create(doc);
 
+emitGlobalEvent(req, EVENTS.PATIENT_TEST, "create", {
+  id: created._id
+});
     return res.status(201).json({
       success: true,
       message: "Lab test order created successfully",
@@ -284,11 +289,9 @@ if (remainingAmount === 0) {
   }
 };
 
-
-
 const getAllPatientTests = async (req, res) => {
   try {
-    const { page = 1, limit = 100000, search } = req.query;
+    const { page = 1, limit = 20, search } = req.query;
     const skip = (page - 1) * limit;
 
     let query = { isDeleted: false };
@@ -392,6 +395,7 @@ const getAllPatientTests = async (req, res) => {
   }
 };
 
+
 const getPatientTestById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -439,7 +443,6 @@ const getPatientTestById = async (req, res) => {
         };
       }
     }
-    // console.log("The testDefinitions are: ", testDefinitions?.[0]?.fields?.[0] , resultLookup)
     // Enrich testDefinitions
     const enrichedTestDefinitions = testDefinitions.map((td) => {
       const testId = td._id.toString();
@@ -459,9 +462,6 @@ const getPatientTestById = async (req, res) => {
         fields: enrichedFields,
       };
     });
-
-    // If you need to return this or continue using it:
-    // console.log("Enriched Test Definitions", enrichedTestDefinitions?.[0]?.fields?.[0]);
 
     return res.status(200).json({
       success: true,
@@ -588,6 +588,8 @@ const softDeletePatientTest = async (req, res) => {
       });
     }
 
+emitGlobalEvent(req, EVENTS.PATIENT_TEST, "softDelete", { id });
+
     return res.status(200).json({
       success: true,
       message: 'Patient test soft deleted successfully',
@@ -622,6 +624,11 @@ const restorePatientTest = async (req, res) => {
         message: 'Patient test not found or not deleted',
       });
     }
+
+emitGlobalEvent(req, EVENTS.PATIENT_TEST, "restore", {
+  id: patientTest._id,
+  action: "restore"
+});
 
     return res.status(200).json({
       success: true,
@@ -884,6 +891,7 @@ const PatientTestStates = async (req, res) => {
       tests: await PatientTest.find({ isDeleted: false }).lean(),
     };
 
+
     res.status(200).json({
       success: true,
       message: 'Dashboard data fetched successfully',
@@ -901,7 +909,6 @@ const PatientTestStates = async (req, res) => {
 
 const paymentAfterReport = async (req, res) => {
   const { patientId } = req.params;
-  console.log('Processing payment after report for patient:', patientId);
   try {
     if (!patientId) {
       return res.status(400).json({
@@ -945,6 +952,12 @@ const paymentAfterReport = async (req, res) => {
         { new: true }
       ).select('-__v -isDeleted -createdAt -updatedAt');
 
+emitGlobalEvent(req,EVENTS.PATIENT_TEST, "paymentFinalized", {
+  id: patientId,
+  action: "paymentFinalized"
+});
+
+
     return res.status(200).json({
       success: true,
       message: 'Payment finalized successfully',
@@ -977,7 +990,9 @@ const updatePatientTest = async (req, res) => {
   try {
     const { id } = req.params;
     const body = req.body;
-console.log("The dtaa is", body)
+
+    console.log("Update Patient Test Payload:", body);
+    
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res
         .status(400)
@@ -1134,6 +1149,11 @@ console.log("The dtaa is", body)
       { $set, $push },
       { new: true, runValidators: true }
     );
+
+emitGlobalEvent(req, EVENTS.PATIENT_TEST, "update", {
+  id,
+  action: "update"
+});
 
     return res.status(200).json({
       success: true,

@@ -1,5 +1,6 @@
 const hospitalModel = require("../models/index.model");
-
+const emitGlobalEvent = require("../utils/emitGlobalEvent");
+const EVENTS = require("../utils/socketEvents");
 const createTest = async (req, res) => {
   try {
     const {
@@ -13,7 +14,6 @@ const createTest = async (req, res) => {
       reportDeliveryTime,
       fields,
     } = req.body;
-    console.log("the req body is", req.body)
 
     // Process fields to handle normalRange conversion and collect common options
     const processedFields = fields.map(field => {
@@ -68,6 +68,10 @@ const createTest = async (req, res) => {
     });
 
     await newTest.save();
+
+    emitGlobalEvent(req, EVENTS.TEST_MANAGEMENT, "create", {
+      id: newTest._id
+    });
 
     res.status(201).json({
       message: "Test created successfully",
@@ -209,7 +213,11 @@ const updateTest = async (req, res) => {
         return field;
       });
     }
-    
+
+    emitGlobalEvent(req, EVENTS.TEST_MANAGEMENT, "update", {
+      id: test._id
+    });
+
     res.status(200).json({ message: "Test updated successfully", test: testObj });
   } catch (err) {
     res.status(500).json({ message: "Failed to update test", error: err.message });
@@ -235,6 +243,10 @@ const deleteTest = async (req, res) => {
     if (!test) {
       return res.status(404).json({ message: "Test not found or already deleted" });
     }
+
+    emitGlobalEvent(req, EVENTS.TEST_MANAGEMENT, "delete", {
+      id: test._id
+    });
 
     res.status(200).json({ message: "Test soft deleted successfully" });
   } catch (err) {
@@ -265,6 +277,10 @@ const recoverTest = async (req, res) => {
         message: "Test not found or already active"
       });
     }
+
+    emitGlobalEvent(req, EVENTS.TEST_MANAGEMENT, "recover", {
+      id: test._id
+    });
 
     res.status(200).json({
       message: "Test recovered successfully",

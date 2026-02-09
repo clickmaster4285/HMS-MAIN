@@ -148,205 +148,195 @@ export const getAllRefundsLegacy = createAsyncThunk(
 );
 
 const refundSlice = createSlice({
-   name: "refund",
-   initialState: {
-      refunds: [],
-      refundDetails: null,
-      patientVisits: [],
-      statistics: null,
-      loading: false,
-      error: null,
-      successMessage: "",
-      filters: {
-         status: "",
-         startDate: "",
-         endDate: "",
-         patientMRNo: "",
-      },
-   },
-   reducers: {
-      clearSuccessMessage: (state) => {
-         state.successMessage = "";
-      },
-      clearError: (state) => {
-         state.error = null;
-      },
-      clearRefundDetails: (state) => {
-         state.refundDetails = null;
-      },
-      clearPatientVisits: (state) => {
-         state.patientVisits = [];
-      },
-      setFilters: (state, action) => {
-         state.filters = { ...state.filters, ...action.payload };
-      },
-      clearFilters: (state) => {
-         state.filters = {
-            status: "",
-            startDate: "",
-            endDate: "",
-            patientMRNo: "",
-         };
-      },
-   },
-   extraReducers: (builder) => {
-      builder
-         // Create Refund
-         .addCase(createRefund.pending, (state) => {
-            state.loading = true;
-            state.error = null;
-         })
-         .addCase(createRefund.fulfilled, (state, action) => {
-            state.loading = false;
-            if (action.payload && action.payload.success) {
-               state.refunds.unshift(action.payload.data.refund); // Updated to match new response structure
-               state.successMessage = action.payload.message || "Refund created successfully!";
-            } else {
-               state.error = action.payload?.message || "Failed to create refund";
-            }
-         })
-         .addCase(createRefund.rejected, (state, action) => {
-            state.loading = false;
-            state.error = action.payload?.message || "Error creating refund";
-         })
+  name: "refund",
+  initialState: {
+    refunds: [],
+    refundDetails: null,
+    patientVisits: [],
+    statistics: null,
+    loading: false,
+    error: null,
+    successMessage: "",
+    filters: {
+      status: "",
+      startDate: "",
+      endDate: "",
+      patientMRNo: "",
+    },
+  },
+  reducers: {
+    clearSuccessMessage: (state) => {
+      state.successMessage = "";
+    },
+    clearError: (state) => {
+      state.error = null;
+    },
+    clearRefundDetails: (state) => {
+      state.refundDetails = null;
+    },
+    clearPatientVisits: (state) => {
+      state.patientVisits = [];
+    },
+    setFilters: (state, action) => {
+      state.filters = { ...state.filters, ...action.payload };
+    },
+    clearFilters: (state) => {
+      state.filters = {
+        status: "",
+        startDate: "",
+        endDate: "",
+        patientMRNo: "",
+      };
+    },
+  },
+  extraReducers: (builder) => {
+    builder
 
-         // Get Refunds by MR Number
-         .addCase(getRefundsByMRNumber.pending, (state) => {
-            state.loading = true;
-            state.error = null;
-         })
-         .addCase(getRefundsByMRNumber.fulfilled, (state, action) => {
-            state.loading = false;
-            if (action.payload && action.payload.success) {
-               state.refunds = action.payload.data;
-            } else {
-               state.error = action.payload?.message || "Failed to fetch refunds";
-            }
-         })
-         .addCase(getRefundsByMRNumber.rejected, (state, action) => {
-            state.loading = false;
-            state.error = action.payload?.message || "Error fetching refunds";
-         })
+      // ================= CREATE REFUND =================
+      .addCase(createRefund.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(createRefund.fulfilled, (state, action) => {
+        state.loading = false;
+        state.successMessage =
+          action.payload?.message || "Refund created successfully!";
+      })
+      .addCase(createRefund.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload?.message || "Error creating refund";
+      })
 
-         // Get Patient Visits for Refund
-         .addCase(getPatientVisitsForRefund.pending, (state) => {
-            state.loading = true;
-            state.error = null;
-         })
-         .addCase(getPatientVisitsForRefund.fulfilled, (state, action) => {
-            state.loading = false;
-            if (action.payload && action.payload.success) {
-               state.patientVisits = action.payload.data.visits || [];
-            } else {
-               state.error = action.payload?.message || "Failed to fetch patient visits";
-            }
-         })
-         .addCase(getPatientVisitsForRefund.rejected, (state, action) => {
-            state.loading = false;
-            state.error = action.payload?.message || "Error fetching patient visits";
-         })
+      // ================= GET REFUNDS BY MR =================
+      .addCase(getRefundsByMRNumber.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(getRefundsByMRNumber.fulfilled, (state, action) => {
+        state.loading = false;
+        if (action.payload?.success) {
+          state.refunds = action.payload.data;
+        } else {
+          state.error = action.payload?.message || "Failed to fetch refunds";
+        }
+      })
+      .addCase(getRefundsByMRNumber.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload?.message || "Error fetching refunds";
+      })
 
-         // Update Refund Status
-         .addCase(updateRefundStatus.pending, (state) => {
-            state.loading = true;
-            state.error = null;
-         })
-         .addCase(updateRefundStatus.fulfilled, (state, action) => {
-            state.loading = false;
-            if (action.payload && action.payload.success) {
-               const updatedRefund = action.payload.data;
-               const index = state.refunds.findIndex(
-                  (refund) => refund._id === updatedRefund._id
-               );
-               if (index !== -1) {
-                  state.refunds[index] = updatedRefund;
-               }
-               if (state.refundDetails && state.refundDetails._id === updatedRefund._id) {
-                  state.refundDetails = updatedRefund;
-               }
-               state.successMessage = action.payload.message || "Refund status updated successfully!";
-            } else {
-               state.error = action.payload?.message || "Failed to update refund status";
-            }
-         })
-         .addCase(updateRefundStatus.rejected, (state, action) => {
-            state.loading = false;
-            state.error = action.payload?.message || "Error updating refund status";
-         })
+      // ================= PATIENT VISITS =================
+      .addCase(getPatientVisitsForRefund.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(getPatientVisitsForRefund.fulfilled, (state, action) => {
+        state.loading = false;
+        if (action.payload?.success) {
+          state.patientVisits = action.payload.data?.visits || [];
+        } else {
+          state.error =
+            action.payload?.message || "Failed to fetch patient visits";
+        }
+      })
+      .addCase(getPatientVisitsForRefund.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload?.message || "Error fetching patient visits";
+      })
 
-         // Get Refund Statistics
-         .addCase(getRefundStatistics.pending, (state) => {
-            state.loading = true;
-            state.error = null;
-         })
-         .addCase(getRefundStatistics.fulfilled, (state, action) => {
-            state.loading = false;
-            if (action.payload && action.payload.success) {
-               state.statistics = action.payload.data;
-            } else {
-               state.error = action.payload?.message || "Failed to fetch refund statistics";
-            }
-         })
-         .addCase(getRefundStatistics.rejected, (state, action) => {
-            state.loading = false;
-            state.error = action.payload?.message || "Error fetching refund statistics";
-         })
+      // ================= UPDATE REFUND STATUS =================
+      .addCase(updateRefundStatus.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updateRefundStatus.fulfilled, (state, action) => {
+        state.loading = false;
+        state.successMessage =
+          action.payload?.message || "Refund status updated successfully!";
+      })
+      .addCase(updateRefundStatus.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload?.message || "Error updating refund status";
+      })
 
-         // Get Refund by ID
-         .addCase(getRefundById.pending, (state) => {
-            state.loading = true;
-            state.error = null;
-         })
-         .addCase(getRefundById.fulfilled, (state, action) => {
-            state.loading = false;
-            if (action.payload && action.payload.success) {
-               state.refundDetails = action.payload.data;
-            } else {
-               state.error = action.payload?.message || "Failed to fetch refund details";
-            }
-         })
-         .addCase(getRefundById.rejected, (state, action) => {
-            state.loading = false;
-            state.error = action.payload?.message || "Error fetching refund details";
-         })
+      // ================= REFUND STATS =================
+      .addCase(getRefundStatistics.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(getRefundStatistics.fulfilled, (state, action) => {
+        state.loading = false;
+        if (action.payload?.success) {
+          state.statistics = action.payload.data;
+        } else {
+          state.error =
+            action.payload?.message || "Failed to fetch refund statistics";
+        }
+      })
+      .addCase(getRefundStatistics.rejected, (state, action) => {
+        state.loading = false;
+        state.error =
+          action.payload?.message || "Error fetching refund statistics";
+      })
 
-         // Get All Refunds
-         .addCase(getAllRefunds.pending, (state) => {
-            state.loading = true;
-            state.error = null;
-         })
-         .addCase(getAllRefunds.fulfilled, (state, action) => {
-            state.loading = false;
-            if (action.payload && action.payload.success) {
-               state.refunds = action.payload.data;
-            } else {
-               state.error = action.payload?.message || "Failed to fetch refunds";
-            }
-         })
-         .addCase(getAllRefunds.rejected, (state, action) => {
-            state.loading = false;
-            state.error = action.payload?.message || "Error fetching refunds";
-         })
+      // ================= GET REFUND BY ID =================
+      .addCase(getRefundById.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(getRefundById.fulfilled, (state, action) => {
+        state.loading = false;
+        if (action.payload?.success) {
+          state.refundDetails = action.payload.data;
+        } else {
+          state.error =
+            action.payload?.message || "Failed to fetch refund details";
+        }
+      })
+      .addCase(getRefundById.rejected, (state, action) => {
+        state.loading = false;
+        state.error =
+          action.payload?.message || "Error fetching refund details";
+      })
 
-         // Get All Refunds (Legacy endpoint)
-         .addCase(getAllRefundsLegacy.pending, (state) => {
-            state.loading = true;
-            state.error = null;
-         })
-         .addCase(getAllRefundsLegacy.fulfilled, (state, action) => {
-            state.loading = false;
-            if (action.payload && action.payload.success) {
-               state.refunds = action.payload.data;
-            } else {
-               state.error = action.payload?.message || "Failed to fetch refunds";
-            }
-         })
-         .addCase(getAllRefundsLegacy.rejected, (state, action) => {
-            state.loading = false;
-            state.error = action.payload?.message || "Error fetching refunds";
-         });
-   },
+      // ================= GET ALL REFUNDS =================
+      .addCase(getAllRefunds.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(getAllRefunds.fulfilled, (state, action) => {
+        state.loading = false;
+        if (action.payload?.success) {
+          state.refunds = action.payload.data;
+        } else {
+          state.error = action.payload?.message || "Failed to fetch refunds";
+        }
+      })
+      .addCase(getAllRefunds.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload?.message || "Error fetching refunds";
+      })
+
+      // ================= LEGACY REFUNDS =================
+      .addCase(getAllRefundsLegacy.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(getAllRefundsLegacy.fulfilled, (state, action) => {
+        state.loading = false;
+        if (action.payload?.success) {
+          state.refunds = action.payload.data;
+        } else {
+          state.error = action.payload?.message || "Failed to fetch refunds";
+        }
+      })
+      .addCase(getAllRefundsLegacy.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload?.message || "Error fetching refunds";
+      });
+  },
 });
+
 
 // Selector exports
 export const selectRefunds = (state) => state.refund.refunds;

@@ -79,7 +79,7 @@ const TestsDetail = () => {
 
 // Layout Component
 const DetailLayout = ({ navigate, children }) => (
-  <div className="min-h-screen bg-gradient-to-br from-slate-50 via-primary-50 to-teal-50">
+  <div className="min-h-screen bg-linear-to-br from-slate-50 via-primary-50 to-teal-50">
     <Header navigate={navigate} />
     <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
       {children}
@@ -96,7 +96,7 @@ const Header = ({ navigate }) => (
           <BackButton navigate={navigate} />
           <div className="h-6 w-px bg-slate-300"></div>
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-primary-600 to-teal-600 bg-clip-text text-transparent">
+            <h1 className="text-2xl md:text-3xl font-bold bg-linear-to-r from-primary-600 to-teal-600 bg-clip-text text-transparent">
               Test Details
             </h1>
             <p className="text-slate-600 text-sm">View comprehensive test information</p>

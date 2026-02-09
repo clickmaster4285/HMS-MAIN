@@ -4,10 +4,15 @@ const mongoose = require('mongoose');
 // const RadiologyReport = require("../models/RadiologyReport");
 const utils = require('../utils/utilsIndex');
 const hospitalModel = require('../models/index.model');
+
 const {
   getStaticPrice,
   normalizeTemplateName,
 } = require('../utils/priceHelper');
+
+const emitGlobalEvent = require("../utils/emitGlobalEvent");
+const EVENTS = require("../utils/socketEvents");
+
 
 // Utility functions
 const loadTemplate = (templateNameRaw) => {
@@ -195,6 +200,8 @@ const createReport = async (req, res) => {
         },
       ],
     });
+
+    emitGlobalEvent(req, EVENTS.RADIOLOGY, "create", saved);
 
     return res
       .status(201)
@@ -691,6 +698,8 @@ const updateReport = async (req, res) => {
     report.performedBy = { name: performerName, id: performerId };
 
     await report.save();
+    
+    emitGlobalEvent(req, EVENTS.RADIOLOGY, "update", report);
 
     return res
       .status(200)
@@ -860,6 +869,8 @@ const softDeleteStudyById = async (req, res) => {
         .json({ success: false, message: 'Study not found' });
     }
 
+    emitGlobalEvent(req, EVENTS.RADIOLOGY, "soft_delete", updated);
+
     res
       .status(200)
       .json({ success: true, message: 'Study soft-deleted', studyId });
@@ -1001,6 +1012,8 @@ const updateFinalContent = async (req, res) => {
     });
 
     await report.save();
+
+    emitGlobalEvent(req, EVENTS.RADIOLOGY, "update_final_content", report);
 
     return res.status(200).json({
       success: true,

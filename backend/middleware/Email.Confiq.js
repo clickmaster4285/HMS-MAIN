@@ -20,7 +20,6 @@ const sendEmail = async (to, subject, text, html) => {
       html,
     });
 
-    console.log("✅ Email sent successfully:", info.messageId);
     return { success: true, messageId: info.messageId };
   } catch (error) {
     console.error("❌ Email sending error:", error.message);
@@ -30,7 +29,6 @@ const sendEmail = async (to, subject, text, html) => {
 
 // Step 3: Run the script directly
 if (require.main === module) {
-  console.log("📧 Sending email...");
 
   sendEmail(
     "umerkhayam1717@gmail.com", // ✅ Receiver

@@ -4,7 +4,7 @@ import Img from "../../assets/landing-page/screens.png"
 
 const MobileAppSection = () => {
   return (
-    <section className="py-20 bg-gradient-to-b from-primary-50 to-white">
+    <section className="py-20 bg-linear-to-b from-primary-50 to-white">
       <div className="container mx-auto px-4">
         <div className="grid grid-cols-1 md:grid-cols-2 items-center gap-12">
           {/* Content Section */}
@@ -28,7 +28,7 @@ const MobileAppSection = () => {
 
               {/* EHR Feature */}
               <div className="flex items-start bg-white p-4 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
-                <div className="flex-shrink-0 bg-green-100 p-3 rounded-lg mr-4">
+                <div className="shrink-0 bg-green-100 p-3 rounded-lg mr-4">
                   <Bell size={20} className="text-green-600" />
                 </div>
                 <div>
@@ -41,7 +41,7 @@ const MobileAppSection = () => {
 
               {/* Telemedicine Feature */}
               <div className="flex items-start bg-white p-4 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
-                <div className="flex-shrink-0 bg-purple-100 p-3 rounded-lg mr-4">
+                <div className="shrink-0 bg-purple-100 p-3 rounded-lg mr-4">
                   <Lock size={20} className="text-purple-600" />
                 </div>
                 <div>
@@ -53,7 +53,7 @@ const MobileAppSection = () => {
               </div>
 
               <div className="flex items-start bg-white p-4 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
-                <div className="flex-shrink-0 bg-sky-100 p-3 rounded-lg mr-4">
+                <div className="shrink-0 bg-sky-100 p-3 rounded-lg mr-4">
                   <Stethoscope size={20} className="text-sky-600" />
                 </div>
                 <div>

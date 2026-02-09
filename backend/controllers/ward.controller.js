@@ -1,6 +1,7 @@
 const hospitalModel = require("../models/index.model");
 const { generateUniqueWardNumber, getNextAvailableWardNumber } = require("../utils/generateUniqueWardNumber");
-
+const emitGlobalEvent = require("../utils/emitGlobalEvent");
+const EVENTS = require("../utils/socketEvents");
 // In your frontend, you can use this to suggest next available number
 exports.getSuggestedWardNumber = async (req, res) => {
     try {
@@ -64,6 +65,8 @@ exports.createWard = async (req, res) => {
         // Add ward to department
         departmentDoc.ward.push(newWard._id);
         await departmentDoc.save();
+
+        emitGlobalEvent(req, EVENTS.WARD, "create", { ward: newWard });
 
         res.status(201).json({
             success: true,
@@ -190,6 +193,8 @@ exports.updateWardById = async (req, res) => {
                 message: "Ward not found after update"
             });
         }
+
+        emitGlobalEvent(req, EVENTS.WARD, "update", { ward: updatedWard });
 
         res.status(200).json({
             success: true,
@@ -375,6 +380,8 @@ exports.deleteWard = async (req, res) => {
             { ward: id },
             { $pull: { ward: id } }
         );
+
+            emitGlobalEvent(req, EVENTS.WARD, "delete", { wardId: id });
 
         res.status(200).json({
             success: true,

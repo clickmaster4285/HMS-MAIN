@@ -72,7 +72,7 @@ const LabTestForm = ({ mode = 'create' }) => {
 
   if (getByIdLoading && mode === 'edit') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-primary-50 via-teal-50 to-white flex items-center justify-center">
+      <div className="min-h-screen bg-linear-to-br from-primary-50 via-teal-50 to-white flex items-center justify-center">
         <div className="text-center">
           <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mb-4"></div>
           <p className="text-primary-700 text-lg">Loading test data...</p>
@@ -82,7 +82,7 @@ const LabTestForm = ({ mode = 'create' }) => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-50 via-teal-50 to-white p-0">
+    <div className="min-h-screen bg-linear-to-br from-primary-50 via-teal-50 to-white p-0">
       <div className="w-full">
         <div className="bg-white rounded-xl shadow-md overflow-hidden mb-8">
           <div className="bg-primary-600 rounded-md text-white px-6 py-8 shadow-md">

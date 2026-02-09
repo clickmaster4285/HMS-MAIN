@@ -57,7 +57,7 @@ export const RecentAdmissions = ({ patients = [] }) => {
                 <tr key={patient.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
-                      <div className="flex-shrink-0 h-10 w-10 bg-teal-100 rounded-full flex items-center justify-center text-teal-600 font-medium">
+                      <div className="shrink-0 h-10 w-10 bg-teal-100 rounded-full flex items-center justify-center text-teal-600 font-medium">
                         {patient.name.charAt(0)}
                       </div>
                       <div className="ml-4">

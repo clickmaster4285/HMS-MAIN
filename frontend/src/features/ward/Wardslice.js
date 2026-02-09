@@ -202,41 +202,39 @@ const wardSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      // Create Ward
+
+      // ================= CREATE WARD =================
       .addCase(createWard.pending, (state) => {
-        state.createStatus = 'loading';
+        state.createStatus = "loading";
         state.error = null;
       })
       .addCase(createWard.fulfilled, (state, action) => {
-        state.createStatus = 'succeeded';
-        if (action.payload?.ward) {
-          state.allWards.push(action.payload.ward);
-          state.successMessage = action.payload.message;
-        }
+        state.createStatus = "succeeded";
+        state.successMessage = action.payload?.message || "Ward created successfully";
       })
       .addCase(createWard.rejected, (state, action) => {
-        state.createStatus = 'failed';
-        // Ensure error is a string, not an object
-        state.error = typeof action.payload === 'object'
-          ? action.payload.message || 'Failed to create ward'
-          : action.payload;
+        state.createStatus = "failed";
+        state.error =
+          typeof action.payload === "object"
+            ? action.payload.message
+            : action.payload;
       })
 
-      // Get All Wards
+      // ================= GET ALL WARDS =================
       .addCase(getAllWards.pending, (state) => {
-        state.fetchStatus = 'loading';
+        state.fetchStatus = "loading";
         state.error = null;
       })
       .addCase(getAllWards.fulfilled, (state, action) => {
-        state.fetchStatus = 'succeeded';
+        state.fetchStatus = "succeeded";
         state.allWards = action.payload?.wards || [];
       })
       .addCase(getAllWards.rejected, (state, action) => {
-        state.fetchStatus = 'failed';
+        state.fetchStatus = "failed";
         state.error = action.payload;
       })
 
-      // Get Ward by ID
+      // ================= GET WARD BY ID =================
       .addCase(getWardById.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -250,94 +248,78 @@ const wardSlice = createSlice({
         state.error = action.payload;
       })
 
-      // Update Ward
+      // ================= UPDATE WARD =================
       .addCase(updateWardById.pending, (state) => {
-        state.updateStatus = 'loading';
+        state.updateStatus = "loading";
         state.error = null;
       })
       .addCase(updateWardById.fulfilled, (state, action) => {
-        state.updateStatus = 'succeeded';
-
-        // Fix: Use action.payload.data instead of action.payload.ward
-        const updatedWard = action.payload.data || action.payload.ward;
-
-        if (updatedWard && updatedWard._id) {
-          state.allWards = state.allWards.map(ward =>
-            ward._id === updatedWard._id ? updatedWard : ward
-          );
-
-          if (state.currentWard?._id === updatedWard._id) {
-            state.currentWard = updatedWard;
-          }
-        }
-
-        state.successMessage = action.payload.message;
+        state.updateStatus = "succeeded";
+        state.successMessage = action.payload?.message || "Ward updated successfully";
       })
       .addCase(updateWardById.rejected, (state, action) => {
-        state.updateStatus = 'failed';
+        state.updateStatus = "failed";
         state.error = action.payload;
       })
 
-      // Delete Ward
+      // ================= DELETE WARD =================
       .addCase(deleteWard.pending, (state) => {
-        state.deleteStatus = 'loading';
+        state.deleteStatus = "loading";
         state.error = null;
       })
       .addCase(deleteWard.fulfilled, (state, action) => {
-        state.deleteStatus = 'succeeded';
-        state.allWards = state.allWards.filter(
-          ward => ward._id !== action.payload.id
-        );
-        state.successMessage = action.payload.message;
+        state.deleteStatus = "succeeded";
+        state.successMessage = action.payload?.message || "Ward deleted successfully";
       })
       .addCase(deleteWard.rejected, (state, action) => {
-        state.deleteStatus = 'failed';
+        state.deleteStatus = "failed";
         state.error = action.payload;
       })
 
-      // Get Wards by Department
+      // ================= WARDS BY DEPARTMENT =================
       .addCase(getwardsbydepartmentId.pending, (state) => {
-        state.departmentFetchStatus = 'loading';
+        state.departmentFetchStatus = "loading";
         state.error = null;
       })
       .addCase(getwardsbydepartmentId.fulfilled, (state, action) => {
-        state.departmentFetchStatus = 'succeeded';
+        state.departmentFetchStatus = "succeeded";
         state.wardsByDepartment = action.payload?.wards || [];
       })
       .addCase(getwardsbydepartmentId.rejected, (state, action) => {
-        state.departmentFetchStatus = 'failed';
+        state.departmentFetchStatus = "failed";
         state.error = action.payload;
       })
 
-      // Get Bed History
+      // ================= BED HISTORY =================
       .addCase(getBedHistory.pending, (state) => {
-        state.historyStatus = 'loading';
+        state.historyStatus = "loading";
         state.error = null;
       })
       .addCase(getBedHistory.fulfilled, (state, action) => {
-        state.historyStatus = 'succeeded';
+        state.historyStatus = "succeeded";
         state.currentBedHistory = action.payload?.history || [];
       })
       .addCase(getBedHistory.rejected, (state, action) => {
-        state.historyStatus = 'failed';
+        state.historyStatus = "failed";
         state.error = action.payload;
       })
 
-      // Get Patient by Bed ID
+      // ================= PATIENT BY BED =================
       .addCase(getPatientByBedId.pending, (state) => {
-        state.bedPatientStatus = 'loading';
+        state.bedPatientStatus = "loading";
         state.error = null;
       })
       .addCase(getPatientByBedId.fulfilled, (state, action) => {
-        state.bedPatientStatus = 'succeeded';
+        state.bedPatientStatus = "succeeded";
         state.currentBed = action.payload?.data?.bed || null;
         state.currentBedPatient = action.payload?.data?.patient || null;
       })
       .addCase(getPatientByBedId.rejected, (state, action) => {
-        state.bedPatientStatus = 'failed';
+        state.bedPatientStatus = "failed";
         state.error = action.payload;
       })
-      // Add this to your extraReducers
+
+      // ================= SUGGESTED WARD NUMBER =================
       .addCase(getSuggestedWardNumber.pending, (state) => {
         state.loading = true;
         state.error = null;

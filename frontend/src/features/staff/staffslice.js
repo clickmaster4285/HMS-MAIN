@@ -10,9 +10,7 @@ export const createStaff = createAsyncThunk(
   "staff/createStaff",
   async (staffData, { rejectWithValue }) => {
     try {
-      console.log("the staff data is ", staffData)
       const response = await axios.post(`${API_URL}/staff/create-staff`, staffData);
-      console.log('the response data ', response.data)
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response.data);
@@ -26,7 +24,6 @@ export const getAllStaff = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const response = await axios.get(`${API_URL}/staff/getall-staff`);
-      // console.log("the staffs are ", response.data.data)
       return response.data.data;
     } catch (error) {
       return rejectWithValue(error.response.data);
@@ -119,39 +116,35 @@ const staffSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      // Create Staff
+
+      // ================= CREATE STAFF =================
       .addCase(createStaff.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
-      .addCase(createStaff.fulfilled, (state, action) => {
+      .addCase(createStaff.fulfilled, (state) => {
         state.loading = false;
-        if (action.payload && action.payload.data && action.payload.data.staff) {
-          state.staffList.push(action.payload.data.staff);
-          state.successMessage = "Staff created successfully!";
-        } else {
-          state.error = "Failed to create staff";
-        }
+        state.successMessage = "Staff created successfully!";
       })
       .addCase(createStaff.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload ? action.payload : "Error creating staff";
+        state.error = action.payload || "Error creating staff";
       })
 
-      // Get All Staff
+      // ================= GET ALL STAFF =================
       .addCase(getAllStaff.pending, (state) => {
         state.loading = true;
       })
       .addCase(getAllStaff.fulfilled, (state, action) => {
         state.loading = false;
-          state.staffList = action.payload;
+        state.staffList = action.payload;
       })
       .addCase(getAllStaff.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload ? action.payload : "Error fetching staff";
+        state.error = action.payload || "Error fetching staff";
       })
 
-      // Get Staff By ID
+      // ================= GET STAFF BY ID =================
       .addCase(getStaffById.pending, (state) => {
         state.loading = true;
       })
@@ -161,58 +154,49 @@ const staffSlice = createSlice({
       })
       .addCase(getStaffById.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload ? action.payload : "Error fetching staff by ID";
+        state.error = action.payload || "Error fetching staff by ID";
       })
 
-      // Update Staff
+      // ================= UPDATE STAFF =================
       .addCase(updateStaff.pending, (state) => {
         state.loading = true;
       })
-      .addCase(updateStaff.fulfilled, (state, action) => {
+      .addCase(updateStaff.fulfilled, (state) => {
         state.loading = false;
-        const updatedStaff = action.payload.data;
-        const index = state.staffList.findIndex(staff => staff._id === updatedStaff._id);
-        if (index !== -1) {
-          state.staffList[index] = updatedStaff;
-        }
         state.successMessage = "Staff updated successfully!";
       })
       .addCase(updateStaff.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload ? action.payload : "Error updating staff";
+        state.error = action.payload || "Error updating staff";
       })
 
-      // Soft Delete Staff
+      // ================= SOFT DELETE STAFF =================
       .addCase(softDeleteStaff.pending, (state) => {
         state.loading = true;
       })
-      .addCase(softDeleteStaff.fulfilled, (state, action) => {
+      .addCase(softDeleteStaff.fulfilled, (state) => {
         state.loading = false;
-        const deletedStaffId = action.payload.data?._id;
-        state.staffList = state.staffList.filter(staff => staff._id !== deletedStaffId);
         state.successMessage = "Staff deleted successfully!";
       })
       .addCase(softDeleteStaff.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload ? action.payload : "Error deleting staff";
+        state.error = action.payload || "Error deleting staff";
       })
 
-      // Restore Staff
+      // ================= RESTORE STAFF =================
       .addCase(restoreStaff.pending, (state) => {
         state.loading = true;
       })
-      .addCase(restoreStaff.fulfilled, (state, action) => {
+      .addCase(restoreStaff.fulfilled, (state) => {
         state.loading = false;
-        const restoredStaff = action.payload.data;
-        state.deletedStaffList = state.deletedStaffList.filter(staff => staff._id !== restoredStaff._id);
         state.successMessage = "Staff restored successfully!";
       })
       .addCase(restoreStaff.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload ? action.payload : "Error restoring staff";
+        state.error = action.payload || "Error restoring staff";
       })
 
-      // Get Deleted Staff
+      // ================= GET DELETED STAFF =================
       .addCase(getDeletedStaff.pending, (state) => {
         state.loading = true;
       })
@@ -226,7 +210,7 @@ const staffSlice = createSlice({
       })
       .addCase(getDeletedStaff.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload ? action.payload : "Error fetching deleted staff";
+        state.error = action.payload || "Error fetching deleted staff";
       });
   },
 });

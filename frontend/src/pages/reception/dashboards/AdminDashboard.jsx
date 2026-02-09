@@ -255,7 +255,7 @@ const AdminDashboard = () => {
                     index === 1 ? 'bg-teal-400' : 
                     index === 2 ? 'bg-cyan-200' : 'bg-gray-300'
                   }`}></div>
-                  <span className="text-sm flex-grow">{dept.name}</span>
+                  <span className="text-sm grow">{dept.name}</span>
                   <span className="text-sm font-medium">{dept.percentage}</span>
                 </div>
               ))}
@@ -277,7 +277,7 @@ const AdminDashboard = () => {
                   <div className="h-8 w-8 bg-teal-100 rounded-full mr-3 flex items-center justify-center text-teal-600">
                     <User className="h-4 w-4" />
                   </div>
-                  <div className="flex-grow">
+                  <div className="grow">
                     <div className="font-medium text-sm">{doctor.name}</div>
                     <div className="text-xs text-gray-500">{doctor.specialty}</div>
                   </div>
@@ -315,7 +315,7 @@ const AdminDashboard = () => {
                     {index === 3 && <Users className="h-4 w-4" />}
                     {index === 4 && <Users className="h-4 w-4" />}
                   </div>
-                  <div className="flex-grow">
+                  <div className="grow">
                     <div className="font-medium text-sm">{report.title}</div>
                     <div className="text-xs text-gray-500">{report.time}</div>
                   </div>

@@ -1,6 +1,8 @@
 const hospitalModel = require("../models/index.model");
 const utils = require("../utils/utilsIndex");
 const bcrypt = require("bcrypt");
+const emitGlobalEvent = require("../utils/emitGlobalEvent");
+const EVENTS = require("../utils/socketEvents");
 
 const createDoctor = async (req, res) => {
   try {
@@ -131,6 +133,14 @@ const createDoctor = async (req, res) => {
       doctorProfile: newDoctor._id
     });
 
+    emitGlobalEvent(req, EVENTS.DOCTOR, "create", {
+      _id: newDoctor._id,
+      user: newUser._id,
+      doctor_Department: newDoctor.doctor_Department,
+      doctor_Type: newDoctor.doctor_Type,
+      doctor_Specialization: newDoctor.doctor_Specialization
+    });
+
     return res.status(201).json({
       success: true,
       data: {
@@ -217,7 +227,7 @@ const getAllDoctors = async (req, res) => {
 const getDoctorById = async (req, res) => {
   try {
     const { doctorId } = req.params;
-    // console.log("the docotr id is ",doctorId)
+  
     const doctor = await hospitalModel.Doctor.findOne({
       _id: doctorId,
       deleted: false,
@@ -238,18 +248,9 @@ const getDoctorById = async (req, res) => {
       });
     }
 
-    // console.log("Searching for patients with:", {
-    //   doctorName: doctor.user.user_Name,
-    //   department: doctor.doctor_Department
-    // });
-
     const patients = await hospitalModel.Patient.find({
       "visits.doctor": doctor._id,
     });
-
-    // console.log("Found patients:", patients);
-
-    // console.log("Doctor details with patients: ", patients);
 
     // Mapping patients' information with the relevant doctor data
     const mappedPatients = patients.map((patient) => ({
@@ -317,6 +318,10 @@ const deleteDoctor = async (req, res) => {
       { $set: { deleted: true } }
     );
 
+    emitGlobalEvent(req, EVENTS.DOCTOR, "delete", {
+      _id: doctor._id,
+      user: doctor.user,
+    });
     return res.status(200).json({
       success: true,
       message: "doctor deleted successfully.",
@@ -445,6 +450,10 @@ const updateDoctor = async (req, res) => {
       });
     }
 
+    emitGlobalEvent(req, EVENTS.DOCTOR, "update", {
+      _id: updatedDoctor._id,
+      user: updatedDoctor.user,
+    });
     return res.status(200).json({
       success: true,
       message: "Doctor updated successfully",
@@ -493,8 +502,6 @@ const updateDoctor = async (req, res) => {
 const getAllDoctorsByDepartmentName = async (req, res) => {
   try {
     const { departmentName } = req.params;
-    // console.log("Requested department:", departmentName);
-    // console.log("Params:", req.params);
 
     const department = await hospitalModel.Department.findOne({
       name: departmentName,

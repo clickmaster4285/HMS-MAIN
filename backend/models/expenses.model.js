@@ -59,10 +59,11 @@ const expenseSchema = new mongoose.Schema({
 });
 
 
-// Auto-calculate total
-expenseSchema.pre("save", function (next) {
-  this.total = this.doctorWelfare + this.otExpenses + this.otherExpenses;
-  next();
+expenseSchema.pre("save", function () {
+  this.total =
+    (this.doctorWelfare || 0) +
+    (this.otExpenses || 0) +
+    (this.otherExpenses || 0);
 });
 
 

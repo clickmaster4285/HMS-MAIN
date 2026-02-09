@@ -111,7 +111,6 @@ export const usePatientForm = (mode = "create") => {
       if (visitId) {
          // Find the specific visit by ID
          targetVisit = patientData.visits.find(v => v._id === visitId) || targetVisit;
-         console.log("Found target visit:", targetVisit);
       }
 
       const doctor = targetVisit.doctor || {};
@@ -165,7 +164,6 @@ export const usePatientForm = (mode = "create") => {
          printOption: ""
       };
 
-      console.log("New form data to be set:", newFormData);
       setFormData(newFormData);
       setIsFormDataReady(true); // Add this line
    };
@@ -588,8 +586,6 @@ export const usePatientForm = (mode = "create") => {
 
    // In your usePatientForm hook, update the handleVisitSelect function
    const handleVisitSelect = (visitId) => {
-      console.log("Visit selected:", visitId);
-
       if (localSelectedPatient) {
          populateForm(localSelectedPatient, visitId);
          setSelectedVisitId(visitId);

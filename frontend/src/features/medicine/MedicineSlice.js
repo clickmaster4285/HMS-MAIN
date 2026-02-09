@@ -92,7 +92,6 @@ const MedicineSlice = createSlice({
             {
             state.medicineList.push(action.payload.medicine);
             state.sucessMessage = "Medicine record added sucessfully";
-            console.log("the pay load is",action.payload.medicine)
             }
             else{
                 state.error = "Failed to create medicine record";

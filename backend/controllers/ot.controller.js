@@ -1,12 +1,11 @@
 const hospitalModel = require("../models/index.model");
 const Admittedpatients = require("../models/admittedPatient.model");  // Reference to AdmittedPatient model
-
+const emitGlobalEvent = require("../utils/emitGlobalEvent");
+const EVENTS = require("../utils/socketEvents");
 const createOperation = async (req, res) => {
     try {
         const { patient_MRNo, otInformation, procedure, surgeon, department, otTime, otNumber, status, total_Operation_Cost, operation_PaymentStatus, payment_Method } = req.body;
-        
-        // console.log("Request body:", req.body);  // Log the request body for debugging
-
+   
         // Check if patient MR number is provided
         if (!patient_MRNo) { 
             return res.status(400).json({ success: false, message: "Patient MR Number is required" });
@@ -43,9 +42,6 @@ const createOperation = async (req, res) => {
             operation_PaymentStatus,
             payment_Method,
         });
-
-        console.log("New operation created:", newOperation);  // Log the created operation for debugging
-
         return res.status(200).json({
             success: true,
             message: "Operation created successfully",

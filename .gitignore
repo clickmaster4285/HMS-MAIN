@@ -6,6 +6,8 @@ frontend/build
 frontend/.turbo
 frontend/next-env.d.ts
 frontend/.vercel
+frontend/dist
+
 
 # Backend specific  
 backend/node_modules

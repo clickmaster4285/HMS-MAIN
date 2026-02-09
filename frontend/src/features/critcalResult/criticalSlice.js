@@ -159,22 +159,23 @@ const criticalResultSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      // Create Critical Result
+
+      // ================= CREATE =================
       .addCase(createCriticalResult.pending, (state) => {
         state.loading = true;
         state.error = null;
         state.success = false;
       })
-      .addCase(createCriticalResult.fulfilled, (state, action) => {
+      .addCase(createCriticalResult.fulfilled, (state) => {
         state.loading = false;
-        state.criticalResults.unshift(action.payload.data);
         state.success = true;
       })
       .addCase(createCriticalResult.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       })
-      // Fetch All Critical Results
+
+      // ================= FETCH ALL =================
       .addCase(fetchCriticalResults.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -187,7 +188,8 @@ const criticalResultSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
-      // Fetch Critical Result By ID
+
+      // ================= FETCH BY ID =================
       .addCase(fetchCriticalResultById.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -200,42 +202,37 @@ const criticalResultSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
-      // Update Critical Result
+
+      // ================= UPDATE =================
       .addCase(updateCriticalResult.pending, (state) => {
         state.loading = true;
         state.error = null;
         state.success = false;
       })
-      .addCase(updateCriticalResult.fulfilled, (state, action) => {
+      .addCase(updateCriticalResult.fulfilled, (state) => {
         state.loading = false;
-        const index = state.criticalResults.findIndex(
-          (result) => result._id === action.payload.data._id
-        );
-        if (index !== -1) {
-          state.criticalResults[index] = action.payload.data;
-        }
-        state.currentCriticalResult = action.payload.data;
         state.success = true;
       })
       .addCase(updateCriticalResult.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       })
-      // Delete Critical Result
+
+      // ================= DELETE =================
       .addCase(deleteCriticalResult.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
-      .addCase(deleteCriticalResult.fulfilled, (state, action) => {
+      .addCase(deleteCriticalResult.fulfilled, (state) => {
         state.loading = false;
-        state.criticalResults = state.criticalResults.filter(
-          (result) => result._id !== action.payload
-        );
+        state.success = true;
       })
       .addCase(deleteCriticalResult.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       })
+
+      // ================= SUMMARY (UNCHANGED) =================
       .addCase(getSummaryByDate.pending, (state) => {
         state.status.summary = 'pending';
         state.summaryState.loading = true;
@@ -244,7 +241,7 @@ const criticalResultSlice = createSlice({
       .addCase(getSummaryByDate.fulfilled, (state, action) => {
         state.status.summary = 'succeeded';
         state.summaryState.loading = false;
-        state.summaryState.summary = action.payload; // array from API
+        state.summaryState.summary = action.payload;
       })
       .addCase(getSummaryByDate.rejected, (state, action) => {
         state.status.summary = 'failed';
@@ -254,6 +251,7 @@ const criticalResultSlice = createSlice({
       });
   },
 });
+
 
 export const { clearError, clearSuccess, setCurrentCriticalResult } =
   criticalResultSlice.actions;

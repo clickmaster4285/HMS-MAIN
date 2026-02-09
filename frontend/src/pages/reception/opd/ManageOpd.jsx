@@ -20,6 +20,7 @@ import DeletePatientConfirmation from './DeletePatientConfirmation';
 import { useNavigate } from 'react-router-dom';
 import PrintOptionsModal from './components/PrintOptionsModal';
 import Pagination from "./manageopd/pagination";
+import {getRoleRoute} from'../../../utils/getRoleRoute'
 
 const ManageOpd = () => {
   const dispatch = useDispatch();
@@ -375,7 +376,7 @@ const ManageOpd = () => {
                           </button>
 
                           <button
-                            onClick={() => navigate(`/receptionist/opd/edit/${p.patient_MRNo}`)}
+                            onClick={() => navigate(getRoleRoute(`/opd/edit/${p.patient_MRNo}`))}
                             className="text-yellow-600 border border-yellow-200 hover:text-yellow-900 p-1 rounded-md hover:bg-yellow-50"
                             aria-label={`Edit ${p.patient_Name}`}
                           >

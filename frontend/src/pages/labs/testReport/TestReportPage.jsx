@@ -10,7 +10,6 @@ const TestReportPage = () => {
       {/* <div className="mt-5">
         <StatsCard/>
       </div> */}
-
       <TestReport/>
     </div>
   );

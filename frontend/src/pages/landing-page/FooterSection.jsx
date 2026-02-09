@@ -15,7 +15,7 @@ const Footer = () => {
 
 
   return (
-    <footer className="relative bg-gradient-to-br from-indigo-900 via-sky-900 to-primary-900 text-white overflow-hidden">
+    <footer className="relative bg-linear-to-br from-indigo-900 via-sky-900 to-primary-900 text-white overflow-hidden">
       {/* Animated background elements */}
       <div className="absolute inset-0">
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary-500/10 rounded-full blur-3xl animate-pulse"></div>
@@ -39,7 +39,7 @@ const Footer = () => {
                   <div className="h-20 w-20 bg-gray-400/30 rounded-xl flex items-center p-1 backdrop-blur-sm justify-center mr-3 group-hover:scale-110 transition-transform">
                    <img src={Logo} alt="CareSync Logo" />
                   </div>
-                  <span className="font-bold text-2xl bg-gradient-to-r from-white to-primary-200 bg-clip-text text-transparent">
+                  <span className="font-bold text-2xl bg-linear-to-r from-white to-primary-200 bg-clip-text text-transparent">
                     CareSync
                   </span>
                 </div>

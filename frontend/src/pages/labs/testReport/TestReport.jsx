@@ -1,7 +1,6 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import TestDetail from './TestDetail';
 import { fetchPatientTestAll } from '../../../features/patientTest/patientTestSlice';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
@@ -15,6 +14,8 @@ import {
   FiChevronDown,
   FiChevronUp,
   FiMoreVertical,
+  FiChevronLeft,
+  FiChevronRight,
 } from 'react-icons/fi';
 import { format } from 'date-fns';
 
@@ -67,7 +68,6 @@ const TestReport = () => {
   const allPatientTests = useSelector(
     (state) => state.patientTest.allPatientTests
   );
-  const { summaryByDate } = useSelector((state) => state.testResult);
   const filterRef = useRef(null);
   const [showSummaryDatePicker, setShowSummaryDatePicker] = useState(false);
   const [summaryDates, setSummaryDates] = useState({
@@ -75,32 +75,74 @@ const TestReport = () => {
     endDate: null,
   });
 
-  useEffect(() => {
-    dispatch(fetchPatientTestAll());
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(20);
+  const [localSearchTerm, setLocalSearchTerm] = useState("");
 
+  // Build query parameters for backend
+  const buildQueryParams = useCallback(() => {
+    const params = {
+      page: currentPage,
+      limit: itemsPerPage,
+    };
+
+    // Combine search and filter terms
+    let searchTerms = [];
+    if (localSearchTerm) searchTerms.push(localSearchTerm);
+    
+    // Only add filter terms to search if they're not "all"
+    if (filters.paymentStatus && filters.paymentStatus !== 'all') {
+      searchTerms.push(`paymentStatus:${filters.paymentStatus}`);
+    }
+    if (filters.testStatus && filters.testStatus !== 'all') {
+      searchTerms.push(`status:${filters.testStatus}`);
+    }
+
+    if (searchTerms.length > 0) {
+      params.search = searchTerms.join(' ');
+    }
+
+    // Add date filters separately (backend should handle these)
+    if (filters.startDate) {
+      params.startDate = format(filters.startDate, 'yyyy-MM-dd');
+    }
+    if (filters.endDate) {
+      params.endDate = format(filters.endDate, 'yyyy-MM-dd');
+    }
+
+    return params;
+  }, [currentPage, itemsPerPage, localSearchTerm, filters]);
+
+  // Fetch data with pagination and filters
+  useEffect(() => {
+    const queryParams = buildQueryParams();
+    dispatch(fetchPatientTestAll(queryParams));
+  }, [dispatch, buildQueryParams]);
+
+  useEffect(() => {
     const handleFilterClickOutside = (event) => {
       if (filterRef.current && !filterRef.current.contains(event.target)) {
         setShowFilterPopup(false);
       }
     };
 
-    const handleDropdownClickOutside = (event) => {
-      const dropdowns = document.querySelectorAll('[id^="dropdown-"]');
-      dropdowns.forEach((dropdown) => {
-        if (!dropdown.contains(event.target)) {
-          dropdown.classList.add('hidden');
-        }
-      });
-    };
-
     document.addEventListener('mousedown', handleFilterClickOutside);
-    document.addEventListener('click', handleDropdownClickOutside);
 
     return () => {
       document.removeEventListener('mousedown', handleFilterClickOutside);
-      document.removeEventListener('click', handleDropdownClickOutside);
     };
-  }, [dispatch]);
+  }, []);
+
+  // Handle search with debounce - FIXED
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setLocalSearchTerm(filters.search);
+      setCurrentPage(1); // Reset to page 1 when searching
+    }, 500); // 500ms debounce
+
+    return () => clearTimeout(timer);
+  }, [filters.search]);
 
   const getCurrentStatus = (statusHistory) => {
     if (!statusHistory || statusHistory.length === 0) return 'registered';
@@ -140,7 +182,7 @@ const TestReport = () => {
         testCode: test.testDetails?.testCode || 'N/A',
         status: getCurrentStatus(test.statusHistory),
         amount: test.testDetails?.testPrice || 0,
-        testId: test.test, // Added for test selection
+        testId: test.test,
       })),
       date: tests.createdAt,
       status: overallStatus,
@@ -158,46 +200,12 @@ const TestReport = () => {
 
   const filteredReports = () => {
     if (!allPatientTests || allPatientTests.length === 0) return [];
+    
     const allPatientReports = allPatientTests
       .map((patientTest) => formatPatientTests(patientTest))
       .filter(Boolean);
 
-    return allPatientReports.filter((report) => {
-      const searchLower = filters.search.toLowerCase();
-      const matchesSearch =
-        filters.search === '' ||
-        report.patientName.toLowerCase().includes(searchLower) ||
-        report.patientMRNo.toLowerCase().includes(searchLower) ||
-        report.patientCNIC.toLowerCase().includes(searchLower) ||
-        report.patientContact.toLowerCase().includes(searchLower);
-
-      const matchesPaymentStatus =
-        filters.paymentStatus === 'all' ||
-        report.paymentStatus === filters.paymentStatus;
-
-      const matchesTestStatus =
-        filters.testStatus === 'all' || report.status === filters.testStatus;
-
-      const reportDate = new Date(report.date);
-      let matchesDateRange = true;
-      if (filters.startDate || filters.endDate) {
-        if (filters.startDate) {
-          matchesDateRange =
-            reportDate >= new Date(filters.startDate.setHours(0, 0, 0, 0));
-        }
-        if (matchesDateRange && filters.endDate) {
-          matchesDateRange =
-            reportDate <= new Date(filters.endDate.setHours(23, 59, 59, 999));
-        }
-      }
-
-      return (
-        matchesSearch &&
-        matchesPaymentStatus &&
-        matchesTestStatus &&
-        matchesDateRange
-      );
-    });
+    return allPatientReports;
   };
 
   const handleFilterChange = (e) => {
@@ -206,6 +214,7 @@ const TestReport = () => {
       ...prev,
       [name]: value,
     }));
+    setCurrentPage(1); // Reset to page 1 when filters change
   };
 
   const handleDateChange = (dates) => {
@@ -215,6 +224,7 @@ const TestReport = () => {
       startDate: start,
       endDate: end,
     }));
+    setCurrentPage(1);
   };
 
   const clearFilters = () => {
@@ -225,49 +235,50 @@ const TestReport = () => {
       startDate: null,
       endDate: null,
     });
+    setCurrentPage(1);
   };
 
   const applyFilters = () => {
     setShowFilterPopup(false);
   };
 
-const preparePrintData = (report, testIds) => {
-  if (!report || !report.fullData) return null;
+  const preparePrintData = (report, testIds) => {
+    if (!report || !report.fullData) return null;
 
-  const patientTest = report.fullData;
-  const testDefinitions = report.fullData.testDefinitions;
+    const patientTest = report.fullData;
+    const testDefinitions = report.fullData.testDefinitions || [];
 
-  const selectedTests =
-    testIds.length > 0
-      ? patientTest.selectedTests.filter((test) =>
-          testIds.includes(test.test)
-        )
-      : patientTest.selectedTests;
+    const selectedTests =
+      testIds.length > 0
+        ? patientTest.selectedTests.filter((test) =>
+            testIds.includes(test.test)
+          )
+        : patientTest.selectedTests;
 
-  const testResults = selectedTests.map((test) => {
-    const definition = testDefinitions.find(
-      (def) => def.testCode === test.testDetails?.testCode
-    );
+    const testResults = selectedTests.map((test) => {
+      const definition = testDefinitions.find(
+        (def) => def.testCode === test.testDetails?.testCode
+      );
 
+      return {
+        testName: test.testDetails?.testName || 'Unknown Test',
+        testId: test.test,
+        fields: (definition?.fields || []).map((field) => ({
+          fieldName: field.name || 'Unknown Field',
+          value: field.value || '',
+          unit: field.unit || '',
+          normalRange: field.normalRange || null,
+          notes: field.notes || '',
+        })),
+        notes: test.notes || '',
+      };
+    });
+    
     return {
-      testName: test.testDetails?.testName || 'Unknown Test',
-      testId: test.test, // ADD THIS - the actual test ID
-      fields: (definition?.fields || []).map((field) => ({
-        fieldName: field.name || 'Unknown Field',
-        value: field.value || '',
-        unit: field.unit || '',
-        normalRange: field.normalRange || null,
-        notes: field.notes || '',
-      })),
-      notes: test.notes || '',
+      patientTest,
+      testResults,
     };
-  });
-  
-  return {
-    patientTest,
-    testResults,
   };
-};
 
   const handlePrint = (report) => {
     setSelectedReport(report);
@@ -285,15 +296,16 @@ const preparePrintData = (report, testIds) => {
         : [...prev, testId]
     );
   };
+
   const handleCompletedAll = () => {
-    const completedTestIds = selectedReport.tests
-      .filter((test) => test.status === 'completed')
-      .map((test) => test.testId);
+    const completedTestIds = selectedReport?.tests
+      ?.filter((test) => test.status === 'completed')
+      .map((test) => test.testId) || [];
     setSelectedTestIds(completedTestIds);
   };
 
   const handleSelectAll = () => {
-    setSelectedTestIds(selectedReport.tests.map((test) => test.testId));
+    setSelectedTestIds(selectedReport?.tests?.map((test) => test.testId) || []);
   };
 
   const handleDeselectAll = () => {
@@ -301,9 +313,9 @@ const preparePrintData = (report, testIds) => {
   };
 
   const handleSelectRegistered = () => {
-    const registeredTestIds = selectedReport.tests
-      .filter((test) => test.status === 'registered')
-      .map((test) => test.testId);
+    const registeredTestIds = selectedReport?.tests
+      ?.filter((test) => test.status === 'registered')
+      .map((test) => test.testId) || [];
     setSelectedTestIds(registeredTestIds);
   };
 
@@ -320,147 +332,136 @@ const preparePrintData = (report, testIds) => {
     proceedWithPrint(selectedReport, selectedTestIds);
   };
 
-const enhancedPrintCSS = `
-  <style>
-    @page {
-      size: A4;
-      margin: 0;
-    }
-    
-    body {
-      margin: 0;
-      padding: 0;
-      color: #333;
-      font-family: Arial, sans-serif;
-      font-size: 12pt;
-      line-height: 1.3;
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
-      background: white;
-    }
-
-    /* Page container for each page */
-    .page-container {
-      width: 210mm;
-      min-height: 297mm;
-      position: relative;
-      page-break-inside: avoid;
-    }
-
-    /* Letterhead space - 25% of page */
-    .letterhead-space {
-      height: 74mm;
-      background-color: transparent;
-    }
-
-    /* Content area - starts after letterhead */
-    .content-area {
-      padding: 0 10mm;
-      min-height: 223mm;
-    }
-
-    /* ENHANCED PAGE BREAK SUPPORT */
-    .separate-page-test {
-      page-break-after: always !important;
-      page-break-before: always !important;
-    }
-
-    .grouped-tests-page {
-      page-break-after: always;
-    }
-
-    .grouped-test {
-      page-break-inside: avoid;
-    }
-
-    /* Visual divider between tests */
-    .test-divider {
-      height: 1mm;
-      margin: 6mm 0;
-      background-color: #e0e0e0;
-      border: none;
-      border-radius: 1mm;
-    }
-
-    /* Ensure tables are visible and properly formatted */
-    table {
-      border-collapse: collapse;
-      width: 100%;
-    }
-
-    th, td {
-      border: 1px solid #ddd;
-      padding: 4px 6px;
-      text-align: left;
-    }
-
-    th {
-      background-color: #f0f0f0;
-      font-weight: bold;
-    }
-
-    /* Patient info styling */
-    .patient-info {
-      margin-bottom: 8mm;
-    }
-
-    .legal-notice {
-      text-align: right;
-      margin-bottom: 4mm;
-      font-size: 10pt;
-      color: #666;
-    }
-
-    /* Test section styling */
-    .test-section {
-      margin-bottom: 4mm;
-    }
-
-    .test-title {
-      font-weight: bold;
-      font-size: 13pt;
-      margin-bottom: 3mm;
-      color: #2b6cb0;
-      border-bottom: 2px solid #2b6cb0;
-      padding-bottom: 2px;
-    }
-
-    @media print {
+  const enhancedPrintCSS = `
+    <style>
+      @page {
+        size: A4;
+        margin: 0;
+      }
+      
       body {
         margin: 0;
         padding: 0;
-        width: 210mm;
+        color: #333;
+        font-family: Arial, sans-serif;
+        font-size: 12pt;
+        line-height: 1.3;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+        background: white;
       }
-      
+
+      .page-container {
+        width: 210mm;
+        min-height: 297mm;
+        position: relative;
+        page-break-inside: avoid;
+      }
+
+      .letterhead-space {
+        height: 74mm;
+        background-color: transparent;
+      }
+
+      .content-area {
+        padding: 0 10mm;
+        min-height: 223mm;
+      }
+
       .separate-page-test {
         page-break-after: always !important;
         page-break-before: always !important;
       }
-      
+
       .grouped-tests-page {
         page-break-after: always;
       }
-      
-      /* Ensure everything is visible when printing */
-      * {
-        visibility: visible !important;
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
+
+      .grouped-test {
+        page-break-inside: avoid;
       }
 
-      /* Hide letterhead space in print if needed */
-      .letterhead-space {
-        background-color: transparent !important;
+      .test-divider {
+        height: 1mm;
+        margin: 6mm 0;
+        background-color: #e0e0e0;
+        border: none;
+        border-radius: 1mm;
       }
-    }
 
-    /* Abnormal result styling */
-    .abnormal {
-      color: red !important;
-      font-weight: bold !important;
-    }
-  </style>
-`;
+      table {
+        border-collapse: collapse;
+        width: 100%;
+      }
+
+      th, td {
+        border: 1px solid #ddd;
+        padding: 4px 6px;
+        text-align: left;
+      }
+
+      th {
+        background-color: #f0f0f0;
+        font-weight: bold;
+      }
+
+      .patient-info {
+        margin-bottom: 8mm;
+      }
+
+      .legal-notice {
+        text-align: right;
+        margin-bottom: 4mm;
+        font-size: 10pt;
+        color: #666;
+      }
+
+      .test-section {
+        margin-bottom: 4mm;
+      }
+
+      .test-title {
+        font-weight: bold;
+        font-size: 13pt;
+        margin-bottom: 3mm;
+        color: #2b6cb0;
+        border-bottom: 2px solid #2b6cb0;
+        padding-bottom: 2px;
+      }
+
+      @media print {
+        body {
+          margin: 0;
+          padding: 0;
+          width: 210mm;
+        }
+        
+        .separate-page-test {
+          page-break-after: always !important;
+          page-break-before: always !important;
+        }
+        
+        .grouped-tests-page {
+          page-break-after: always;
+        }
+        
+        * {
+          visibility: visible !important;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+
+        .letterhead-space {
+          background-color: transparent !important;
+        }
+      }
+
+      .abnormal {
+        color: red !important;
+        font-weight: bold !important;
+      }
+    </style>
+  `;
 
   const proceedWithPrint = (report, testIds) => {
     const printData = preparePrintData(report, testIds);
@@ -650,6 +651,43 @@ const enhancedPrintCSS = `
   };
 
   const reports = filteredReports();
+  const { pagination } = useSelector((state) => state.patientTest);
+
+  // Generate page numbers for pagination
+  const generatePageNumbers = () => {
+    const totalPages = pagination?.totalPages || 1;
+    const pages = [];
+    
+    if (totalPages <= 5) {
+      // Show all pages if 5 or less
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      // Show first, last, and pages around current
+      if (currentPage <= 3) {
+        pages.push(1, 2, 3, 4, '...', totalPages);
+      } else if (currentPage >= totalPages - 2) {
+        pages.push(1, '...', totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
+      } else {
+        pages.push(1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages);
+      }
+    }
+    
+    return pages;
+  };
+
+  const handlePageChange = (newPage) => {
+    if (newPage >= 1 && newPage <= (pagination?.totalPages || 1)) {
+      setCurrentPage(newPage);
+    }
+  };
+
+  const handleItemsPerPageChange = (e) => {
+    const newItemsPerPage = parseInt(e.target.value);
+    setItemsPerPage(newItemsPerPage);
+    setCurrentPage(1); // Reset to first page when changing items per page
+  };
 
   return (
     <div className="bg-white rounded-xl shadow-sm p-6 relative">
@@ -843,6 +881,28 @@ const enhancedPrintCSS = `
           )}
         </div>
       </div>
+      <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 text-sm text-gray-600">
+        <div>
+          Showing {((currentPage - 1) * itemsPerPage) + 1} to{' '}
+          {Math.min(currentPage * itemsPerPage, pagination?.totalItems || 0)} of{' '}
+          {pagination?.totalItems || 0} records
+        </div>
+        <div className="flex items-center space-x-4 mt-2 md:mt-0">
+          <div className="flex items-center">
+            <label className="mr-2 text-sm">Rows per page:</label>
+            <select
+              value={itemsPerPage}
+              onChange={handleItemsPerPageChange}
+              className="border border-gray-300 rounded px-2 py-1 text-sm"
+            >
+              <option value={10}>10</option>
+              <option value={20}>20</option>
+              <option value={50}>50</option>
+              <option value={100}>100</option>
+            </select>
+          </div>
+        </div>
+      </div>
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <div className="bg-primary-50 p-4 rounded-lg border border-primary-100">
           <p className="text-sm text-primary-600 font-medium">Total Patients</p>
@@ -974,7 +1034,6 @@ const enhancedPrintCSS = `
                         (t) => t.status === 'completed'
                       ).length;
 
-                      // pick a color: green when all done, amber when partial, gray when none
                       const chipColor =
                         completed === total
                           ? 'bg-green-100 text-green-800'
@@ -1021,9 +1080,10 @@ const enhancedPrintCSS = `
                           aria-haspopup="true"
                           onClick={(e) => {
                             e.stopPropagation();
-                            document
-                              .getElementById(`dropdown-${report.id}`)
-                              .classList.toggle('hidden');
+                            const dropdown = document.getElementById(`dropdown-${report.id}`);
+                            if (dropdown) {
+                              dropdown.classList.toggle('hidden');
+                            }
                           }}
                         >
                           <span className="sr-only">Open options</span>
@@ -1075,6 +1135,82 @@ const enhancedPrintCSS = `
           </tbody>
         </table>
       </div>
+      {/* Pagination Controls */}
+      {(pagination?.totalPages || 0) > 1 && (
+        <div className="flex flex-col md:flex-row items-center justify-between mt-6 px-4 py-3 bg-white border-t border-gray-200">
+          <div className="text-sm text-gray-700 mb-4 md:mb-0">
+            Page {currentPage} of {pagination?.totalPages || 1}
+          </div>
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => handlePageChange(1)}
+              disabled={currentPage === 1}
+              className={`px-3 py-1 rounded border ${
+                currentPage === 1
+                  ? 'text-gray-400 cursor-not-allowed'
+                  : 'text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              First
+            </button>
+            <button
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+              className={`px-3 py-1 rounded border flex items-center ${
+                currentPage === 1
+                  ? 'text-gray-400 cursor-not-allowed'
+                  : 'text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              <FiChevronLeft className="mr-1" /> Previous
+            </button>
+            
+            {/* Page numbers */}
+            <div className="flex space-x-1">
+              {generatePageNumbers().map((pageNum, index) => (
+                pageNum === '...' ? (
+                  <span key={`ellipsis-${index}`} className="px-3 py-1">...</span>
+                ) : (
+                  <button
+                    key={pageNum}
+                    onClick={() => handlePageChange(pageNum)}
+                    className={`px-3 py-1 rounded border ${
+                      currentPage === pageNum
+                        ? 'bg-primary-600 text-white border-primary-600'
+                        : 'text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    {pageNum}
+                  </button>
+                )
+              ))}
+            </div>
+
+            <button
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === (pagination?.totalPages || 1)}
+              className={`px-3 py-1 rounded border flex items-center ${
+                currentPage === (pagination?.totalPages || 1)
+                  ? 'text-gray-400 cursor-not-allowed'
+                  : 'text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              Next <FiChevronRight className="ml-1" />
+            </button>
+            <button
+              onClick={() => handlePageChange(pagination?.totalPages || 1)}
+              disabled={currentPage === (pagination?.totalPages || 1)}
+              className={`px-3 py-1 rounded border ${
+                currentPage === (pagination?.totalPages || 1)
+                  ? 'text-gray-400 cursor-not-allowed'
+                  : 'text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              Last
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

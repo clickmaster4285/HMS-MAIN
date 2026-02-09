@@ -78,9 +78,7 @@ const Card = ({ title, value }) => {
 
 const TestSummaryCard = ({ data }) => {
   const [viewMode, setViewMode] = useState('test'); // 'test' or 'revenue'
-  
-  // console.log("📊 Test Summary Data:", data);
-  
+ 
   const testChartData = [
     { name: 'Completed', value: data?.completedTests || 0 },
     { name: 'Pending', value: data?.pendingTests || 0 },

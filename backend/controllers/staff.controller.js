@@ -1,7 +1,8 @@
 const hospitalModel = require("../models/index.model");
 const utils = require("../utils/utilsIndex")
 const bcrypt = require("bcrypt");
-
+const emitGlobalEvent = require("../utils/emitGlobalEvent");
+const EVENTS = require("../utils/socketEvents");
 const createStaff = async (req, res) => {
   try {
     const {
@@ -22,7 +23,6 @@ const createStaff = async (req, res) => {
       shiftTiming
     } = req.body;
 
-    console.log(`Received staff creation request`, req.body);
 
     const cleanData = { ...req.body };
 
@@ -124,6 +124,8 @@ const createStaff = async (req, res) => {
     };
    
     const newStaff = await hospitalModel.Staff.create([staffData]);
+
+    emitGlobalEvent(req, EVENTS.STAFF, "create", {staff: newStaff[0], user: newUser[0]});
 
     return res.status(201).json({
       success: true,
@@ -376,6 +378,7 @@ const updateStaffById = async (req, res) => {
     // Get the updated staff with populated user data
     const updatedStaff = await hospitalModel.Staff.findById(id).populate('user');
 
+    emitGlobalEvent(req, EVENTS.STAFF, "update", updatedStaff);
     res.status(200).json({
       success: true,
       message: 'Staff updated successfully',
@@ -448,6 +451,7 @@ const softDeleteStaff = async (req, res) => {
       { isDeleted: true }
     );
 
+    emitGlobalEvent(req, EVENTS.STAFF, "delete", staff);
     res.status(200).json({
       success: true,
       message: "Staff deleted successfully",
@@ -486,6 +490,8 @@ const restoreStaff = async (req, res) => {
       { isDeleted: false }
     );
 
+    emitGlobalEvent(req, EVENTS.STAFF, "restore", staff);
+    
     res.status(200).json({
       success: true,
       message: "Staff restored successfully",

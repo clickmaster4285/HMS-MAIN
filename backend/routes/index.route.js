@@ -22,6 +22,8 @@ const criticalResult = require("./criticalResult.route");
 const Refund = require("./refundOpd.route");  
 const expenses = require("./expenses.route");
 const summary = require("./summary.route")
+// const backup = require("./backup.routes");
+
 
 
 router.use("/user", user);
@@ -46,6 +48,6 @@ router.use("/criticalResult",criticalResult);
 router.use("/refund",Refund);
 router.use("/expense", expenses);
 router.use("/summary", summary);
-
+// router.use("/backup", backup);
 
 module.exports = router;

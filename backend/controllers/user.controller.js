@@ -3,6 +3,8 @@ const userModel = require("../models/user.model");
 const { sendverficationcode } = require("../middleware/Email");
 const JWT_SECRET = process.env.JWT_SECRET;
 const jwt = require("jsonwebtoken");
+const emitGlobalEvent = require("../utils/emitGlobalEvent");
+const EVENTS = require("../utils/socketEvents");
 
 const signUp = async (req, res) => {
   try {
@@ -39,10 +41,16 @@ const signUp = async (req, res) => {
 
     await sendverficationcode(user.user_Email, verificationCode);
 
+emitGlobalEvent(req, EVENTS.USER, "create", {
+  _id: user._id,
+  user_Email: user.user_Email,
+  user_Access: user.user_Access,
+  isVerified: user.isVerified
+});
     return res.status(201).json({ success: true, message: "User registered successfully", user });
 
   } catch (error) {
-    console.error("Signup error:", error); // ✅ full error log
+    console.error("Signup error:", error); 
     return res.status(500).json({ success: false, message: "Server error during signup", error: error.message });
   }
 };
@@ -58,12 +66,9 @@ const VerifyEmail = async (req, res) => {
       });
     }
 
-    console.log("📩 Received code:", code);
-
     const user = await userModel.findOne({ verificationCode: code });
 
     if (!user) {
-      console.log("⚠️ User not found for code:", code);
       return res.status(400).json({
         success: false,
         message: "Invalid or expired verification code",
@@ -76,6 +81,10 @@ const VerifyEmail = async (req, res) => {
 
     await user.save();
 
+emitGlobalEvent(req, EVENTS.USER, "update", {
+  _id: user._id,
+  isVerified: true
+});
     return res.status(200).json({
       success: true,
       message: "Email verified successfully",
@@ -94,8 +103,6 @@ const VerifyEmail = async (req, res) => {
 const login = async (req, res) => {
   try {
     let { user_Email, user_Password, user_Identifier } = req.body;
-    console.log("Login Request Body:", req.body);
-
     // Trim all inputs
     const input = (user_Email || user_Identifier)?.trim();
     const password = user_Password?.trim();
@@ -170,6 +177,8 @@ const login = async (req, res) => {
 
     const jwtLoginToken = jwt.sign(userPayload, JWT_SECRET, { expiresIn: "7d" });
 
+
+
     return res.status(200).json({
       success: true,
       status: 200,
@@ -181,7 +190,7 @@ const login = async (req, res) => {
     });
 
   } catch (error) {
-    console.log("Login error:", error);
+    console.error("Login error:", error);
     return res.status(500).json({
       success: false,
       status: 500,

@@ -3,10 +3,17 @@ import { ChevronRight, ArrowRight, Star, Zap, Activity, BarChart2, Smartphone } 
 import Hero_Img from "../../assets/images/hero_img.png";
 import Doc1 from "../../assets/doctor/doc-1 (2).png";
 import { motion } from 'framer-motion';
+import { useSelector } from "react-redux";
 
 const HeroSection = () => {
+    const {
+      staffList,
+      deletedStaffList,
+      loading,
+      error,
+    } = useSelector((state) => state.staff);
   return (
-    <section className="relative overflow-hidden bg-gradient-to-br from-indigo-900 via-indigo-950 to-primary-900 text-white pt-24 pb-32 md:pt-32 md:pb-48">
+    <section className="relative overflow-hidden bg-linear-to-br from-indigo-900 via-indigo-950 to-primary-900 text-white pt-24 pb-32 md:pt-32 md:pb-48">
       {/* Animated background elements */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute -top-1/3 -left-1/4 w-[800px] h-[800px] rounded-full bg-primary-500/5 blur-[100px] animate-[pulse_8s_ease-in-out_infinite]"></div>
@@ -32,7 +39,7 @@ const HeroSection = () => {
               </div>
 
               <h1 className="text-4xl md:text-5xl xl:text-6xl font-bold mb-6 leading-tight">
-                <span className="bg-gradient-to-r from-primary-400 to-primary-200 bg-clip-text text-transparent">CARESYNC</span> HMS
+                <span className="bg-linear-to-r from-primary-400 to-primary-200 bg-clip-text text-transparent">CARESYNC</span> HMS
               </h1>
               <p className="text-xl md:text-2xl font-light mb-8 text-gray-300 leading-relaxed">
                 Transform healthcare delivery with our AI-powered platform that <span className="font-medium text-white">streamlines operations, enhances patient care,</span> and provides real-time insights for data-driven decisions.
@@ -43,12 +50,12 @@ const HeroSection = () => {
                   whileHover={{ scale: 1.03 }}
                   whileTap={{ scale: 0.97 }}
                   href="#"
-                  className="relative overflow-hidden group bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 transition-all duration-300 py-4 px-8 rounded-xl font-medium flex items-center justify-center shadow-lg hover:shadow-primary-500/30"
+                  className="relative overflow-hidden group bg-linear-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 transition-all duration-300 py-4 px-8 rounded-xl font-medium flex items-center justify-center shadow-lg hover:shadow-primary-500/30"
                 >
                   <span className="relative z-10 flex items-center">
                     Get Started <ChevronRight className="ml-2" size={18} />
                   </span>
-                  <span className="absolute inset-0 bg-gradient-to-r from-primary-600 to-primary-700 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
+                  <span className="absolute inset-0 bg-linear-to-r from-primary-600 to-primary-700 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
                 </motion.a>
 
                 <motion.a
@@ -144,14 +151,14 @@ const HeroSection = () => {
               className="relative w-full max-w-2xl"
             >
               {/* Main Hero Image */}
-              <div className="relative z-10 rounded-2xl overflow-hidden shadow-2xl border border-white/10 bg-gradient-to-br from-white/5 to-white/10 backdrop-blur-sm">
+              <div className="relative z-10 rounded-2xl overflow-hidden shadow-2xl border border-white/10 bg-linear-to-br from-white/5 to-white/10 backdrop-blur-sm">
                 <img
                   className="w-full h-auto object-cover"
                   src={Hero_Img}
                   alt="Hospital Management System Dashboard"
                   loading="eager"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
+                <div className="absolute inset-0 bg-linear-to-t from-black/60 via-transparent to-transparent"></div>
               </div>
 
               {/* Floating Analytics Card */}
@@ -162,7 +169,7 @@ const HeroSection = () => {
                 whileHover={{ y: -5 }}
                 className="absolute -bottom-28 -left-10 z-20 w-80 bg-white/95 backdrop-blur-md rounded-xl shadow-2xl border border-gray-200/30 overflow-hidden transition-all duration-300"
               >
-                <div className="bg-gradient-to-r from-primary-600 to-primary-500 px-5 py-3 flex justify-between items-center">
+                <div className="bg-linear-to-r from-primary-600 to-primary-500 px-5 py-3 flex justify-between items-center">
                   <div className="flex items-center">
                     <Activity className="w-5 h-5 mr-2 text-white" />
                     <h3 className="font-semibold text-white">Performance Metrics</h3>
@@ -181,7 +188,7 @@ const HeroSection = () => {
                     </div>
                     <div className="w-full bg-gray-100 rounded-full h-2">
                       <div
-                        className="bg-gradient-to-r from-primary-400 to-primary-600 h-2 rounded-full"
+                        className="bg-linear-to-r from-primary-400 to-primary-600 h-2 rounded-full"
                         style={{ width: "94%" }}
                       ></div>
                     </div>
@@ -194,7 +201,7 @@ const HeroSection = () => {
                     </div>
                     <div className="w-full bg-gray-100 rounded-full h-2">
                       <div
-                        className="bg-gradient-to-r from-primary-400 to-primary-600 h-2 rounded-full"
+                        className="bg-linear-to-r from-primary-400 to-primary-600 h-2 rounded-full"
                         style={{ width: "87%" }}
                       ></div>
                     </div>
@@ -226,13 +233,13 @@ const HeroSection = () => {
                 className="absolute -top-12 -right-8 lg:-right-16 z-20"
               >
                 <div className="relative bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-1.5 overflow-hidden shadow-lg">
-                  <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-white/20 opacity-0 hover:opacity-100 transition-opacity duration-500"></div>
+                  <div className="absolute inset-0 bg-linear-to-br from-white/5 to-white/20 opacity-0 hover:opacity-100 transition-opacity duration-500"></div>
                   <img
                     src={Doc1}
                     alt="Doctor using CARESYNC HMS"
                     className="w-48 lg:w-60 h-auto rounded-xl object-cover transition-all duration-500 hover:brightness-110"
                   />
-                  <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/70 to-transparent">
+                  <div className="absolute bottom-0 left-0 right-0 p-3 bg-linear-to-t from-black/70 to-transparent">
                    
                   </div>
                 </div>
@@ -246,7 +253,7 @@ const HeroSection = () => {
                 whileHover={{ y: -5, rotate: -2 }}
                 className="absolute -top-28 left-8 lg:left-16 z-20 w-40 bg-white rounded-xl shadow-xl overflow-hidden border border-gray-200/50 transition-all duration-300"
               >
-                <div className="bg-gradient-to-r from-primary-500 to-primary-600 px-3 py-2 text-white text-xs font-medium flex justify-between items-center">
+                <div className="bg-linear-to-r from-primary-500 to-primary-600 px-3 py-2 text-white text-xs font-medium flex justify-between items-center">
                   <div className="flex items-center">
                     <Smartphone className="w-3 h-3 mr-1.5" />
                     <span>Mobile App</span>

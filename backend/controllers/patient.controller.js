@@ -1,6 +1,7 @@
 const hospitalModel = require("../models/index.model");
 const utils = require("../utils/utilsIndex");
-
+const emitGlobalEvent = require("../utils/emitGlobalEvent");
+const EVENTS = require("../utils/socketEvents");
 // Search patient by multiple fields
 const searchPatient = async (req, res) => {
   try {
@@ -233,6 +234,8 @@ const createPatient = async (req, res) => {
 
     // Populate the complete data for response
     const populatedPatient = await populatePatient(patient._id);
+
+    emitGlobalEvent(req, EVENTS.PATIENT, "create", {populatedPatient});
 
     return res.status(201).json({
       success: true,
@@ -483,6 +486,8 @@ const updatePatient = async (req, res) => {
     // Populate the updated patient data for response
     const populatedPatient = await populatePatient(patient._id);
 
+    emitGlobalEvent(req, EVENTS.PATIENT, "update", { populatedPatient });
+
     return res.status(200).json({
       success: true,
       message: "Patient updated successfully",
@@ -661,6 +666,7 @@ const deletePatient = async (req, res) => {
     patient.deleted = true;
     await patient.save();
 
+    emitGlobalEvent(req, EVENTS.PATIENT, "delete", { patientId });
     return res.status(200).json({
       success: true,
       message: "Patient deleted successfully.",

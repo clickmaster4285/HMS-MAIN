@@ -1,5 +1,6 @@
 const Expense = require('../models/expenses.model');
-
+const emitGlobalEvent = require("../utils/emitGlobalEvent");
+const EVENTS = require("../utils/socketEvents");
 exports.createExpense = async (req, res) => {
   try {
     const { expenseType, doctor, doctorWelfare, otExpenses, otherExpenses, description, date } = req.body;
@@ -49,6 +50,7 @@ exports.createExpense = async (req, res) => {
     const expense = new Expense(expenseData);
     await expense.save();
 
+      emitGlobalEvent(req, EVENTS.EXPENSE, "create", expense);
     res.status(201).json({
       success: true,
       message: 'Expense created successfully',
@@ -179,6 +181,8 @@ exports.updateExpense = async (req, res) => {
 
     await expense.save();
 
+      emitGlobalEvent(req, EVENTS.EXPENSE, "update", expense);
+
     res.json({
       success: true,
       message: 'Expense updated successfully',
@@ -216,6 +220,7 @@ exports.deleteExpense = async (req, res) => {
 
     await Expense.findByIdAndDelete(req.params.id);
 
+      emitGlobalEvent(req, EVENTS.EXPENSE, "delete", expense);
     res.json({
       success: true,
       message: 'Expense deleted successfully'
@@ -251,6 +256,8 @@ exports.softDeleteExpense = async (req, res) => {
     // mark as deleted instead of actually removing
     expense.deleted = true;
     await expense.save();
+
+    emitGlobalEvent(req, EVENTS.EXPENSE, "softDelete", expense);
 
     res.json({
       success: true,

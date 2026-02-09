@@ -24,9 +24,9 @@ const CriticalForm = () => {
   const [showPrintForm, setShowPrintForm] = useState(false);
   const [printData, setPrintData] = useState(null);
 
-  useEffect(() => {
-    dispatch(fetchCriticalResults());
-  }, [dispatch]);
+useEffect(() => {
+  dispatch(fetchCriticalResults());
+}, [dispatch]);
 
   useEffect(() => {
     if (success && !loading) {

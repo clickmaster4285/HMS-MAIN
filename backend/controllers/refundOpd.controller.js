@@ -1,6 +1,7 @@
 // controllers/refundController.js
 const hospitalModel = require('../models/index.model');
-
+const emitGlobalEvent = require("../utils/emitGlobalEvent");
+const EVENTS = require("../utils/socketEvents");
 // Create a new refund with enhanced tracking
 exports.createRefund = async (req, res) => {
    try {
@@ -88,6 +89,8 @@ exports.createRefund = async (req, res) => {
       // Populate data for response
       await refund.populate('patient', 'patient_MRNo patient_Name');
       await refund.populate('processedBy', 'user_Name user_Email');
+
+        emitGlobalEvent(req, EVENTS.REFUND, "create", refund);
 
       res.status(201).json({
          success: true,
@@ -428,6 +431,8 @@ exports.updateRefundStatus = async (req, res) => {
 
       await refund.save();
       await refund.populate('patient', 'patient_MRNo patient_Name');
+
+      emitGlobalEvent(req, EVENTS.REFUND, "update", refund);
 
       res.json({
          success: true,
