@@ -204,7 +204,7 @@ const CombinedFeaturesSection = () => {
             whileHover={{ scale: 1.05 }}
           >
             <Zap size={16} className="mr-2 fill-sky-500 text-sky-500" />
-            Why Choose <span className="font-bold tracking-wider px-1">CARESYNC</span> HMS
+            Why Choose <span className="font-bold tracking-wider px-1">ClickMasters</span> HMS Hospital Managment System
           </motion.span>
           <motion.h2 
             className="text-3xl md:text-4xl font-bold text-gray-900 mb-4"
@@ -212,7 +212,7 @@ const CombinedFeaturesSection = () => {
             animate={{ opacity: 1 }}
             transition={{ delay: 0.2 }}
           >
-            Complete Healthcare Management Solution
+            Complete Hospital Managment System for Healthcare
           </motion.h2>
           <motion.p 
             className="text-lg text-gray-600"
@@ -220,8 +220,8 @@ const CombinedFeaturesSection = () => {
             animate={{ opacity: 1 }}
             transition={{ delay: 0.4 }}
           >
-            Our integrated platform connects all hospital departments, streamlining operations and improving 
-            patient care through digital transformation with reliability and efficiency.
+            Our Hospital Managment System connects all departments, streamlining operations and improving 
+            patient care through reliable digital transformation.
           </motion.p>
         </motion.div>
         

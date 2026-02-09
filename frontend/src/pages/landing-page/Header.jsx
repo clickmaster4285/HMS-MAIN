@@ -3,7 +3,7 @@ import { Menu, X, PenTool, Building, Building2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Logo from "../../assets/landing-page/logo.png";
 
-const Header = () => {
+const Header = ({ scrollToSection }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const navigate = useNavigate();
 
@@ -12,21 +12,58 @@ const Header = () => {
   };
 
   return (
-    <header className="bg-linear-to-r from-indigo-900 to-primary-800 text-white">
+    <header className="sticky top-0 z-50 bg-linear-to-r from-indigo-900 to-primary-800 text-white">
       <div className="container mx-auto px-4 py-4 flex justify-between items-center">
         <div className="flex items-center">
           <div className="h-auto w-14 rounded-md flex items-center justify-center mr-2">
-            <img src={Logo} alt="CareSync Logo" />
+            <img src={Logo} alt="ClickMasters HMS Logo" />
           </div>
+          <span className="font-bold text-lg tracking-wide">ClickMasters HMS</span>
          
         </div>
 
         {/* Desktop Navigation */}
         <nav className="hidden md:flex space-x-8">
-          <a href="#features" className="hover:text-primary-300 transition-colors">Features</a>
-          <a href="#testimonials" className="hover:text-primary-300 transition-colors">Testimonials</a>
-          <a href="#pricing" className="hover:text-primary-300 transition-colors">Pricing</a>
-          <a href="#contact" className="hover:text-primary-300 transition-colors">Contact</a>
+          <a
+            href="#features"
+            onClick={(e) => {
+              e.preventDefault();
+              scrollToSection("features");
+            }}
+            className="hover:text-primary-300 transition-colors"
+          >
+            Features
+          </a>
+          <a
+            href="#testimonials"
+            onClick={(e) => {
+              e.preventDefault();
+              scrollToSection("testimonials");
+            }}
+            className="hover:text-primary-300 transition-colors"
+          >
+            Testimonials
+          </a>
+          <a
+            href="#pricing"
+            onClick={(e) => {
+              e.preventDefault();
+              scrollToSection("pricing");
+            }}
+            className="hover:text-primary-300 transition-colors"
+          >
+            Pricing
+          </a>
+          <a
+            href="#contact"
+            onClick={(e) => {
+              e.preventDefault();
+              scrollToSection("contact");
+            }}
+            className="hover:text-primary-300 transition-colors"
+          >
+            Contact
+          </a>
         </nav>
 
         <div className="hidden md:flex items-center space-x-4">
@@ -45,10 +82,50 @@ const Header = () => {
       {isMenuOpen && (
         <div className="md:hidden bg-indigo-900 px-4 py-4">
           <nav className="flex flex-col space-y-4">
-            <a href="#features" className="hover:text-primary-300 transition-colors" onClick={toggleMenu}>Features</a>
-            <a href="#testimonials" className="hover:text-primary-300 transition-colors" onClick={toggleMenu}>Testimonials</a>
-            <a href="#pricing" className="hover:text-primary-300 transition-colors" onClick={toggleMenu}>Pricing</a>
-            <a href="#contact" className="hover:text-primary-300 transition-colors" onClick={toggleMenu}>Contact</a>
+            <a
+              href="#features"
+              className="hover:text-primary-300 transition-colors"
+              onClick={(e) => {
+                e.preventDefault();
+                scrollToSection("features");
+                toggleMenu();
+              }}
+            >
+              Features
+            </a>
+            <a
+              href="#testimonials"
+              className="hover:text-primary-300 transition-colors"
+              onClick={(e) => {
+                e.preventDefault();
+                scrollToSection("testimonials");
+                toggleMenu();
+              }}
+            >
+              Testimonials
+            </a>
+            <a
+              href="#pricing"
+              className="hover:text-primary-300 transition-colors"
+              onClick={(e) => {
+                e.preventDefault();
+                scrollToSection("pricing");
+                toggleMenu();
+              }}
+            >
+              Pricing
+            </a>
+            <a
+              href="#contact"
+              className="hover:text-primary-300 transition-colors"
+              onClick={(e) => {
+                e.preventDefault();
+                scrollToSection("contact");
+                toggleMenu();
+              }}
+            >
+              Contact
+            </a>
             <div className="pt-4 flex flex-col space-y-2">
               <button
                 onClick={() => navigate("/profiles")}

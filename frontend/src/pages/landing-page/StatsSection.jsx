@@ -114,9 +114,9 @@ const StatsSection = () => {
           transition={{ duration: 0.8 }}
           className="text-center mb-16"
         >
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">Healthcare Excellence in Numbers</h2>
+          <h2 className="text-3xl md:text-4xl font-bold mb-4">Hospital Managment System Results in Numbers</h2>
           <p className="text-sky-200 max-w-2xl mx-auto text-lg">
-            Our commitment to quality care is reflected in these milestones
+            ClickMasters HMS Hospital Managment System performance milestones
           </p>
         </motion.div>
 

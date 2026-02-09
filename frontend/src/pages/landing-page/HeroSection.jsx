@@ -39,17 +39,17 @@ const HeroSection = () => {
               </div>
 
               <h1 className="text-4xl md:text-5xl xl:text-6xl font-bold mb-6 leading-tight">
-                <span className="bg-linear-to-r from-primary-400 to-primary-200 bg-clip-text text-transparent">CARESYNC</span> HMS
+                <span className="bg-linear-to-r from-primary-400 to-primary-200 bg-clip-text text-transparent">ClickMasters</span> HMS
               </h1>
               <p className="text-xl md:text-2xl font-light mb-8 text-gray-300 leading-relaxed">
-                Transform healthcare delivery with our AI-powered platform that <span className="font-medium text-white">streamlines operations, enhances patient care,</span> and provides real-time insights for data-driven decisions.
+                Transform healthcare delivery with our <span className="font-medium text-white">Hospital Managment System</span> that streamlines operations, enhances patient care, and provides real-time insights for data-driven decisions.
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4 mb-16">
                 <motion.a
                   whileHover={{ scale: 1.03 }}
                   whileTap={{ scale: 0.97 }}
-                  href="#"
+                  href="https://clickmasters.pk/contact-us/"
                   className="relative overflow-hidden group bg-linear-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 transition-all duration-300 py-4 px-8 rounded-xl font-medium flex items-center justify-center shadow-lg hover:shadow-primary-500/30"
                 >
                   <span className="relative z-10 flex items-center">
@@ -61,7 +61,7 @@ const HeroSection = () => {
                 <motion.a
                   whileHover={{ scale: 1.03 }}
                   whileTap={{ scale: 0.97 }}
-                  href="#"
+                  href="https://clickmasters.pk/contact-us/"
                   className="relative overflow-hidden group border-2 border-white/20 hover:border-white/40 hover:bg-white/5 backdrop-blur-sm transition-all duration-300 py-4 px-8 rounded-xl font-medium flex items-center justify-center"
                 >
                   <span className="relative z-10 flex items-center group-hover:text-white">
@@ -236,7 +236,7 @@ const HeroSection = () => {
                   <div className="absolute inset-0 bg-linear-to-br from-white/5 to-white/20 opacity-0 hover:opacity-100 transition-opacity duration-500"></div>
                   <img
                     src={Doc1}
-                    alt="Doctor using CARESYNC HMS"
+                    alt="Doctor using ClickMasters HMS"
                     className="w-48 lg:w-60 h-auto rounded-xl object-cover transition-all duration-500 hover:brightness-110"
                   />
                   <div className="absolute bottom-0 left-0 right-0 p-3 bg-linear-to-t from-black/70 to-transparent">

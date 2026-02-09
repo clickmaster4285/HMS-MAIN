@@ -70,11 +70,11 @@ const ContactSection = () => {
               </motion.div>
 
               <h1 className="text-3xl md:text-5xl font-bold bg-linear-to-r from-white via-sky-200 to-primary-200 bg-clip-text text-transparent mb-0 group-hover:bg-linear-to-r group-hover:from-sky-100 group-hover:via-sky-300 group-hover:to-primary-300 transition-all duration-500">
-                Contact Us
+                Contact ClickMasters HMS
               </h1>
             </motion.div>
             <p className="text-xl text-slate-300 max-w-2xl mx-auto leading-relaxed">
-              Ready to transform your design workflow? Let's start a conversation about your project.
+              Have questions about ClickMasters HMS? Our team is ready to help.
             </p>
           </div>
 
@@ -94,6 +94,7 @@ const ContactSection = () => {
                     <div>
                       <h3 className="font-semibold text-white">Email Us</h3>
                       <p className="text-sky-300">marketing@clickmasters.pk</p>
+                      <p className="text-sky-300">info@clickmasters.pk</p>
                     </div>
                   </div>
 
@@ -103,7 +104,8 @@ const ContactSection = () => {
                     </div>
                     <div>
                       <h3 className="font-semibold text-white">Call Us</h3>
-                      <p className="text-primary-300">+X (XXX) XXX-XXXX</p>
+                      <p className="text-primary-300">0333-1116842</p>
+                      <p className="text-primary-300">0332-5394285</p>
                     </div>
                   </div>
 
@@ -113,9 +115,19 @@ const ContactSection = () => {
                     </div>
                     <div>
                       <h3 className="font-semibold text-white">Visit Us</h3>
-                      <p className="text-green-300">PWD, Islamabad | pk</p>
+                      <p className="text-green-300">Main PWD Rd, PWD Housing Society Sector A, Islamabad, Punjab 45700, Pakistan</p>
                     </div>
                   </div>
+                </div>
+
+                <div className="pt-6">
+                  <a
+                    href="https://clickmasters.pk/contact-us/"
+                    className="inline-flex items-center gap-2 text-sm font-semibold text-sky-200 hover:text-white transition-colors"
+                  >
+                    Visit contact page
+                    <Send className="w-4 h-4" />
+                  </a>
                 </div>
 
                 {/* Social Media */}

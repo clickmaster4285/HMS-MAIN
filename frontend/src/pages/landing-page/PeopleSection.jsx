@@ -35,8 +35,7 @@ const PeopleSection = () => {
              Explore Cloud-Based Healthcare Software Solutions Tailored for Hospitals, Clinics, and Doctors.
             </h1>
             <p className="text-gray-600 mb-6">
-              Get access to top digital solutions via CARESYNC’s CMS (Clinic Management System), PMS (Patient Management System), and HIMS (Hospital Information Management System), made with care for medical professionals, clinics, and hospitals of all sizes.
-
+              Get access to top digital solutions via ClickMasters Hospital Managment System (HMS), PMS (Patient Management System), and HIMS (Hospital Information Management System), made with care for medical professionals, clinics, and hospitals of all sizes.
             </p>
             <p className="text-gray-600 mb-6">
              When reviewing an individual clinic, the main tasks include new admissions, discharge management, and nursing documentation reviews.

@@ -9,7 +9,7 @@ const MobileAppSection = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 items-center gap-12">
           {/* Content Section */}
           <div className="order-2 md:order-1">
-            <h2 className="text-3xl font-bold mb-4 text-gray-900">Enhancing Patient Experience with CARESYNC</h2>
+            <h2 className="text-3xl font-bold mb-4 text-gray-900">Enhancing Patient Experience with ClickMasters HMS</h2>
             <p className="text-gray-600 mb-8 text-lg">
               Our hospital management system is designed to prioritize patient well-being, providing seamless communication, easy access to information, and personalized care.
             </p>

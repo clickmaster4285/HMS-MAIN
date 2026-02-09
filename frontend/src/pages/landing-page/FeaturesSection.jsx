@@ -65,13 +65,13 @@ const FeaturesSection = () => {
       <div className="container mx-auto px-4">
         <div className="text-center max-w-4xl mx-auto mb-16">
           <span className="inline-block px-8 py-3 text-sm font-medium text-sky-600 bg-sky-100 rounded-full mb-4">
-            Hospital Management System
+            Hospital Managment System
           </span>
           <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-            Comprehensive Healthcare Solutions
+            ClickMasters HMS Hospital Managment System Features
           </h2>
           <p className="text-lg text-gray-600">
-            Our integrated platform connects all hospital departments, streamlining operations and improving patient care through digital transformation.
+            Our Hospital Managment System connects every department, streamlining operations and improving patient care with a modern Hospital Management System approach.
           </p>
         </div>
         

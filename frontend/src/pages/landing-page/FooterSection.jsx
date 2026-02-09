@@ -10,7 +10,7 @@ const Footer = () => {
     { icon: Twitter, href: "#", color: "hover:text-sky-400", bgColor: "hover:bg-sky-400/10" },
     { icon: Facebook, href: "#", color: "hover:text-primary-600", bgColor: "hover:bg-primary-600/10" },
     { icon: Instagram, href: "#", color: "hover:text-purple-500", bgColor: "hover:bg-purple-500/10" },
-    { icon: Link, href: "#", color: "hover:text-gray-400", bgColor: "hover:bg-white/10" }
+    { icon: Link, href: "https://clickmasters.pk/contact-us/", color: "hover:text-gray-400", bgColor: "hover:bg-white/10" }
   ];
 
 
@@ -37,16 +37,22 @@ const Footer = () => {
               <div className="md:col-span-2">
                 <div className="flex items-center mb-6 group">
                   <div className="h-20 w-20 bg-gray-400/30 rounded-xl flex items-center p-1 backdrop-blur-sm justify-center mr-3 group-hover:scale-110 transition-transform">
-                   <img src={Logo} alt="CareSync Logo" />
+                   <img src={Logo} alt="ClickMasters HMS Logo" />
                   </div>
                   <span className="font-bold text-2xl bg-linear-to-r from-white to-primary-200 bg-clip-text text-transparent">
-                    CareSync
+                    ClickMasters HMS
                   </span>
                 </div>
                 
                 <p className="text-slate-400 mb-6 leading-relaxed max-w-sm">
-                  Empowering healthcare providers with data-driven insights to create better patient experiences and operational efficiency.
+                  ClickMasters HMS helps hospitals streamline operations, improve patient care, and make data-driven decisions.
                 </p>
+
+                <div className="text-slate-400 space-y-2 mb-6">
+                  <p>marketing@clickmasters.pk • info@clickmasters.pk</p>
+                  <p>0333-1116842 • 0332-5394285</p>
+                  <p>Main PWD Rd, PWD Housing Society Sector A, Islamabad, Punjab 45700</p>
+                </div>
                 
                 <div className="flex gap-3">
                   {socialLinks.map((social, index) => (
@@ -81,7 +87,10 @@ const Footer = () => {
                 <ul className="space-y-3">
                   {["About Us", "Our Team", "Careers", "Blog", "Contact Us"].map((item, i) => (
                     <li key={i}>
-                      <a href="#" className="text-slate-400 hover:text-white underline transition-colors duration-300 hover:translate-x-1 inline-block">
+                      <a
+                        href={item === "Contact Us" ? "https://clickmasters.pk/contact-us/" : "#"}
+                        className="text-slate-400 hover:text-white underline transition-colors duration-300 hover:translate-x-1 inline-block"
+                      >
                         {item}
                       </a>
                     </li>
@@ -108,7 +117,7 @@ const Footer = () => {
             <div className="border-t border-slate-700/50 pt-8">
               <div className="flex flex-col md:flex-row justify-between items-center gap-6">
                 <div className="flex items-center gap-2 text-slate-400">
-                  <span>&copy; 2025 CURESYNC.  Healthcare Solutions</span>
+                  <span>&copy; 2025 ClickMasters HMS. Healthcare Solutions</span>
                   <Heart className="w-4 h-4 text-red-500 animate-pulse" />
                   
                 </div>

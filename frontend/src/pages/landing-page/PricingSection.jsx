@@ -89,13 +89,13 @@ const PricingSection = () => {
           className="text-center max-w-3xl mx-auto mb-16"
         >
           <span className="inline-block px-8 py-2 text-sm font-semibold bg-sky-100 text-sky-800 rounded-full mb-4">
-            FLEXIBLE PLANS
+            HOSPITAL MANAGMENT SYSTEM PLANS
           </span>
           <h2 className="text-3xl lg:text-4xl font-bold mb-4 bg-clip-text text-transparent bg-gray-800">
-            Healthcare Solutions for Every Scale
+            ClickMasters HMS for Every Hospital Size
           </h2>
           <p className="text-lg text-gray-600">
-            Transparent pricing with enterprise-grade features for organizations of all sizes
+            Transparent pricing for Hospital Managment System deployments, from clinics to multi-site hospitals.
           </p>
         </motion.div>
         
@@ -154,7 +154,7 @@ const PricingSection = () => {
                 </ul>
                 
                 <motion.a
-                  href="#"
+                  href="https://clickmasters.pk/contact-us/"
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   className={`block w-full py-3 px-6 text-center rounded-lg font-medium transition-all ${
@@ -189,7 +189,7 @@ const PricingSection = () => {
                 telemedicine, clinical research, and multi-site management.
               </p>
               <a 
-                href="#" 
+                href="https://clickmasters.pk/contact-us/" 
                 className="inline-flex items-center text-sky-600 underline bg-sky-50 rounded-tr-xl p-2 font-semibold hover:text-sky-800"
               >
                 Contract our expert
