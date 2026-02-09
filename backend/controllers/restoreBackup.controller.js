@@ -8,7 +8,7 @@ const {
   getBackupChain,
   validateBackup,
   getDatabaseStatus,
-} = require('../services/restore.service');
+} = require('../services/backup.service');
 
 const BACKUP_ROOT = process.env.BACKUP_ROOT;
 

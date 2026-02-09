@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { createInventoryRecord, updateInventoryRecord, getAllInventory, deleteInventory } from '../../../features/inventory/inventorySlice';
+import { createInventoryRecord, updateInventoryRecord, getAllInventory, deleteInventory } from '../../../features/inventory/InventorySlice';
 import { getallDepartments } from '../../../features/department/DepartmentSlice';
 import { getwardsbydepartmentId } from '../../../features/ward/Wardslice';
 import { useDispatch, useSelector } from 'react-redux';
