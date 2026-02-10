@@ -5,11 +5,11 @@ import { FormSection } from '../../../components/common/FormSection';
 import ReactDOMServer from 'react-dom/server';
 import PrintA4 from './PrintPatientTest';
 import {
-  fetchAllTests,
   SubmitPatientTest,
   fetchPatientByMRNo,
   resetPatientTestStatus,
 } from '../../../features/patientTest/patientTestSlice';
+import { getAllTests } from '../../../features/testManagment/testSlice';
 import PatientInfoForm from './PatientIno';
 import TestInformationForm from './TestInfo';
 import { toast } from 'react-toastify';
@@ -23,7 +23,10 @@ const AddlabPatient = () => {
     loading,
     error,
   } = useSelector((state) => state.patientTest);
-  const testList = useSelector((state) => state.patientTest.tests);
+  const testList = useSelector((state) => state.labtest.tests);
+
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedTests, setSelectedTests] = useState([]);
 
   const [isPrinting, setIsPrinting] = useState(false);
   const [mode, setMode] = useState('existing');
@@ -72,7 +75,7 @@ const AddlabPatient = () => {
     });
 
   useEffect(() => {
-    dispatch(fetchAllTests());
+    dispatch(getAllTests({ page: 1, limit: 100 }));
     return () => dispatch(resetPatientTestStatus());
   }, [dispatch]);
 
@@ -108,17 +111,23 @@ const AddlabPatient = () => {
     setFormKey((prev) => prev + 1); // This will force re-render child components
   };
 
+  const handleSearchChange = (value) => {
+    setSearchTerm(value);
+    // Dispatch search to Redux if needed
+    // dispatch(setSearch(value));
+  };
+
   // Calculate DOB from age (decimal)
   const calculateDobFromAge = (ageString) => {
     if (!ageString) return null;
 
     const today = new Date();
     const ageNum = parseFloat(ageString);
-    
+
     if (isNaN(ageNum)) return null;
 
     const calculatedDob = new Date(today);
-    
+
     if (ageNum < 1) {
       // If less than 1 year, treat as months
       const months = Math.round(ageNum * 12);
@@ -128,7 +137,7 @@ const AddlabPatient = () => {
       const years = Math.floor(ageNum);
       const fractionalPart = ageNum - years;
       const months = Math.round(fractionalPart * 12);
-      
+
       calculatedDob.setFullYear(today.getFullYear() - years);
       calculatedDob.setMonth(today.getMonth() - months);
     }
@@ -139,31 +148,31 @@ const AddlabPatient = () => {
   // Calculate age from DOB (returns decimal)
   const calculateAgeFromDob = (dobDate) => {
     if (!dobDate) return '';
-    
+
     const today = new Date();
     const birthDate = new Date(dobDate);
-    
+
     if (isNaN(birthDate.getTime())) return '';
-    
+
     let years = today.getFullYear() - birthDate.getFullYear();
     let months = today.getMonth() - birthDate.getMonth();
     let days = today.getDate() - birthDate.getDate();
-    
+
     // Adjust for negative days
     if (days < 0) {
       months--;
       days += new Date(today.getFullYear(), today.getMonth(), 0).getDate();
     }
-    
+
     // Adjust for negative months
     if (months < 0) {
       years--;
       months += 12;
     }
-    
+
     // Calculate decimal age (years + months/12)
     const decimalAge = years + (months / 12);
-    
+
     // Format to 2 decimal places if needed
     return decimalAge.toFixed(2);
   };
@@ -209,7 +218,7 @@ const AddlabPatient = () => {
         const ageMatch = patientData.age.toString().match(/\d+(\.\d+)?/);
         ageValue = ageMatch ? ageMatch[0] : '';
       }
-      
+
       // If no age from backend but has DOB, calculate age from DOB
       if (!ageValue && patientData.DateOfBirth) {
         ageValue = calculateAgeFromDob(patientData.DateOfBirth);
@@ -273,6 +282,7 @@ const AddlabPatient = () => {
         },
       ])
     );
+    setSelectedTests(prev => prev.filter(testId => testId !== id));
     setSelectedTestId('');
   };
 
@@ -578,8 +588,6 @@ const AddlabPatient = () => {
         <TestInformationForm
           key={`tinfo-${formKey}`}
           testList={testList}
-          selectedTestId={selectedTestId}
-          setSelectedTestId={setSelectedTestId}
           testRows={testRows}
           handleTestAdd={handleTestAdd}
           handleTestRowChange={handleTestRowChange}
@@ -594,13 +602,17 @@ const AddlabPatient = () => {
           paidBoxValue={totalPaid}
           discountBoxValue={totalDiscount}
           mode={mode}
+          searchTerm={searchTerm}
+          onSearchChange={handleSearchChange}
+          selectedTests={selectedTests}
+          onSelectedTestsChange={setSelectedTests}
         />
       </FormSection>
 
       <ButtonGroup className="justify-end">
-        <Button 
-          type="button" 
-          variant="secondary" 
+        <Button
+          type="button"
+          variant="secondary"
           onClick={handleCancel}
         >
           Cancel

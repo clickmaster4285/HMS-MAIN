@@ -2,18 +2,25 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { toast } from 'react-toastify';
 import { debounce } from 'lodash';
 
-export const useTestSelection = (testList, testRows, handleTestAdd) => {
+export const useTestSelection = (testList, testRows, handleTestAdd, externalSearchTerm) => {
   const [selectedTests, setSelectedTests] = useState([]);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState(externalSearchTerm);
   const [showTestList, setShowTestList] = useState(false);
   const [lastEnterTime, setLastEnterTime] = useState(0);
   const searchInputRef = useRef(null);
   const testListRef = useRef(null);
 
+  useEffect(() => {
+    if (externalSearchTerm !== undefined) {
+      setSearchTerm(externalSearchTerm);
+    }
+  }, [externalSearchTerm]);
+
   // Filter available tests
   const availableTests = (Array.isArray(testList) ? testList : [])
     .filter((test) => !testRows.some((row) => row.testId === test._id))
-    .filter((test) => 
+    .filter((test) =>
+      searchTerm.trim() === '' || // Show all if no search term
       test.testName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       test.testCode?.toLowerCase().includes(searchTerm.toLowerCase())
     );

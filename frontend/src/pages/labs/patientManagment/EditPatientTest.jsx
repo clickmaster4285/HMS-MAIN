@@ -1,12 +1,12 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   fetchPatientTestById,
-  fetchAllTests,
   updatepatientTest,
 } from '../../../features/patientTest/patientTestSlice';
+import { getAllTests } from '../../../features/testManagment/testSlice';
 import { Button, ButtonGroup } from '../../../components/common/Buttons';
 import { FormSection } from '../../../components/common/FormSection';
 import PatientInfoForm from './PatientIno';
@@ -38,8 +38,10 @@ const EditPatientTest = () => {
   const { id } = useParams();
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedTests, setSelectedTests] = useState([]);
 
-  const testList = useSelector((state) => state.patientTest.tests);
+  const testList = useSelector((state) => state.labtest.tests);
   const patientTestById = useSelector(
     (state) => state.patientTest.patientTestById
   );
@@ -84,7 +86,7 @@ const EditPatientTest = () => {
 
   useEffect(() => {
     dispatch(fetchPatientTestById(id));
-    dispatch(fetchAllTests());
+    dispatch(getAllTests({ page: 1, limit: 100 })); 
   }, [dispatch, id]);
 
 useEffect(() => {
@@ -195,39 +197,42 @@ useEffect(() => {
 
   const handleCancel = () => navigate(-1);
 
-  const handleTestAdd = () => {
-    if (!selectedTestId) return;
-    const selected = testList.find((t) => t._id === selectedTestId);
+  const handleSearchChange = (value) => {
+    setSearchTerm(value);
+    dispatch(setSearch(value));
+  };
+
+  // Add test addition logic
+  const handleTestAdd = useCallback((testId) => {
+    const selected = testList.find((t) => t._id === testId);
     if (!selected) return;
 
     const price = Number(selected.testPrice || 0);
     const disc = Number(selected.discountAmount || 0);
     const final = Math.max(0, price - disc);
 
-    setTestRows((prev) => [
-      ...prev,
-      {
-        srNo: prev.length + 1,
-        testId: selected._id,
-        testName: selected.testName || '',
-        testCode: selected.testCode || '',
-        sampleDate: ymd(new Date()),
-        reportDate: '',
-        amount: price,
-        discount: disc,
-        finalAmount: final,
-        paid: 0,
-        remaining: final,
-        sampleStatus: 'pending',
-        reportStatus: 'not_started',
-        testStatus: 'registered',
-        statusHistory: [],
-        notes: '',
-      },
-    ]);
+    const newRow = {
+      srNo: testRows.length + 1,
+      testId: selected._id,
+      testName: selected.testName || '',
+      testCode: selected.testCode || '',
+      sampleDate: ymd(new Date()),
+      reportDate: '',
+      amount: price,
+      discount: disc,
+      finalAmount: final,
+      paid: 0,
+      remaining: final,
+      sampleStatus: 'pending',
+      reportStatus: 'not_started',
+      testStatus: 'registered',
+      statusHistory: [],
+      notes: '',
+    };
 
-    setSelectedTestId('');
-  };
+    setTestRows((prev) => [...prev, newRow]);
+    setSelectedTests((prev) => prev.filter(id => id !== testId));
+  }, [testList, testRows]);
 
   const handleTestRowChange = (i, field, value) => {
     const rows = [...testRows];
@@ -694,8 +699,6 @@ useEffect(() => {
       <FormSection title="Test Information" bgColor="bg-primary-700 text-white">
         <TestInformationForm
           testList={testList}
-          selectedTestId={selectedTestId}
-          setSelectedTestId={setSelectedTestId}
           testRows={testRows}
           handleTestAdd={handleTestAdd}
           handleTestRowChange={handleTestRowChange}
@@ -710,6 +713,10 @@ useEffect(() => {
           mode="edit"
           paidBoxValue={billing.advanceAmount}
           discountBoxValue={billing.discountAmount}
+          searchTerm={searchTerm}
+          onSearchChange={handleSearchChange}
+          selectedTests={selectedTests}
+          onSelectedTestsChange={setSelectedTests}
         />
       </FormSection>
 

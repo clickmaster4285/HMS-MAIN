@@ -257,16 +257,11 @@ useEffect(() => {
           onChange={handlePatientChange}
           className="border h-10.5 p-2 rounded w-full border-gray-300 shadow-sm"
         >
-          <option value="">Select Referred By</option>
-          <option value={doctorList[0]}>Self</option>
-          <option value={doctorList[1]}>THQ</option>
-          <optgroup label="Doctors">
-            {doctorList.slice(2).map((doctor, index) => (
+            {doctorList.map((doctor, index) => (
               <option key={index} value={doctor}>
                 {doctor}
               </option>
             ))}
-          </optgroup>
         </select>
       </div>
       {/* Guardian Name */}

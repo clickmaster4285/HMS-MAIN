@@ -19,20 +19,22 @@ const TestInformationForm = ({
   mode,
   paidBoxValue,
   discountBoxValue,
+  searchTerm = '',
+  onSearchChange = () => { },
+  selectedTests = [],
+  onSelectedTestsChange = () => { },
 }) => {
   const [paidBox, setPaidBox] = useState('');
   const [discountBox, setDiscountBox] = useState('');
   const [showSelectedPreview, setShowSelectedPreview] = useState(false);
+  const [localSearchTerm, setLocalSearchTerm] = useState(searchTerm || '');
 
-  // Use custom hook for test selection logic
   const {
-    selectedTests,
-    searchTerm,
+    selectedTests: hookSelectedTests, // Rename to avoid conflict
     showTestList,
     availableTests,
     searchInputRef,
     testListRef,
-    setSearchTerm,
     setShowTestList,
     handleTestSelection,
     handleSelectAll,
@@ -40,9 +42,26 @@ const TestInformationForm = ({
     handleAddSingleTest,
     handleKeyDown,
     getSelectedTestDetails,
-  } = useTestSelection(testList, testRows, handleTestAdd);
+  } = useTestSelection(testList, testRows, handleTestAdd, searchTerm);
 
   const selectedTestDetails = getSelectedTestDetails();
+
+  // ADD THIS SEARCH HANDLER
+  const handleSearchChange = (value) => {
+    setLocalSearchTerm(value);
+
+    // Call parent's search handler if provided
+    if (onSearchChange) {
+      onSearchChange(value);
+    }
+
+    // Show/hide test list based on search
+    if (value.trim()) {
+      setShowTestList(true);
+    } else {
+      setShowTestList(false);
+    }
+  };
 
   // Convert input to non-negative number
   const toNumber = (v) => {
@@ -135,6 +154,10 @@ const TestInformationForm = ({
   // Remove individual selected test
   const handleRemoveSelectedTest = (testId) => {
     handleTestSelection(testId);
+
+    if (onSelectedTestsChange) {
+      onSelectedTestsChange(hookSelectedTests.filter(id => id !== testId));
+    }
   };
 
   return (
@@ -147,10 +170,10 @@ const TestInformationForm = ({
               ref={searchInputRef}
               type="text"
               placeholder="Search tests by name or code... (Double Enter to add selected)"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              value={localSearchTerm}
+              onChange={(e) => handleSearchChange(e.target.value)}
               onFocus={() => {
-                if (searchTerm.trim()) {
+                if (localSearchTerm.trim()) {
                   setShowTestList(true);
                 }
               }}
@@ -208,10 +231,10 @@ const TestInformationForm = ({
               onClick={handleAddSelectedTests}
               onMouseEnter={() => setShowSelectedPreview(true)}
               onMouseLeave={() => setShowSelectedPreview(false)}
-              disabled={selectedTests.length === 0}
+              disabled={hookSelectedTests.length === 0}
               className="px-4 py-2 bg-primary-700 text-white rounded h-10.5 hover:bg-primary-800 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
             >
-              Add Selected ({selectedTests.length})
+              Add Selected ({hookSelectedTests.length})
             </button>
 
             {/* Selected Tests Preview */}

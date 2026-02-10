@@ -90,28 +90,40 @@ const createTest = async (req, res) => {
 
 const getTests = async (req, res) => {
   try {
-    //for pagination
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
+    const search = req.query.search || '';
 
+    // Build search query
+    let query = { isDeleted: false };
 
-    const tests = await hospitalModel.TestManagment.find({ isDeleted: false })
-      .sort({ createdAt: -1 }).skip(skip)          
+    if (search) {
+      query.$or = [
+        { testName: { $regex: search, $options: 'i' } },
+        { testCode: { $regex: search, $options: 'i' } },
+        { testDept: { $regex: search, $options: 'i' } }
+      ];
+    }
+
+    const tests = await hospitalModel.TestManagment.find(query)
+      .sort({ createdAt: -1 })
+      .skip(skip)
       .limit(limit);
-    
-    
-    const total = await hospitalModel.TestManagment.countDocuments({ isDeleted: false });
-    
+
+    const total = await hospitalModel.TestManagment.countDocuments(query);
 
     if (tests.length === 0) {
-      return res.status(200).json({ message: 'No active tests found' ,tests: [],
+      return res.status(200).json({
+        message: 'No active tests found',
+        tests: [],
         pagination: {
           total,
           page,
           limit,
           totalPages: Math.ceil(total / limit)
-        }});
+        }
+      });
     }
 
     // Convert Maps to objects for frontend
@@ -128,7 +140,7 @@ const getTests = async (req, res) => {
       return testObj;
     });
 
-   res.status(200).json({
+    res.status(200).json({
       tests: testsWithPlainRanges,
       pagination: {
         total,
@@ -136,8 +148,8 @@ const getTests = async (req, res) => {
         limit,
         totalPages: Math.ceil(total / limit)
       }
-   });
-    
+    });
+
   } catch (err) {
     res.status(500).json({
       message: 'Failed to fetch tests',

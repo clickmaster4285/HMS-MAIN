@@ -53,25 +53,15 @@ export const createTest = createAsyncThunk(
 // Async thunk to get all tests
 export const getAllTests = createAsyncThunk(
   'testManagement/getAllTests',
-async ({ page = 1, limit = 10 } = {}, { rejectWithValue }) => {
+  async ({ page = 1, limit = 10, search = '' } = {}, { rejectWithValue }) => {
     try {
-      const response = await axios.get(`${API_URL}/testManagement/getAlltest`,{
+      const response = await axios.get(`${API_URL}/testManagement/getAlltest`, {
         ...getAuthHeaders(),
-        params: { page, limit }  });
-      
-      // Handle both array and object responses
-     const data = response.data;
+        params: { page, limit, search }  // ADDED search parameter
+      });
 
-      // Handle empty case (your backend returns message + empty tests)
-      if (data.message && data.tests?.length === 0) {
-        return {
-          tests: [],
-          pagination: data.pagination || { page, limit, total: 0, totalPages: 0 }
-        };
-      }
+      const data = response.data;
 
-
-      
       return {
         tests: data.tests || [],
         pagination: data.pagination || {
@@ -79,11 +69,11 @@ async ({ page = 1, limit = 10 } = {}, { rejectWithValue }) => {
           limit: parseInt(limit),
           total: data.tests?.length || 0,
           totalPages: 1
-        }
+        },
+        search // Include search in returned data
       };
 
-
-      } catch (error) {
+    } catch (error) {
       console.error('Fetch tests error:', error.response?.data || error.message);
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch tests');
     }
@@ -155,21 +145,29 @@ const testSlice = createSlice({
     deleteError: null,
     deleteSuccess: '',
     pagination: {
-    page: 1,
-    limit: 10,
-    total: 0,
-    totalPages: 1
-    }
-    
+      page: 1,
+      limit: 10,
+      total: 0,
+      totalPages: 1
+    },
+    search: '' // ADDED: Search state
   },
   reducers: {
-  setPage: (state, action) => {
-    state.pagination.page = action.payload;
-  },
-  setLimit: (state, action) => {
-    state.pagination.limit = action.payload;
-    state.pagination.page = 1; // reset to page 1 when changing limit
-  }
+    setPage: (state, action) => {
+      state.pagination.page = action.payload;
+    },
+    setLimit: (state, action) => {
+      state.pagination.limit = action.payload;
+      state.pagination.page = 1; // reset to page 1 when changing limit
+    },
+    // ADDED: Set search reducer
+    setSearch: (state, action) => {
+      state.search = action.payload;
+    },
+    // ADDED: Clear search reducer
+    clearSearch: (state) => {
+      state.search = '';
+    }
   },
   
 
@@ -262,7 +260,8 @@ const testSlice = createSlice({
 });
 
 export default testSlice.reducer;
-export const { setPage, setLimit } = testSlice.actions;
+export const { setPage, setLimit, setSearch, clearSearch } = testSlice.actions;
+
 // Selectors
 export const selectAllTests = state => state.labtest.tests;
 export const selectSelectedTest = state => state.labtest.selectedTest;

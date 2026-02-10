@@ -118,34 +118,6 @@ export const fetchPatientTestById = createAsyncThunk(
   }
 );
 
-export const fetchAllTests = createAsyncThunk(
-  'patientTest/fetchAllTests',
-  async (_, { rejectWithValue }) => {
-    try {
-      const response = await axios.get(`${API_URL}/testManagement/getAlltest`, {
-        headers: getAuthHeaders(),
-      });
-
-      console.log("API Response:", response.data); // Check structure
-
-      // FIXED: Extract tests from the correct property
-      const tests = response.data?.tests || response.data?.activeTests || response.data || [];
-      console.log("Extracted tests:", tests);
-
-      return Array.isArray(tests) ? tests : [];
-    } catch (error) {
-      const message =
-        error.response?.data?.message ||
-        error.message ||
-        'Failed to fetch tests';
-      return rejectWithValue({
-        message,
-        status: error.response?.status || 500,
-      });
-    }
-  }
-);
-
 export const getTestHistory = createAsyncThunk(
   'patientTest/getTestHistory',
   async (_, { rejectWithValue }) => {
@@ -305,7 +277,7 @@ const patienttestSlice = createSlice({
   extraReducers: (builder) => {
     builder
 
-      // ================= SUBMIT PATIENT TEST =================
+      //  SUBMIT PATIENT TEST 
       .addCase(SubmitPatientTest.pending, (state) => {
         state.status.submit = 'pending';
         state.isLoading = true;
@@ -324,7 +296,7 @@ const patienttestSlice = createSlice({
         state.error = action.payload?.message || 'Lab test submission failed';
       })
 
-      // ================= FETCH PATIENT BY MR =================
+      //  FETCH PATIENT BY MR 
       .addCase(fetchPatientByMRNo.pending, (state) => {
         state.status.fetch = 'pending';
         state.isLoading = true;
@@ -343,7 +315,7 @@ const patienttestSlice = createSlice({
         state.error = action.payload?.message || 'Failed to fetch patient';
       })
 
-      // ================= FETCH PATIENT TEST BY ID =================
+      //  FETCH PATIENT TEST BY ID 
       .addCase(fetchPatientTestById.pending, (state) => {
         state.status.fetchById = 'pending';
         state.isLoading = true;
@@ -363,7 +335,7 @@ const patienttestSlice = createSlice({
           action.payload?.message || 'Failed to fetch patient test by ID';
       })
 
-      // ================= FETCH ALL PATIENT TESTS =================
+      //  FETCH ALL PATIENT TESTS 
       .addCase(fetchPatientTestAll.pending, (state) => {
         state.status.fetchAll = 'pending';
         state.isLoading = true;
@@ -389,7 +361,7 @@ const patienttestSlice = createSlice({
           action.payload?.message || 'Failed to fetch all patient tests';
       })
 
-      // ================= UPDATE PATIENT TEST =================
+      //  UPDATE PATIENT TEST 
       .addCase(updatepatientTest.pending, (state) => {
         state.isLoading = true;
         state.isError = false;
@@ -405,7 +377,7 @@ const patienttestSlice = createSlice({
           action.payload?.message || 'Failed to update patient test';
       })
 
-      // ================= DELETE PATIENT TEST =================
+      //  DELETE PATIENT TEST 
       .addCase(deletepatientTest.pending, (state) => {
         state.isLoading = true;
         state.isError = false;
@@ -421,26 +393,7 @@ const patienttestSlice = createSlice({
           action.payload?.message || 'Failed to delete patient test';
       })
 
-      // ================= FETCH ALL TEST DEFINITIONS =================
-      .addCase(fetchAllTests.pending, (state) => {
-        state.status.fetchTests = 'pending';
-        state.isLoading = true;
-        state.isError = false;
-        state.error = null;
-      })
-      .addCase(fetchAllTests.fulfilled, (state, action) => {
-        state.status.fetchTests = 'succeeded';
-        state.isLoading = false;
-        state.tests = action.payload;
-      })
-      .addCase(fetchAllTests.rejected, (state, action) => {
-        state.status.fetchTests = 'failed';
-        state.isLoading = false;
-        state.isError = true;
-        state.error = action.payload?.message || 'Failed to fetch tests';
-      })
-
-      // ================= TEST HISTORY =================
+      //  TEST HISTORY 
       .addCase(getTestHistory.pending, (state) => {
         state.status.fetchAll = 'pending';
         state.isLoading = true;

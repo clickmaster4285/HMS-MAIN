@@ -1,5 +1,4 @@
 const doctorList = [
-
   "Dr. Asad",
   "Dr. Asim Mehmood",
   "Dr. Asim Rafiq",
@@ -7,7 +6,6 @@ const doctorList = [
   "Dr. Faizan Rauf",
   "Dr. Faraz Mehmood",
   "Dr. Farooq",
-  "Dr. Asim Mehmood",
   "Dr. Fouzia Malik",
   "Dr. Hammad",
   "Dr. Jibran Bari Khan",
@@ -15,8 +13,8 @@ const doctorList = [
   "Dr. Maj(R) Kashif Abrar",
   "Dr. Mehnaz Kashif",
   "Dr. Muhammad Mubashir",
-  "Dr. Noor-E-Hira",
   "Dr. Nazreen",
+  "Dr. Noor-E-Hira",
   "Dr. Omer",
   "Dr. Qaisar Jahan",
   "Dr. Shahzad",
@@ -26,5 +24,8 @@ const doctorList = [
   "Dr. Younas",
   "OT Technician",
   "Razia (Lhv)",
+  "Self",
+  "THQ",
 ];
+
 export default doctorList;

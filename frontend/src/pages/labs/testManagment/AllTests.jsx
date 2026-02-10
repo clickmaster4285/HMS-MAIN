@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { getAllTests, deleteTest, selectAllTests, selectGetAllLoading, selectGetAllError, selectDeleteLoading, selectDeleteError, selectDeleteSuccess } from '../../../features/testManagment/testSlice';
-import { setPage, setLimit } from '../../../features/testManagment/testSlice';
+import { setPage, setLimit, setSearch } from '../../../features/testManagment/testSlice';
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
 import { FaEdit, FaTrash } from 'react-icons/fa';
 import { toast } from 'react-toastify';
@@ -10,7 +10,7 @@ import { toast } from 'react-toastify';
 const AllAddedTests = () => {
   const dispatch = useDispatch();
   const [searchTerm, setSearchTerm] = useState('');
-
+  const [searchTimeout, setSearchTimeout] = useState(null);
 
   const {
     tests,
@@ -19,31 +19,55 @@ const AllAddedTests = () => {
     deleteLoading,
     deleteError,
     deleteSuccess,
-    pagination = { page: 1, limit: 10, total: 0, totalPages: 1 }
-  } = useSelector((state) => state.labtest); 
-
-
+    pagination = { page: 1, limit: 10, total: 0, totalPages: 1 },
+    search // Get search from redux state
+  } = useSelector((state) => state.labtest);
 
   const navigate = useNavigate();
 
+  // Use a debounced search to avoid too many API calls
   useEffect(() => {
-    dispatch(getAllTests({ page: pagination.page, limit: pagination.limit }));
-  }, [dispatch, pagination.page, pagination.limit]);
+    if (searchTimeout) {
+      clearTimeout(searchTimeout);
+    }
 
-  // Reset search handler
-  const handleResetSearch = () => {
-    setSearchTerm('');
-  };
+    const timeout = setTimeout(() => {
+      dispatch(setSearch(searchTerm)); // Update search in redux
+      dispatch(setPage(1)); // Reset to first page when searching
+      dispatch(getAllTests({
+        page: 1,
+        limit: pagination.limit,
+        search: searchTerm
+      }));
+    }, 500); // 500ms delay
+
+    setSearchTimeout(timeout);
+
+    return () => {
+      if (searchTimeout) {
+        clearTimeout(searchTimeout);
+      }
+    };
+  }, [searchTerm]);
+
+  // Initial load and pagination changes
+  useEffect(() => {
+    dispatch(getAllTests({
+      page: pagination.page,
+      limit: pagination.limit,
+      search: search // Include current search term
+    }));
+  }, [dispatch, pagination.page, pagination.limit, search]);
 
   // Only filter by name and code
-  const filteredTests = tests.filter((test) => {
-    if (!searchTerm) return true;
-    const search = searchTerm.trim().toLowerCase();
-    return (
-      test.testName?.toLowerCase().includes(search) ||
-      test.testCode?.toLowerCase().includes(search)
-    );
-  });
+  // const filteredTests = tests.filter((test) => {
+  //   if (!searchTerm) return true;
+  //   const search = searchTerm.trim().toLowerCase();
+  //   return (
+  //     test.testName?.toLowerCase().includes(search) ||
+  //     test.testCode?.toLowerCase().includes(search)
+  //   );
+  // });
 
   // Add a delete handler stub
   const handleDelete = async (testId) => {
@@ -66,6 +90,15 @@ const AllAddedTests = () => {
   const handleLimitChange = (e) => {
     dispatch(setLimit(parseInt(e.target.value)));
   };
+
+  const handleSearchChange = (e) => {
+    setSearchTerm(e.target.value);
+  };
+
+  const handleResetSearch = () => {
+    setSearchTerm('');
+    dispatch(setSearch(''));
+  }; 
 
   return (
     <div className="min-h-screen bg-primary-50 w-full">
@@ -150,7 +183,7 @@ const AllAddedTests = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-primary-400 text-xs sm:text-sm font-medium">Filtered Tests</p>
-                    <p className="text-2xl sm:text-3xl font-bold text-teal-700">{filteredTests.length}</p>
+                        <p className="text-2xl sm:text-3xl font-bold text-teal-700">{tests.length}</p>
                   </div>
                   <div className="bg-teal-100 p-3 rounded-xl">
                     <svg className="w-6 h-6 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -237,7 +270,7 @@ const AllAddedTests = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-primary-50">
-                  {filteredTests.map((test, index) => (
+                      {tests.map((test, index) => (
                     <tr
                       key={test._id}
                       className="hover:bg-linear-to-r hover:from-primary-50 hover:to-teal-50 transition-all duration-200 cursor-pointer group"
@@ -318,7 +351,7 @@ const AllAddedTests = () => {
                       </td>
                     </tr>
                   ))}
-                  {filteredTests.length === 0 && !getAllLoading && (
+                      {tests.length === 0 && !getAllLoading && (
                     <tr>
                       <td colSpan="7" className="py-12 text-center">
                         <div className="flex flex-col items-center space-y-4">
