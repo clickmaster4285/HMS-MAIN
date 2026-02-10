@@ -38,3 +38,4 @@ coverage/
 # Root
 node_modules
 package-lock.json
+*.bat
