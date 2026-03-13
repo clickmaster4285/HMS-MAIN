@@ -29,6 +29,16 @@ const TestInformationForm = ({
   const [showSelectedPreview, setShowSelectedPreview] = useState(false);
   const [localSearchTerm, setLocalSearchTerm] = useState(searchTerm || '');
 
+  // ADD THIS SEARCH HANDLER
+  const handleSearchChange = (value) => {
+    setLocalSearchTerm(value);
+
+    // Call parent's search handler if provided
+    if (onSearchChange) {
+      onSearchChange(value);
+    }
+  };
+
   const {
     selectedTests: hookSelectedTests, // Rename to avoid conflict
     showTestList,
@@ -42,25 +52,17 @@ const TestInformationForm = ({
     handleAddSingleTest,
     handleKeyDown,
     getSelectedTestDetails,
-  } = useTestSelection(testList, testRows, handleTestAdd, searchTerm);
+  } = useTestSelection(testList, testRows, handleTestAdd, searchTerm, handleSearchChange);
 
   const selectedTestDetails = getSelectedTestDetails();
 
-  // ADD THIS SEARCH HANDLER
-  const handleSearchChange = (value) => {
-    setLocalSearchTerm(value);
+  // Local handlers (hook now handles clearing)
+  const handleAddSelectedTestsLocal = () => {
+    handleAddSelectedTests();
+  };
 
-    // Call parent's search handler if provided
-    if (onSearchChange) {
-      onSearchChange(value);
-    }
-
-    // Show/hide test list based on search
-    if (value.trim()) {
-      setShowTestList(true);
-    } else {
-      setShowTestList(false);
-    }
+  const handleAddSingleTestLocal = (testId) => {
+    handleAddSingleTest(testId);
   };
 
   // Convert input to non-negative number
@@ -212,7 +214,7 @@ const TestInformationForm = ({
                       </div>
                       <button
                         type="button"
-                        onClick={() => handleAddSingleTest(test._id)}
+                        onClick={() => handleAddSingleTestLocal(test._id)}
                         className="px-2 py-1 text-xs bg-primary-600 text-white rounded hover:bg-primary-700"
                       >
                         Add
@@ -228,7 +230,7 @@ const TestInformationForm = ({
           <div className="relative">
             <button
               type="button"
-              onClick={handleAddSelectedTests}
+              onClick={handleAddSelectedTestsLocal}
               onMouseEnter={() => setShowSelectedPreview(true)}
               onMouseLeave={() => setShowSelectedPreview(false)}
               disabled={hookSelectedTests.length === 0}
