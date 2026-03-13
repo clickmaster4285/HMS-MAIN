@@ -6,6 +6,16 @@ const PrintA4 = ({ formData }) => {
   
   const safe = (v, fallback = '_________') =>
     v !== undefined && v !== null && v !== '' ? v : fallback;
+
+  // Custom age formatting
+  const formatAge = (age) => {
+    if (age === undefined || age === null || age === '') return '_________';
+    const num = Number(age);
+    if (isNaN(num)) return age;
+    const decimal = num % 1;
+    if (decimal === 0) return Math.floor(num);
+    return decimal.toFixed(2).replace(/^0\./, '.');
+  };
   const formatCurrency = (amount) =>
     amount?.toLocaleString('en-PK', {
       style: 'currency',
@@ -152,7 +162,7 @@ const PrintA4 = ({ formData }) => {
               <strong>Gender:</strong> {safe(formData.patient?.Gender)}
             </p>
             <p>
-              <strong>Age:</strong> {safe(formData.patient?.Age)}
+              <strong>Age:</strong> {formatAge(formData.patient?.Age)}
             </p>
             <p>
               <strong>Phone Number:</strong> {safe(formData.patient?.ContactNo)}
@@ -266,7 +276,7 @@ const PrintA4 = ({ formData }) => {
                 <strong>Gender:</strong> {safe(formData.patient?.Gender)}
               </p>
               <p>
-                <strong>Age:</strong> {safe(formData.patient?.Age)}
+                <strong>Age:</strong> {formatAge(formData.patient?.Age)}
               </p>
               <p>
                 <strong>Phone Number:</strong>{' '}
