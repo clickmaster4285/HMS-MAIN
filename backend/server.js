@@ -36,14 +36,14 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/', indexRouter);
 
 // // 🌐 Serve frontend build
-// app.use(express.static(path.join(__dirname, "../frontend/dist")));
+app.use(express.static(path.join(__dirname, "../frontend/dist")));
 
-// // 🔁 SPA fallback (FIXED)
-// app.use((req, res) => {
-//   res.sendFile(
-//     path.join(__dirname, "../frontend/dist/index.html")
-//   );
-// });
+// 🔁 SPA fallback (FIXED)
+app.use((req, res) => {
+  res.sendFile(
+    path.join(__dirname, "../frontend/dist/index.html")
+  );
+});
 
 
 const PORT = process.env.PORT;
