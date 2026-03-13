@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { toast } from 'react-toastify';
 import { debounce } from 'lodash';
 
-export const useTestSelection = (testList, testRows, handleTestAdd, externalSearchTerm) => {
+export const useTestSelection = (testList, testRows, handleTestAdd, externalSearchTerm, onSearchChange) => {
   const [selectedTests, setSelectedTests] = useState([]);
   const [searchTerm, setSearchTerm] = useState(externalSearchTerm);
   const [showTestList, setShowTestList] = useState(false);
@@ -13,6 +13,14 @@ export const useTestSelection = (testList, testRows, handleTestAdd, externalSear
   useEffect(() => {
     if (externalSearchTerm !== undefined) {
       setSearchTerm(externalSearchTerm);
+    }
+  }, [externalSearchTerm]);
+
+  useEffect(() => {
+    if (externalSearchTerm && externalSearchTerm.trim()) {
+      setShowTestList(true);
+    } else {
+      setShowTestList(false);
     }
   }, [externalSearchTerm]);
 
@@ -41,18 +49,19 @@ export const useTestSelection = (testList, testRows, handleTestAdd, externalSear
   // Handle test selection with auto-clear and refocus
   const handleTestSelection = useCallback((testId) => {
     setSelectedTests(prev => {
-      const newSelectedTests = prev.includes(testId) 
+      const newSelectedTests = prev.includes(testId)
         ? prev.filter(id => id !== testId)
         : [...prev, testId];
-      
+
       // Auto-clear search and refocus after selection
       if (newSelectedTests.length > 0) {
         setTimeout(() => {
           setSearchTerm('');
+          if (onSearchChange) onSearchChange('');
           searchInputRef.current?.focus();
         }, 100);
       }
-      
+
       return newSelectedTests;
     });
   }, []);
@@ -66,6 +75,7 @@ export const useTestSelection = (testList, testRows, handleTestAdd, externalSear
       // Auto-clear search and refocus after select all
       setTimeout(() => {
         setSearchTerm('');
+        if (onSearchChange) onSearchChange('');
         searchInputRef.current?.focus();
       }, 100);
     }
@@ -84,17 +94,18 @@ export const useTestSelection = (testList, testRows, handleTestAdd, externalSear
           handleTestAdd(testId);
         }
       });
-      
+
       // Clear selection and search term
       setSelectedTests([]);
       setSearchTerm('');
+      if (onSearchChange) onSearchChange('');
       setShowTestList(false);
-      
+
       // Focus back to search input for next entry
       setTimeout(() => {
         searchInputRef.current?.focus();
       }, 100);
-      
+
       toast.success(`${selectedTests.length} test(s) added`);
     } catch (error) {
       toast.error('Failed to add tests');
@@ -104,7 +115,7 @@ export const useTestSelection = (testList, testRows, handleTestAdd, externalSear
   // Handle single test addition
   const handleAddSingleTest = useCallback((testId) => {
     if (!testId) return;
-    
+
     if (testRows.some((row) => row.testId === testId)) {
       toast.error('This test is already added');
       return;
@@ -113,12 +124,13 @@ export const useTestSelection = (testList, testRows, handleTestAdd, externalSear
     try {
       handleTestAdd(testId);
       setSearchTerm('');
+      if (onSearchChange) onSearchChange('');
       setShowTestList(false);
-      
+
       setTimeout(() => {
         searchInputRef.current?.focus();
       }, 100);
-      
+
       toast.success('Test added');
     } catch (error) {
       toast.error('Failed to add test');
@@ -130,7 +142,7 @@ export const useTestSelection = (testList, testRows, handleTestAdd, externalSear
     if (e.key === 'Enter') {
       const currentTime = new Date().getTime();
       const timeDiff = currentTime - lastEnterTime;
-      
+
       if (timeDiff < 500 && selectedTests.length > 0) {
         e.preventDefault();
         e.stopPropagation();
@@ -151,12 +163,13 @@ export const useTestSelection = (testList, testRows, handleTestAdd, externalSear
   // Handle search term change with auto-show list
   const handleSearchChange = useCallback((value) => {
     setSearchTerm(value);
+    if (onSearchChange) onSearchChange(value);
     if (value.trim()) {
       setShowTestList(true);
     } else {
       setShowTestList(false);
     }
-  }, []);
+  }, [onSearchChange]);
 
   // Auto-focus search input when component mounts
   useEffect(() => {
@@ -169,7 +182,7 @@ export const useTestSelection = (testList, testRows, handleTestAdd, externalSear
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (testListRef.current && !testListRef.current.contains(event.target) &&
-          searchInputRef.current && !searchInputRef.current.contains(event.target)) {
+        searchInputRef.current && !searchInputRef.current.contains(event.target)) {
         setShowTestList(false);
       }
     };
