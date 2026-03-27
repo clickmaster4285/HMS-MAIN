@@ -417,12 +417,12 @@ const AddlabPatient = () => {
   const submitForm = async (shouldPrint = false) => {
     if (testRows.length === 0) {
       toast.error('Please add at least one test');
-      return;
+      return false;
     }
 
     if (!patient.Name?.trim()) {
       toast.error('Patient name is required');
-      return;
+      return false;
     }
 
     const normalizedRows = normalizeRows(testRows);
@@ -495,9 +495,11 @@ const AddlabPatient = () => {
 
       // reset form
       handleCancel(); // Use the cancel function to clear everything
+      return true;
     } catch (err) {
       console.error('❌ Submission error:', err);
       toast.error(`Submission failed: ${err.message}`);
+      return false;
     } finally {
       setIsPrinting(false);
     }
@@ -505,8 +507,10 @@ const AddlabPatient = () => {
 
   const handleSubmitOnly = async (e) => {
     e.preventDefault();
-    await submitForm(false);
-    navigate('/lab/all-patients');
+    const success = await submitForm(false);
+    if (success) {
+      navigate('/lab/all-patients');
+    }
   };
 
   const handleSubmitAndPrint = async (e) => {
