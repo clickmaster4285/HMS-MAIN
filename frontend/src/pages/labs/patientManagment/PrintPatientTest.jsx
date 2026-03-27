@@ -3,7 +3,7 @@ import Logo from '../../../assets/images/logo1.png';
 import { QRCodeSVG } from 'qrcode.react';
 
 const PrintA4 = ({ formData }) => {
-  
+  console.log("the data is ", formData);
   const safe = (v, fallback = '_________') =>
     v !== undefined && v !== null && v !== '' ? v : fallback;
 
@@ -11,10 +11,7 @@ const PrintA4 = ({ formData }) => {
   const formatAge = (age) => {
     if (age === undefined || age === null || age === '') return '_________';
     const num = Number(age);
-    if (isNaN(num)) return age;
-    const decimal = num % 1;
-    if (decimal === 0) return Math.floor(num);
-    return decimal.toFixed(2).replace(/^0\./, '.');
+    return num.toFixed(2).replace(/^0\./, '.');
   };
   const formatCurrency = (amount) =>
     amount?.toLocaleString('en-PK', {
@@ -161,7 +158,7 @@ const PrintA4 = ({ formData }) => {
             <p>
               <strong>Gender:</strong> {safe(formData.patient?.Gender)}
             </p>
-            <p>
+            <p>{console.log(formatAge(formData.patient?.Age))}
               <strong>Age:</strong> {formatAge(formData.patient?.Age)}
             </p>
             <p>

@@ -79,7 +79,6 @@ export const fetchAllRadiologyReports = createAsyncThunk(
         headers: getAuthHeaders(),
         params: cleanParams
       });
-      console.log("response is", response);
       return response.data.data;
     } catch (error) {
       const message =

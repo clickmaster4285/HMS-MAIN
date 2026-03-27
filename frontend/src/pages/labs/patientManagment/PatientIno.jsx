@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { InputField } from '../../../components/common/FormFields';
 import doctorList from '../../../utils/doctors';
 
@@ -16,137 +16,158 @@ const PatientInfoForm = ({
 }) => {
   const [ageInput, setAgeInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const debounceTimer = useRef(null);
+
+  // Helper to format age for display (e.g., "21.00" -> "21", "0.20" -> "0.2")
+  const formatAgeValue = useCallback((val) => {
+    if (!val) return '';
+    const stringVal = String(val);
+    if (!stringVal.includes('.')) return stringVal;
+    
+    const [years, months] = stringVal.split('.');
+    if (!months || parseInt(months) === 0) return years;
+    
+    // If months is "10", keep it as "10", but if it's "1", keep as "1"
+    return `${years}.${months}`;
+  }, []);
 
   // Initialize ageInput for edit mode
-useEffect(() => {
-  if (mode === 'edit') {
-    setAgeInput(patient.Age || '');
-  }
-}, [patient.Age, mode]);
+  useEffect(() => {
+    if (mode === 'edit' && patient.Age) {
+      setAgeInput(formatAgeValue(patient.Age));
+    }
+  }, [patient.Age, mode, formatAgeValue]);
+
+  // Clean up timer on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    };
+  }, []);
 
   // Auto-capitalize function
-  const autoCapitalize = (text) => {
+  const autoCapitalize = useCallback((text) => {
     return text
       .toLowerCase()
       .split(' ')
       .map(word => word.charAt(0).toUpperCase() + word.slice(1))
       .join(' ');
-  };
+  }, []);
 
   // Handle patient name change with auto-capitalization
-  const handleNameChange = (e) => {
+  const handleNameChange = useCallback((e) => {
     const { name, value } = e.target;
     const capitalizedValue = autoCapitalize(value);
     
-    // Create a synthetic event with the capitalized value
-    const syntheticEvent = {
+    handlePatientChange({
       target: {
         name: name,
         value: capitalizedValue
       }
-    };
-    
-    handlePatientChange(syntheticEvent);
-  };
+    });
+  }, [autoCapitalize, handlePatientChange]);
 
-  // Calculate DOB from age input
-  const calculateDobFromAge = (ageString) => {
-    if (!ageString) return null;
+  // Calculate DOB from age input (0.11 = 11 months)
+  const calculateDobFromAge = useCallback((ageString) => {
+    if (!ageString || ageString === '.') return null;
 
     const today = new Date();
-    const ageParts = ageString.toLowerCase().split(' ');
-
     let years = 0;
     let months = 0;
-    let days = 0;
 
-    // Handle decimal input like "0.2" (meaning 0.2 years = 2.4 months ≈ 2 months)
     if (ageString.includes('.')) {
-      const decimalValue = parseFloat(ageString);
-      if (!isNaN(decimalValue)) {
-        if (decimalValue < 1) {
-          // If less than 1 year, treat as months
-          months = Math.round(decimalValue * 12);
-        } else {
-          // If 1 or more years, split into years and months
-          years = Math.floor(decimalValue);
-          months = Math.round((decimalValue - years) * 12);
-        }
-      }
+      const parts = ageString.split('.');
+      years = parseInt(parts[0]) || 0;
+      months = parseInt(parts[1]) || 0;
     } else {
-      // Parse age string (e.g., "20 years", "2 months", "1 year 6 months")
-      for (let i = 0; i < ageParts.length; i++) {
-        if (ageParts[i] === 'year' || ageParts[i] === 'years') {
-          years = parseInt(ageParts[i - 1]) || 0;
-        } else if (ageParts[i] === 'month' || ageParts[i] === 'months') {
-          months = parseInt(ageParts[i - 1]) || 0;
-        } else if (ageParts[i] === 'day' || ageParts[i] === 'days') {
-          days = parseInt(ageParts[i - 1]) || 0;
-        }
-      }
-
-      // If it's just a number, assume it's years
-      if (!isNaN(ageString) && years === 0 && months === 0 && days === 0) {
-        years = parseInt(ageString);
-      }
+      years = parseInt(ageString) || 0;
     }
 
-    // Calculate DOB
     const calculatedDob = new Date(today);
     calculatedDob.setFullYear(today.getFullYear() - years);
     calculatedDob.setMonth(today.getMonth() - months);
-    calculatedDob.setDate(today.getDate() - days);
-
+    
     return calculatedDob;
+  }, []);
+
+  // Strict validation and capping logic
+  const validateAndCapAge = (value) => {
+    // 1. Remove anything not a digit or decimal
+    let cleaned = value.replace(/[^0-9.]/g, '');
+    
+    // 2. Only one decimal allowed
+    const parts = cleaned.split('.');
+    if (parts.length > 2) {
+      cleaned = parts[0] + '.' + parts.slice(1).join('');
+    }
+
+    // 3. Length restriction (max 5 chars)
+    if (cleaned.length > 5) {
+      cleaned = cleaned.substring(0, 5);
+    }
+
+    // 4. Handle leading zeros for whole numbers
+    if (cleaned.length > 1 && cleaned.startsWith('0') && cleaned[1] !== '.') {
+      cleaned = cleaned.replace(/^0+/, '');
+      if (cleaned === '') cleaned = '0';
+    }
+
+    const newParts = cleaned.split('.');
+    let yearsPart = newParts[0];
+    let monthsPart = newParts[1];
+
+    // 5. Cap years at 99
+    if (yearsPart && parseInt(yearsPart) > 99) {
+      yearsPart = '99';
+    }
+
+    // 6. Cap months at 11
+    if (monthsPart !== undefined) {
+      if (monthsPart.length > 2) {
+        monthsPart = monthsPart.substring(0, 2);
+      }
+      if (parseInt(monthsPart) > 11) {
+        monthsPart = '11';
+      }
+    }
+
+    return monthsPart !== undefined ? `${yearsPart}.${monthsPart}` : yearsPart;
   };
 
-  // Handle age input change with debounce - for both new and edit modes
-  const handleAgeInputChange = (e) => {
-    const value = e.target.value;
-    setAgeInput(value);
+  const handleAgeInputChange = useCallback((e) => {
+    const rawValue = e.target.value;
+    
+    // Special handling for decimal point to allow typing "0."
+    let validatedValue;
+    if (rawValue.endsWith('.') && (rawValue.match(/\./g) || []).length === 1) {
+      const base = rawValue.slice(0, -1).replace(/[^0-9]/g, '');
+      validatedValue = (base === '' ? '0' : Math.min(parseInt(base), 99)) + '.';
+    } else {
+      validatedValue = validateAndCapAge(rawValue);
+    }
+
+    setAgeInput(validatedValue);
     setIsTyping(true);
 
-    // Update patient.Age in edit mode
-    if (mode === 'edit') {
-      const syntheticEvent = {
-        target: {
-          name: 'Age',
-          value: value
-        }
-      };
-      handlePatientChange(syntheticEvent);
-    }
+    // Update parent state immediately for consistency
+    handlePatientChange({
+      target: {
+        name: 'Age',
+        value: validatedValue
+      }
+    });
 
-    // Clear any existing timeout
-    if (window.ageInputTimeout) {
-      clearTimeout(window.ageInputTimeout);
-    }
+    if (debounceTimer.current) clearTimeout(debounceTimer.current);
 
-    // Set a new timeout to process the input after user stops typing
-    window.ageInputTimeout = setTimeout(() => {
+    debounceTimer.current = setTimeout(() => {
       setIsTyping(false);
-
-      if (value.trim() === '') {
-        handleDobChange(null);
-        return;
-      }
-
-      const calculatedDob = calculateDobFromAge(value);
-      if (calculatedDob) {
-        handleDobChange(calculatedDob);
-      }
-    }, 800); // 800ms delay
-  };
-
-  // 1) Put this helper near the top of the file (inside or above the component)
-  const RequiredLabel = ({ children, required }) => (
-    <label className="block mb-1 font-medium text-gray-700">
-      {required && <span className="text-red-500">*</span>} {children}
-    </label>
-  );
+      const dob = calculateDobFromAge(validatedValue);
+      handleDobChange(dob);
+    }, 500);
+  }, [calculateDobFromAge, handleDobChange, handlePatientChange]);
 
   // Common fields that appear in both modes
-  const commonFields = (
+  const commonFields = useMemo(() => (
     <>
       {/* 1. Name */}
       <InputField
@@ -159,22 +180,29 @@ useEffect(() => {
         required
       />
 
-      {/* 2. Age - Different for each mode */}
+      {/* 2. Age */}
       {mode === 'new' || mode === 'edit' ? (
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Age (auto-calculates DOB)<span className="text-red-500"> *</span>
+            Age (Max 99.11)<span className="text-red-500"> *</span>
           </label>
           <input
             type="text"
-            placeholder="e.g., 20, 0.2, 2 months, 1.5"
+            placeholder="e.g., 20 or 0.11"
             value={ageInput}
             onChange={handleAgeInputChange}
-            className="border rounded px-3 py-2 h-10.5 w-full border-gray-300 shadow-sm"
+            className={`border rounded px-3 py-2 h-10.5 w-full shadow-sm transition-colors ${
+              ageInput.includes('.') && parseInt(ageInput.split('.')[1]) > 11 
+                ? 'border-red-500 focus:ring-red-500' 
+                : 'border-gray-300 focus:ring-primary-500'
+            }`}
           />
-          {isTyping && (
-            <p className="mt-1 text-xs text-gray-500">Calculating DOB...</p>
-          )}
+          <div className="flex justify-between mt-1">
+            <p className="text-[10px] text-gray-500">Format: Years.Months (0-11)</p>
+            {isTyping && (
+              <p className="text-[10px] text-primary-600 animate-pulse">Calculating DOB...</p>
+            )}
+          </div>
         </div>
       ) : (
         <InputField
@@ -200,7 +228,7 @@ useEffect(() => {
           name="Gender"
           value={patient.Gender || ''}
           onChange={handlePatientChange}
-          className="border h-10.5 p-2 rounded w-full border-gray-300 shadow-sm"
+          className="border h-10.5 p-2 rounded w-full border-gray-300 shadow-sm focus:ring-primary-500"
         >
           <option value="">Select Gender</option>
           <option value="Male">Male</option>
@@ -219,7 +247,6 @@ useEffect(() => {
         onChange={handlePatientChange}
         required
       />
-      {/* Default contact checkbox */}
       <div className="flex items-center">
         <div className="flex items-center mt-2">
           <input
@@ -227,7 +254,7 @@ useEffect(() => {
             id="useDefaultContact"
             checked={useDefaultContact}
             onChange={(e) => setUseDefaultContact(e.target.checked)}
-            className="mr-2"
+            className="mr-2 h-4 w-4 text-primary-600 border-gray-300 rounded"
           />
           <label htmlFor="useDefaultContact" className="text-sm text-gray-600">
             Use default contact number ({defaultContactNumber})
@@ -255,7 +282,7 @@ useEffect(() => {
           name="ReferredBy"
           value={patient.ReferredBy || ''}
           onChange={handlePatientChange}
-          className="border h-10.5 p-2 rounded w-full border-gray-300 shadow-sm"
+          className="border h-10.5 p-2 rounded w-full border-gray-300 shadow-sm focus:ring-primary-500"
         >
             {doctorList.map((doctor, index) => (
               <option key={index} value={doctor}>
@@ -264,7 +291,6 @@ useEffect(() => {
             ))}
         </select>
       </div>
-      {/* Guardian Name */}
       <InputField
         name="Guardian"
         label="Guardian Name"
@@ -274,7 +300,8 @@ useEffect(() => {
         onChange={handlePatientChange}
       />
     </>
-  );
+  ), [patient, ageInput, handleNameChange, handleAgeInputChange, handlePatientChange, mode, isTyping, useDefaultContact, setUseDefaultContact, defaultContactNumber]);
+
 
   // Fields specific to existing patient mode
   const existingPatientFields = (

@@ -60,7 +60,6 @@ const SummaryTable = ({
 
    const handleDownload = () => {
       // Implement download functionality
-      console.log('Downloading data...');
    };
 
    return (

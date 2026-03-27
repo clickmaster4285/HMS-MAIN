@@ -10,7 +10,7 @@ function initSocket(server) {
   });
 
   io.on("connection", (socket) => {
-    console.log("✅ Socket connected:", socket.id);
+    // console.log("✅ Socket connected:", socket.id);
 
     socket.on("ping", () => {
       socket.emit("pong", {
@@ -21,7 +21,7 @@ function initSocket(server) {
     });
 
     socket.on("disconnect", (reason) => {
-      console.log("❌ Socket disconnected:", socket.id, "| Reason:", reason);
+      // console.log("❌ Socket disconnected:", socket.id, "| Reason:", reason);
     });
   });
 
