@@ -117,35 +117,31 @@ const AddlabPatient = () => {
     // dispatch(setSearch(value));
   };
 
-  // Calculate DOB from age (decimal)
+  // Calculate DOB from age (Years.Months format)
   const calculateDobFromAge = (ageString) => {
-    if (!ageString) return null;
+    if (!ageString || ageString === '.') return null;
 
     const today = new Date();
-    const ageNum = parseFloat(ageString);
+    let years = 0;
+    let months = 0;
 
-    if (isNaN(ageNum)) return null;
+    if (ageString.includes('.')) {
+      const parts = ageString.split('.');
+      years = parseInt(parts[0]) || 0;
+      months = parseInt(parts[1]) || 0;
+    } else {
+      years = parseInt(ageString) || 0;
+    }
 
     const calculatedDob = new Date(today);
-
-    if (ageNum < 1) {
-      // If less than 1 year, treat as months
-      const months = Math.round(ageNum * 12);
-      calculatedDob.setMonth(today.getMonth() - months);
-    } else {
-      // If 1 or more years, split into years and months
-      const years = Math.floor(ageNum);
-      const fractionalPart = ageNum - years;
-      const months = Math.round(fractionalPart * 12);
-
-      calculatedDob.setFullYear(today.getFullYear() - years);
-      calculatedDob.setMonth(today.getMonth() - months);
-    }
+    calculatedDob.setFullYear(today.getFullYear() - years);
+    calculatedDob.setMonth(today.getMonth() - months);
+    calculatedDob.setDate(today.getDate()); // Keep today's day for consistency
 
     return calculatedDob;
   };
 
-  // Calculate age from DOB (returns decimal)
+  // Calculate age from DOB (returns Years.Months format)
   const calculateAgeFromDob = (dobDate) => {
     if (!dobDate) return '';
 
@@ -161,7 +157,7 @@ const AddlabPatient = () => {
     // Adjust for negative days
     if (days < 0) {
       months--;
-      days += new Date(today.getFullYear(), today.getMonth(), 0).getDate();
+      // No need to calculate exact days for the Years.Months format we're using
     }
 
     // Adjust for negative months
@@ -170,11 +166,9 @@ const AddlabPatient = () => {
       months += 12;
     }
 
-    // Calculate decimal age (years + months/12)
-    const decimalAge = years + (months / 12);
-
-    // Format to 2 decimal places if needed
-    return decimalAge.toFixed(2);
+    // Format as Years.Months
+    if (months === 0) return years.toString();
+    return `${years}.${months}`;
   };
 
   const handleDobChange = (date) => {
