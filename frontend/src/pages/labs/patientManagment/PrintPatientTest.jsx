@@ -3,18 +3,13 @@ import Logo from '../../../assets/images/logo1.png';
 import { QRCodeSVG } from 'qrcode.react';
 
 const PrintA4 = ({ formData }) => {
-  
   const safe = (v, fallback = '_________') =>
     v !== undefined && v !== null && v !== '' ? v : fallback;
 
   // Custom age formatting
   const formatAge = (age) => {
     if (age === undefined || age === null || age === '') return '_________';
-    const num = Number(age);
-    if (isNaN(num)) return age;
-    const decimal = num % 1;
-    if (decimal === 0) return Math.floor(num);
-    return decimal.toFixed(2).replace(/^0\./, '.');
+    return age;
   };
   const formatCurrency = (amount) =>
     amount?.toLocaleString('en-PK', {

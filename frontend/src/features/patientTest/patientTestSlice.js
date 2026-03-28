@@ -87,7 +87,6 @@ export const fetchPatientTestAll = createAsyncThunk(
           endDate
         } 
       });
-    console.log("res= " , response)
       return response.data.data; 
     } catch (error) {
       const message =

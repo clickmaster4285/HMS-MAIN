@@ -778,11 +778,6 @@ const PatientTestsTable = () => {
                               <span className="font-medium">
                                 {x._norm.testName}
                               </span>
-                              {x._norm.testCode && (
-                                <span className="text-gray-400 ml-1">
-                                  ({x._norm.testCode})
-                                </span>
-                              )}
                             </div>
                           ))}
                           {t.selectedTests.length > 2 && (

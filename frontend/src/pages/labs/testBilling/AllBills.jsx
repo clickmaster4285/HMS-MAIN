@@ -389,7 +389,6 @@ const AllBills = () => {
     setPaymentProcessing(true);
     try {
       // Implement your payment finalization logic here
-      console.log("Finalizing payment:", paymentData);
       // Call your API to finalize payment
 
       toast.success("Payment finalized successfully!");
