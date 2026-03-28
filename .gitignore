@@ -7,6 +7,8 @@ frontend/.turbo
 frontend/next-env.d.ts
 frontend/.vercel
 frontend/dist
+frontend/.env
+frontend/.env/
 
 
 # Backend specific  
@@ -18,6 +20,8 @@ backend/uploads/*
 backend/uploads
 backend/dist
 backend/.cache
+backend/.env
+backend/.env/
 
 # Common
 # .env
